@@ -5,6 +5,7 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readdirSync,
   renameSync,
   rmSync,
   unlinkSync,
@@ -149,6 +150,17 @@ function validateAdaptedSkill(skillPath, expectedName) {
   if (!/^description:\s*.+$/m.test(frontmatter)) throw new Error(`${path} lost its description`);
 }
 
+function copyDirectoryContents(source, target) {
+  mkdirSync(target, { recursive: false });
+  for (const entry of readdirSync(source, { withFileTypes: true })) {
+    cpSync(join(source, entry.name), join(target, entry.name), {
+      recursive: entry.isDirectory(),
+      errorOnExist: true,
+      force: false,
+    });
+  }
+}
+
 const skills = await (await import("node:fs/promises"))
   .readdir(sourceRoot, { withFileTypes: true })
   .then((entries) => entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort());
@@ -203,7 +215,7 @@ try {
     stageRoots.set(harness, stageRoot);
     for (const skill of skills) {
       const staged = join(stageRoot, skill);
-      cpSync(join(sourceRoot, skill), staged, { recursive: true, errorOnExist: true, force: false });
+      copyDirectoryContents(join(sourceRoot, skill), staged);
       applyAdapter(staged, harness, skill);
       validateAdaptedSkill(staged, skill);
     }
