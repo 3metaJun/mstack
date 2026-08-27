@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "install-skills": "node scripts/install.mjs",
-    "test": "node scripts/validate.mjs && node --test scripts/*.test.mjs"
+    "test": "node scripts/validate.mjs && node --test scripts/install.test.mjs"
   },
   "engines": {
     "node": ">=18"
