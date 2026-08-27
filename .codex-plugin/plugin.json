@@ -1,0 +1,18 @@
+{
+  "name": "harness-skills",
+  "version": "0.1.0",
+  "description": "Portable engineering skills for Codex, Claude Code, and OpenCode.",
+  "author": {
+    "name": "3metaJun"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Harness Skills",
+    "shortDescription": "Portable, evidence-first engineering workflows.",
+    "longDescription": "A curated collection of portable skills for verification, debugging, type-safe design, and auditable agent work.",
+    "developerName": "3metaJun",
+    "category": "Developer Tools",
+    "capabilities": ["skills"],
+    "defaultPrompt": "Use the relevant Harness Skills workflow for this engineering task."
+  }
+}

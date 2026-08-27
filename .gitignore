@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+decisions.tsv
+.audit/
+.env
+.env.*
+*.key
+*.pem
+artifacts/
+screenshots/
+traces/
+*.log

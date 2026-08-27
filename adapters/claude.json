@@ -1,0 +1,10 @@
+{
+  "removeFrontmatter": {
+    "show-me-your-work": ["metadata"]
+  },
+  "frontmatter": {
+    "show-me-your-work": {
+      "compatibility": "Node.js 18 or newer is required for scripts/log.mjs."
+    }
+  }
+}
