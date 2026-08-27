@@ -97,6 +97,45 @@ test("rejects duplicate harnesses and aliased target roots", () => {
   }
 });
 
+test("rejects invalid skill filters", () => {
+  const { root, env } = fixture();
+  try {
+    const missing = run(["--harness", "codex", "--skill"], env);
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /requires one or more/);
+
+    const unknown = run(["--harness", "codex", "--skill", "not-a-skill"], env);
+    assert.notEqual(unknown.status, 0);
+    assert.match(unknown.stderr, /Unknown skill/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("installs only selected skills", () => {
+  const { root, env } = fixture();
+  try {
+    const result = run(
+      ["--harness", "all", "--skill", "writing-for-agents,codebase-design,diagnosing-bugs"],
+      env,
+    );
+    assert.equal(result.status, 0, result.stderr);
+    for (const target of [
+      env.HARNESS_SKILLS_CODEX_DIR,
+      env.HARNESS_SKILLS_CLAUDE_DIR,
+      env.HARNESS_SKILLS_OPENCODE_DIR,
+    ]) {
+      assert.deepEqual(readdirSync(target).sort(), [
+        "codebase-design",
+        "diagnosing-bugs",
+        "writing-for-agents",
+      ]);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 function findFile(root, name) {
   const entries = readdirSync(root, { withFileTypes: true });
   for (const entry of entries) {

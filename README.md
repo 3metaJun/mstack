@@ -6,10 +6,12 @@ improvement does not drift across copies. The canonical frontmatter is valid
 for Codex plugins; small adapter manifests transform harness-specific metadata
 during installation without placing runtime conditions in a skill body.
 
-This initial collection ports 15 high-value workflows from
-[`pstack`](https://github.com/cursor/plugins/tree/main/pstack/skills). Cursor-only
-paths, commands, transcript locations, and delegation assumptions have been
-replaced with capability-based instructions and harness-specific references.
+The collection began with 15 high-value workflows from
+[`pstack`](https://github.com/cursor/plugins/tree/main/pstack/skills) and now
+also includes selected skills from
+[`mattpocock/skills`](https://github.com/mattpocock/skills). Harness-specific
+paths, commands, metadata, and delegation assumptions stay out of canonical
+skill instructions.
 
 ## Install
 
@@ -27,6 +29,12 @@ Install only one target:
 node scripts/install.mjs --harness codex
 node scripts/install.mjs --harness claude
 node scripts/install.mjs --harness opencode
+```
+
+Install selected skills without touching the rest:
+
+```bash
+node scripts/install.mjs --harness all --skill writing-for-agents,codebase-design,diagnosing-bugs
 ```
 
 The installer never overwrites an existing skill by default. Use `--dry-run`
@@ -69,6 +77,9 @@ verify discovery with `opencode debug skill`.
 | `typescript-best-practices` | Apply strict, modern TypeScript patterns. |
 | `principle-boundary-discipline` | Validate at boundaries and keep the core typed and pure. |
 | `principle-build-the-lever` | Build a rerunnable tool for non-trivial work. |
+| `writing-for-agents` | Write compact, reliable instructions and context pointers for agents. |
+| `codebase-design` | Design deep modules with small interfaces and well-placed seams. |
+| `diagnosing-bugs` | Diagnose hard bugs through tight feedback loops and falsifiable hypotheses. |
 
 ## Repository contract
 

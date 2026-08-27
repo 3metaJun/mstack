@@ -6,7 +6,9 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
 const EXPECTED_SKILLS = [
   "blast-radius",
+  "codebase-design",
   "create-verification-skill",
+  "diagnosing-bugs",
   "principle-boundary-discipline",
   "principle-build-the-lever",
   "principle-fix-root-causes",
@@ -20,6 +22,7 @@ const EXPECTED_SKILLS = [
   "show-me-your-work",
   "tdd",
   "typescript-best-practices",
+  "writing-for-agents",
 ].sort();
 
 const errors = [];

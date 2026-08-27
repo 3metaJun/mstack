@@ -1,5 +1,7 @@
 # Third-party notices
 
+## pstack
+
 The skills in this repository are adapted from the `pstack` plugin in
 [`cursor/plugins`](https://github.com/cursor/plugins/tree/main/pstack/skills),
 pinned during the port at commit
@@ -26,3 +28,18 @@ Adapted upstream skill names:
 - `typescript-best-practices`
 - `principle-boundary-discipline`
 - `principle-build-the-lever`
+
+## mattpocock/skills
+
+The following skills are adapted from
+[`mattpocock/skills`](https://github.com/mattpocock/skills), pinned during the
+port at commit
+[`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`](https://github.com/mattpocock/skills/commit/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76):
+
+- `writing-for-agents`
+- `codebase-design`
+- `diagnosing-bugs`
+
+The upstream repository is licensed under MIT. These adaptations preserve the
+core methods while narrowing automatic triggers, respecting repository
+terminology, and removing harness-specific runtime assumptions.

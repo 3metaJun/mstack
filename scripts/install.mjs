@@ -31,9 +31,9 @@ function valueAfter(flag) {
 }
 
 if (args.includes("--help") || !args.includes("--harness")) {
-  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|all> [--dry-run] [--replace]
+  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|all> [--skill <name[,name...]>] [--dry-run] [--replace]
 
-Installs every canonical skill into one or more user-level harness directories.
+Installs all or selected canonical skills into user-level harness directories.
 Existing skill directories are preserved unless --replace is supplied.`);
   process.exit(args.includes("--help") ? 0 : 1);
 }
@@ -161,9 +161,22 @@ function copyDirectoryContents(source, target) {
   }
 }
 
-const skills = await (await import("node:fs/promises"))
+const availableSkills = await (await import("node:fs/promises"))
   .readdir(sourceRoot, { withFileTypes: true })
   .then((entries) => entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort());
+const hasSkillFilter = args.includes("--skill");
+const skillFilter = valueAfter("--skill");
+if (hasSkillFilter && (!skillFilter || skillFilter.startsWith("--"))) {
+  throw new Error("--skill requires one or more comma-separated skill names");
+}
+const requestedSkills = hasSkillFilter ? skillFilter.split(",").filter(Boolean) : undefined;
+if (requestedSkills?.length === 0) throw new Error("--skill requires at least one skill name");
+if (requestedSkills && new Set(requestedSkills).size !== requestedSkills.length) {
+  throw new Error(`Duplicate skill in --skill: ${requestedSkills.join(",")}`);
+}
+const unknownSkills = requestedSkills?.filter((skill) => !availableSkills.includes(skill)) ?? [];
+if (unknownSkills.length) throw new Error(`Unknown skill: ${unknownSkills.join(", ")}`);
+const skills = requestedSkills ?? availableSkills;
 
 const plan = harnesses.flatMap((harness) =>
   skills.map((skill) => ({ harness, skill, target: join(targets[harness], skill) })),
