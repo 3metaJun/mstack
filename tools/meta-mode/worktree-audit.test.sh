@@ -30,7 +30,7 @@ printf '[]\n'
 EOF
 chmod +x "$fake_bin/gh"
 
-output=$(PATH="$fake_bin:$PATH" MSTACK_TRANSCRIPTS_DIR="$transcripts" "$script_dir/worktree-audit.sh" "$repo")
+output=$(PATH="$fake_bin:$PATH" MSTACK_TRANSCRIPTS_DIR="$transcripts" bash "$script_dir/worktree-audit.sh" "$repo")
 row=$(printf '%s\n' "$output" | awk -F '\t' -v worktree="$worktree" '$9 == worktree')
 
 [ -n "$row" ] || { printf 'missing audit row for %s\n%s\n' "$worktree" "$output" >&2; exit 1; }
