@@ -6,13 +6,14 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { tmpdir } from "node:os";
+import { hostname, tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import test from "node:test";
 
@@ -766,6 +767,50 @@ test("recovers a stale transaction after the process exits between a rename and 
   }
 });
 
+test("quarantines user edits before rolling back an interrupted transaction", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      write(join(source, "automations", "benny", "README.md"), "changed pstack automation\n");
+    }, "prepare interrupted sync with user edit");
+
+    const interrupted = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "after",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/automations/benny/README.md",
+        action: "exit",
+        exitCode: 86,
+      }],
+    );
+    assert.equal(interrupted.status, 86, interrupted.stderr);
+
+    const transactionsRoot = join(target, ".mstack-sync-upstream", "transactions");
+    const [transactionId] = readdirSync(transactionsRoot);
+    write(join(target, "automations", "benny", "README.md"), "user edit during recovery\n");
+
+    const recovered = run(synchronizer, ["--source", source, "--target", target, "--apply", "--force"]);
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.match(recovered.stderr, new RegExp(`automations/benny/README\\.md.*${transactionId}.*recovery`));
+    assert.equal(
+      readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
+      "changed mstack automation\n",
+    );
+    assert.equal(
+      readFileSync(join(target, ".mstack-sync-upstream", "recovery", transactionId, "0.user"), "utf8"),
+      "user edit during recovery\n",
+    );
+    assert.equal(existsSync(transactionsRoot) ? readdirSync(transactionsRoot).length : 0, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("cleans up a committed transaction without rolling it back after the committed marker rename", () => {
   const { root, source, target } = fixture();
   try {
@@ -802,30 +847,22 @@ test("cleans up a committed transaction without rolling it back after the commit
       "committed mstack automation\n",
     );
 
-    const recovered = runWithFaults(
-      synchronizer,
-      ["--source", source, "--target", target, "--apply", "--force"],
-      root,
-      [{
-        method: "renameSync",
-        phase: "before",
-        fromIncludes: "/.mstack-sync-upstream-tx/",
-        toEndsWith: "/automations/benny/README.md",
-        message: "committed transaction attempted rollback",
-      }],
-    );
-    assert.equal(recovered.status, 0, recovered.stderr);
+    write(join(target, "automations", "benny", "README.md"), "user edit after commit\n");
+
+    const recovered = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+    assert.notEqual(recovered.status, 0);
     assert.doesNotMatch(recovered.stderr, /committed transaction attempted rollback/);
     assert.equal(
       readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
-      "committed mstack automation\n",
+      "user edit after commit\n",
     );
     assert.equal(
       readFileSync(join(target, "docs", "guide", "02-meta-mode.md"), "utf8"),
       "Committed /meta-mode guide for mstack.\nHarness confirms.\n",
     );
     const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
-    assert.equal(checked.status, 0, checked.stderr);
+    assert.notEqual(checked.status, 0);
+    assert.match(checked.stderr, /automations\/benny\/README\.md/);
     assertNoTransactionState(target);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -1000,6 +1037,25 @@ test("takes over dead sync locks and stale takeover guards", () => {
   }
 });
 
+test("takes over a lock whose PID was reused by a different process instance", () => {
+  const { root, source, target } = fixture();
+  try {
+    write(join(target, ".mstack-sync-upstream.lock"), `${JSON.stringify({
+      version: 2,
+      pid: process.pid,
+      token: "reused-pid-owner",
+      host: hostname(),
+      platform: process.platform,
+      start: "different-process-start",
+    })}\n`);
+    const result = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+    assert.equal(result.status, 0, result.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 for (const [kind, description] of [["malformed", "malformed"], ["escaping", "path-escaping"]]) {
   test(`refuses a ${description} interrupted transaction journal without mutating files`, () => {
     const { root, source, target } = fixture();
@@ -1056,3 +1112,71 @@ for (const [kind, description] of [["malformed", "malformed"], ["escaping", "pat
     }
   });
 }
+
+test("rejects a journal operation that targets reserved transaction state", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    const transactionId = "invalid-reserved";
+    const transaction = transactionDirectory(target, transactionId);
+    mkdirSync(transaction, { recursive: true });
+    write(join(transaction, "COMMITTING"), "\n");
+    write(join(transaction, "journal.json"), `${JSON.stringify({
+      version: 1,
+      id: transactionId,
+      owner: { pid: 2147483647, token: "reserved-test-owner" },
+      targetRoot: realpathSync(target),
+      createdDirectories: [],
+      operations: [{
+        kind: "write",
+        target: ".mstack-sync-upstream.lock",
+        stage: ".mstack-sync-upstream-tx/invalid-reserved/0.new",
+        backup: ".mstack-sync-upstream-tx/invalid-reserved/0.old",
+        before: { kind: "absent" },
+        after: { kind: "file", sha256: sha256("reserved replacement\n"), mode: 0o600 },
+      }],
+    }, null, 2)}\n`);
+
+    const before = snapshotTree(target);
+    const result = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /reserved transaction path/i);
+    assert.deepEqual(snapshotTree(target), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects a transaction journal copied from a different checkout", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    const transactionId = "invalid-other-target";
+    const transaction = transactionDirectory(target, transactionId);
+    mkdirSync(transaction, { recursive: true });
+    write(join(transaction, "COMMITTING"), "\n");
+    write(join(transaction, "journal.json"), `${JSON.stringify({
+      version: 1,
+      id: transactionId,
+      owner: { pid: 2147483647, token: "other-target-owner" },
+      targetRoot: join(root, "other-checkout"),
+      createdDirectories: [],
+      operations: [{
+        kind: "manifest",
+        target: "profiles/upstream-manifest.json",
+        stage: `.mstack-sync-upstream-tx/${transactionId}/0.new`,
+        backup: `.mstack-sync-upstream-tx/${transactionId}/0.old`,
+        before: { kind: "absent" },
+        after: { kind: "file", sha256: sha256("other checkout\n"), mode: 0o600 },
+      }],
+    }, null, 2)}\n`);
+
+    const before = snapshotTree(target);
+    const result = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /target root|different checkout/i);
+    assert.deepEqual(snapshotTree(target), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
