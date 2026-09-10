@@ -276,13 +276,27 @@ content still matches the previous manifest. Pass `--apply --force` after
 reviewing a diff when overwriting or removing a locally changed file is
 intentional.
 
-Only one `--apply` can run against a target at a time. Writes and removals are
-staged and journaled before the target is changed; an ordinary failure rolls
-the whole refresh back. If the process is interrupted, the next `--apply`
-recovers the unfinished transaction before rebuilding the sync plan. Dry runs
-and `check-upstream` refuse to inspect a target while a sync is active or needs
-recovery. The transaction prevents persistent partial refreshes, but readers
-that ignore the sync lock can still observe files changing during the commit.
+All sync commands use one exclusive lock per target, so concurrent `--apply`,
+dry-run, and `check-upstream` commands are serialized. The lock records the
+host, platform, and process start identity. A lock from another runtime (for
+example Windows versus WSL), or one whose owner cannot be verified, is left in
+place and the command explains how to inspect and remove it after confirming
+that no sync is running.
+
+Writes and removals are staged and journaled before the target is changed; an
+ordinary failure rolls the whole refresh back. If the process is interrupted,
+the next `--apply` recovers the unfinished transaction before rebuilding the
+sync plan. If a user changed a target during an unfinished rollback, mstack
+moves that file to `.mstack-sync-upstream/recovery/<transaction>/<index>.user`
+and restores the previous version; the command prints both paths. A
+`COMMITTED` marker is authoritative, so later user edits are preserved while
+transaction sidecars are cleaned up. Dry runs and `check-upstream` refuse to
+inspect a target while a sync is active or needs recovery.
+
+On Windows, directory fsync is best-effort because Node cannot portably flush a
+directory handle. The transaction provides process-crash recovery, but it does
+not provide a power-loss durability guarantee on that platform. Readers that
+ignore the sync lock can still observe files changing during the commit.
 
 `--apply` writes `profiles/upstream-manifest.json`. Its hashes describe the
 transformed upstream baseline, not package integrity. Files configured with

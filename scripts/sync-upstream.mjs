@@ -62,10 +62,13 @@ const releaseReadLockAtExit = () => {
 if (!apply) process.once("exit", releaseReadLockAtExit);
 
 try {
-const recoveredTransactions = apply ? recoverUpstreamSyncTransactions(targetRoot, syncLock) : 0;
+const recovery = apply ? recoverUpstreamSyncTransactions(targetRoot, syncLock) : { count: 0, quarantined: [] };
 if (!apply) assertUpstreamSyncTargetReadable(targetRoot, syncLock);
-if (recoveredTransactions) {
-  console.log(`Recovered ${recoveredTransactions} interrupted upstream sync transaction(s).`);
+if (recovery.count) {
+  console.log(`Recovered ${recovery.count} interrupted upstream sync transaction(s).`);
+}
+for (const { id, target, path } of recovery.quarantined) {
+  console.warn(`Preserved the user-modified ${target} from transaction ${id} at ${path}.`);
 }
 if (!existsSync(sourceRoot)) throw new Error(`Upstream checkout not found: ${sourceRoot}`);
 const upstreamsPath = resolveInside(targetRoot, "profiles/upstreams.json", "upstream profile");

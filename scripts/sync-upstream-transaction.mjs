@@ -16,7 +16,9 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { hostname } from "node:os";
 import { basename, dirname, isAbsolute, posix, relative, resolve, sep } from "node:path";
 
 const LOCK_NAME = ".mstack-sync-upstream.lock";
@@ -24,6 +26,101 @@ const STATE_NAME = ".mstack-sync-upstream";
 const SIDECAR_NAME = ".mstack-sync-upstream-tx";
 const JOURNAL_VERSION = 1;
 const HASH_PATTERN = /^[0-9a-f]{64}$/;
+const RUNTIME_HOST = hostname();
+
+function processStartIdentity(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1) return undefined;
+  if (process.platform === "linux") {
+    try {
+      const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+      const commandEnd = stat.lastIndexOf(")");
+      if (commandEnd === -1) return undefined;
+      const fields = stat.slice(commandEnd + 2).trim().split(/\s+/);
+      return fields[19] ? `linux:${fields[19]}` : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  if (process.platform === "win32") {
+    try {
+      const start = execFileSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if ($null -ne $p) { $p.StartTime.ToFileTimeUtc() }`,
+        ],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      ).trim();
+      return start ? `windows:${start}` : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  if (process.platform === "darwin") {
+    try {
+      const start = execFileSync("ps", ["-p", String(pid), "-o", "lstart="], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+      return start ? `darwin:${start}` : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+function processLiveness(pid) {
+  try {
+    process.kill(pid, 0);
+    return "alive";
+  } catch (error) {
+    if (error.code === "ESRCH") return "dead";
+    return "unknown";
+  }
+}
+
+function ownerLiveness(owner) {
+  const liveness = processLiveness(owner.pid);
+  if (liveness === "dead") return "dead";
+  if (owner.host !== RUNTIME_HOST || owner.platform !== process.platform) return "unknown";
+  if (typeof owner.start !== "string" || owner.start.length === 0) return "unknown";
+  const actualStart = processStartIdentity(owner.pid);
+  if (!actualStart) return "unknown";
+  return actualStart === owner.start ? "alive" : "dead";
+}
+
+function currentOwner() {
+  return {
+    version: 2,
+    pid: process.pid,
+    token: randomUUID(),
+    host: RUNTIME_HOST,
+    platform: process.platform,
+    start: processStartIdentity(process.pid) ?? null,
+  };
+}
+
+function assertOwnerShape(owner, label) {
+  if (!owner || !Number.isSafeInteger(owner.pid) || owner.pid < 1 ||
+      typeof owner.token !== "string" || owner.token.length === 0) {
+    throw new Error(`Invalid upstream sync ${label}.`);
+  }
+  if (owner.version !== undefined && ![1, 2].includes(owner.version)) {
+    throw new Error(`Invalid upstream sync ${label}.`);
+  }
+  if (owner.host !== undefined && typeof owner.host !== "string") {
+    throw new Error(`Invalid upstream sync ${label}.`);
+  }
+  if (owner.platform !== undefined && typeof owner.platform !== "string") {
+    throw new Error(`Invalid upstream sync ${label}.`);
+  }
+  if (owner.start !== undefined && owner.start !== null && typeof owner.start !== "string") {
+    throw new Error(`Invalid upstream sync ${label}.`);
+  }
+}
 
 function digest(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -190,6 +287,20 @@ function assertTargetDoesNotOverlap(targets, target, label) {
   if (overlap) throw new Error(`Overlapping targets in ${label}: ${overlap} and ${target}`);
 }
 
+function assertReservedTransactionTarget(target, label) {
+  if (target.split("/").some((part) => [LOCK_NAME, STATE_NAME, SIDECAR_NAME].includes(part))) {
+    throw new Error(`Upstream sync ${label} uses a reserved transaction path: ${target}`);
+  }
+}
+
+function targetRootIdentity(path) {
+  let normalized = path.replaceAll("\\", "/");
+  const windowsDrive = normalized.match(/^([A-Za-z]):(?:\/|$)/);
+  if (windowsDrive) normalized = `/mnt/${windowsDrive[1].toLowerCase()}${normalized.slice(2)}`;
+  normalized = normalized.replace(/\/+$/, "");
+  return process.platform === "win32" || normalized.startsWith("/mnt/") ? normalized.toLowerCase() : normalized;
+}
+
 function assertFingerprintShape(value, label) {
   if (!value || typeof value !== "object" || !["absent", "file"].includes(value.kind)) {
     throw new Error(`Invalid upstream sync transaction ${label}.`);
@@ -233,12 +344,10 @@ function readJournal(targetRoot, transactionPath, id) {
   if (!journal || typeof journal !== "object" || journal.version !== JOURNAL_VERSION || journal.id !== id) {
     throw new Error(`Invalid upstream sync transaction journal at ${journalPath}.`);
   }
-  if (!journal.owner || !Number.isSafeInteger(journal.owner.pid) || journal.owner.pid < 1 ||
-      typeof journal.owner.token !== "string" || journal.owner.token.length === 0) {
-    throw new Error(`Invalid upstream sync transaction owner at ${journalPath}.`);
-  }
-  if (journal.targetRoot !== realpathSync(targetRoot)) {
-    throw new Error(`Upstream sync transaction journal targets a different checkout: ${journalPath}`);
+  assertOwnerShape(journal.owner, `transaction owner at ${journalPath}`);
+  if (typeof journal.targetRoot !== "string" || journal.targetRoot.length === 0 ||
+      targetRootIdentity(journal.targetRoot) !== targetRootIdentity(realpathSync(targetRoot))) {
+    throw new Error(`Invalid upstream sync transaction target root at ${journalPath}.`);
   }
   if (!Array.isArray(journal.createdDirectories) || !Array.isArray(journal.operations) || !journal.operations.length) {
     throw new Error(`Invalid upstream sync transaction journal at ${journalPath}.`);
@@ -247,6 +356,7 @@ function readJournal(targetRoot, transactionPath, id) {
   const createdDirectories = new Set();
   for (const [index, path] of journal.createdDirectories.entries()) {
     normalizedRelativePath(path, `createdDirectories[${index}]`);
+    assertReservedTransactionTarget(path, `createdDirectories[${index}]`);
     resolveInside(targetRoot, path, `createdDirectories[${index}]`);
     if (createdDirectories.has(path)) throw new Error(`Duplicate directory in upstream sync transaction: ${path}`);
     createdDirectories.add(path);
@@ -259,6 +369,7 @@ function readJournal(targetRoot, transactionPath, id) {
       throw new Error(`Invalid upstream sync transaction operation ${index}.`);
     }
     normalizedRelativePath(operation.target, `operations[${index}].target`);
+    assertReservedTransactionTarget(operation.target, `operations[${index}].target`);
     resolveInside(targetRoot, operation.target, `operations[${index}].target`);
     assertTargetDoesNotOverlap(targets, operation.target, "upstream sync transaction");
     targets.push(operation.target);
@@ -360,21 +471,47 @@ function cleanupAbandonedJournalWrite(targetRoot, transactionPath) {
 }
 
 function transactionPaths(targetRoot, journal) {
-  return journal.operations.map((operation) => ({
+  return journal.operations.map((operation, index) => ({
     ...operation,
+    index,
     targetPath: resolveInside(targetRoot, operation.target, "operation target"),
     stagePath: operation.stage === null ? undefined : resolveInside(targetRoot, operation.stage, "operation stage"),
     backupPath: resolveInside(targetRoot, operation.backup, "operation backup"),
   }));
 }
 
-function rollbackOperation(operation) {
+function quarantineUnknownTarget(targetRoot, transactionPath, operation) {
+  const { stateRoot } = transactionRoots(targetRoot);
+  const recoveryRoot = resolve(stateRoot, "recovery", basename(transactionPath));
+  resolveInside(
+    targetRoot,
+    relative(targetRoot, recoveryRoot).split(sep).join("/"),
+    "upstream sync recovery directory",
+  );
+  mkdirSync(recoveryRoot, { recursive: true, mode: 0o700 });
+  fsyncDirectory(dirname(recoveryRoot));
+  fsyncDirectory(recoveryRoot);
+  const recoveryPath = resolve(recoveryRoot, `${operation.index}.user`);
+  if (lstatIfPresent(recoveryPath)) {
+    throw new Error(`Recovery file already exists: ${recoveryPath}`);
+  }
+  durableRename(operation.targetPath, recoveryPath);
+  return { path: recoveryPath, target: operation.target };
+}
+
+function rollbackOperation(targetRoot, transactionPath, operation) {
   const backup = lstatIfPresent(operation.backupPath);
-  const current = fingerprint(operation.targetPath);
+  let current = fingerprint(operation.targetPath);
+  let quarantined;
 
   if (operation.before.kind === "file") {
     if (backup) {
       assertFingerprint(operation.backupPath, operation.before, "Upstream sync backup");
+      if (current.kind !== "absent" &&
+          !fingerprintsEqual(current, operation.before) && !fingerprintsEqual(current, operation.after)) {
+        quarantined = quarantineUnknownTarget(targetRoot, transactionPath, operation);
+        current = { kind: "absent" };
+      }
       if (current.kind === "absent") {
         durableRename(operation.backupPath, operation.targetPath);
       } else if (fingerprintsEqual(current, operation.after)) {
@@ -390,26 +527,32 @@ function rollbackOperation(operation) {
     }
   } else {
     if (backup) throw new Error(`Unexpected backup for a newly created target: ${operation.backupPath}`);
-    if (fingerprintsEqual(current, operation.after)) durableUnlink(operation.targetPath);
-    else if (current.kind !== "absent") {
-      throw new Error(`Refusing to remove an unknown file while rolling back: ${operation.targetPath}`);
+    if (fingerprintsEqual(current, operation.after)) {
+      durableUnlink(operation.targetPath);
+    } else if (current.kind !== "absent") {
+      quarantined = quarantineUnknownTarget(targetRoot, transactionPath, operation);
+      current = { kind: "absent" };
     }
   }
 
   if (operation.stagePath) removeExpectedFile(operation.stagePath, operation.after, "Upstream sync staged file");
   assertFingerprint(operation.targetPath, operation.before, "Rolled back upstream sync target");
+  return quarantined;
 }
 
-function rollbackJournal(targetRoot, journal) {
+function rollbackJournal(targetRoot, transactionPath, journal) {
   const errors = [];
+  const quarantined = [];
   for (const operation of transactionPaths(targetRoot, journal).reverse()) {
     try {
-      rollbackOperation(operation);
+      const result = rollbackOperation(targetRoot, transactionPath, operation);
+      if (result) quarantined.push(result);
     } catch (error) {
       errors.push(`${operation.target}: ${error.message}`);
     }
   }
   if (errors.length) throw new Error(errors.join("\n"));
+  return quarantined;
 }
 
 function cleanupTransaction(targetRoot, transactionPath, journal) {
@@ -452,15 +595,6 @@ function validateCommittedTargets(targetRoot, journal) {
   }
 }
 
-function processIsAlive(pid) {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code !== "ESRCH";
-  }
-}
-
 function lockOwnerText(owner) {
   return JSON.stringify(owner);
 }
@@ -482,7 +616,17 @@ function createOwnedLock(lockPath, owner) {
   let published = false;
   try {
     writeDurableFile(temporaryPath, `${lockOwnerText(owner)}\n`);
-    linkSync(temporaryPath, lockPath);
+    try {
+      linkSync(temporaryPath, lockPath);
+    } catch (error) {
+      if (["EPERM", "EOPNOTSUPP", "ENOTSUP", "EXDEV"].includes(error.code)) {
+        throw new Error(
+          `Upstream sync requires hard links for its lock on this filesystem: ${lockPath}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
     published = true;
     fsyncDirectory(dirname(lockPath));
     durableUnlink(temporaryPath);
@@ -509,14 +653,21 @@ function removeDeadLockInitializers(targetRoot) {
   const prefix = `${LOCK_NAME}.`;
   for (const entry of readdirSync(targetRoot, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.startsWith(prefix) || !entry.name.endsWith(".tmp")) continue;
-    const match = entry.name.match(/^\.mstack-sync-upstream\.lock\.([1-9]\d*)\.([0-9a-f-]+)\.tmp$/);
-    if (!match) throw new Error(`Invalid upstream sync lock initializer: ${resolve(targetRoot, entry.name)}`);
-    const pid = Number(match[1]);
-    if (!Number.isSafeInteger(pid) || processIsAlive(pid)) {
-      throw new Error(`Another upstream sync is initializing its lock: ${resolve(targetRoot, entry.name)}`);
+    const match = entry.name.match(/^\.mstack-sync-upstream\.lock\.(?:takeover\.)?([1-9]\d*)\.([0-9a-f-]+)\.tmp$/);
+    if (!match) continue;
+    const initializerPath = resolve(targetRoot, entry.name);
+    let initializer;
+    try {
+      initializer = JSON.parse(readRegularFile(initializerPath, "upstream sync lock initializer").toString("utf8"));
+      assertOwnerShape(initializer, `lock initializer at ${initializerPath}`);
+    } catch (error) {
+      throw new Error(`Invalid upstream sync lock initializer: ${initializerPath}`, { cause: error });
+    }
+    if (ownerLiveness(initializer) !== "dead") {
+      throw new Error(`Another upstream sync is initializing its lock: ${initializerPath}`);
     }
     try {
-      durableUnlink(resolve(targetRoot, entry.name));
+      durableUnlink(initializerPath);
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
     }
@@ -534,8 +685,8 @@ function acquireTakeoverGuard(guardPath, owner) {
     } catch (error) {
       throw new Error(`Invalid upstream sync takeover claim: ${reclaimedPath}`, { cause: error });
     }
-    if (!reclaimedOwner || !Number.isSafeInteger(reclaimedOwner.pid) || reclaimedOwner.pid < 1 ||
-        processIsAlive(reclaimedOwner.pid)) {
+    assertOwnerShape(reclaimedOwner, `takeover claim at ${reclaimedPath}`);
+    if (ownerLiveness(reclaimedOwner) !== "dead") {
       throw new Error(`Another upstream sync is recovering the lock: ${reclaimedPath}`);
     }
     durableUnlink(reclaimedPath);
@@ -551,8 +702,12 @@ function acquireTakeoverGuard(guardPath, owner) {
   } catch (error) {
     throw new Error(`Invalid or initializing upstream sync takeover guard: ${guardPath}`, { cause: error });
   }
-  if (!current || current.version !== 1 || !Number.isSafeInteger(current.pid) || current.pid < 1 ||
-      typeof current.token !== "string" || current.token.length === 0 || processIsAlive(current.pid)) {
+  try {
+    assertOwnerShape(current, `takeover guard at ${guardPath}`);
+  } catch (error) {
+    throw new Error(`Invalid upstream sync takeover guard: ${guardPath}`, { cause: error });
+  }
+  if (ownerLiveness(current) !== "dead") {
     throw new Error(`Another upstream sync is recovering the lock: ${guardPath}`);
   }
   const reclaimedPath = `${guardPath}.${owner.token}.reclaimed`;
@@ -576,7 +731,7 @@ function acquireTakeoverGuard(guardPath, owner) {
 
 export function acquireUpstreamSyncLock(targetRoot, { recoverStale = true } = {}) {
   const lockPath = resolve(targetRoot, LOCK_NAME);
-  const owner = { version: 1, pid: process.pid, token: randomUUID() };
+  const owner = currentOwner();
   removeDeadLockInitializers(targetRoot);
   try {
     return { lockPath, owner: createOwnedLock(lockPath, owner) };
@@ -590,12 +745,17 @@ export function acquireUpstreamSyncLock(targetRoot, { recoverStale = true } = {}
   } catch (error) {
     throw new Error(`Invalid or initializing upstream sync lock: ${lockPath}`, { cause: error });
   }
-  if (!current || current.version !== 1 || !Number.isSafeInteger(current.pid) || current.pid < 1 ||
-      typeof current.token !== "string" || current.token.length === 0) {
-    throw new Error(`Invalid upstream sync lock: ${lockPath}`);
+  try {
+    assertOwnerShape(current, `lock at ${lockPath}`);
+  } catch (error) {
+    throw new Error(`Invalid upstream sync lock: ${lockPath}`, { cause: error });
   }
-  if (processIsAlive(current.pid)) {
+  const currentLiveness = ownerLiveness(current);
+  if (currentLiveness === "alive") {
     throw new Error(`Another live upstream sync owns the lock: ${lockPath}`);
+  }
+  if (currentLiveness === "unknown") {
+    throw new Error(`Cannot verify the upstream sync lock owner; verify no sync is running, then remove ${lockPath} and retry.`);
   }
   if (!recoverStale) {
     throw new Error(`Target has an active or interrupted upstream sync; rerun sync-upstream with --apply: ${lockPath}`);
@@ -611,12 +771,17 @@ export function acquireUpstreamSyncLock(targetRoot, { recoverStale = true } = {}
     } catch (error) {
       throw new Error(`Invalid or initializing upstream sync lock: ${lockPath}`, { cause: error });
     }
-    if (!guardedCurrent || guardedCurrent.version !== 1 || !Number.isSafeInteger(guardedCurrent.pid) ||
-        guardedCurrent.pid < 1 || typeof guardedCurrent.token !== "string" || guardedCurrent.token.length === 0) {
-      throw new Error(`Invalid upstream sync lock: ${lockPath}`);
+    try {
+      assertOwnerShape(guardedCurrent, `lock at ${lockPath}`);
+    } catch (error) {
+      throw new Error(`Invalid upstream sync lock: ${lockPath}`, { cause: error });
     }
-    if (processIsAlive(guardedCurrent.pid)) {
+    const guardedLiveness = ownerLiveness(guardedCurrent);
+    if (guardedLiveness === "alive") {
       throw new Error(`Another live upstream sync owns the lock: ${lockPath}`);
+    }
+    if (guardedLiveness === "unknown") {
+      throw new Error(`Cannot verify the upstream sync lock owner; verify no sync is running, then remove ${lockPath} and retry.`);
     }
     durableUnlink(lockPath);
     try {
@@ -656,6 +821,7 @@ export function assertUpstreamSyncTargetReadable(targetRoot, heldLock) {
 export function recoverUpstreamSyncTransactions(targetRoot, lock) {
   assertLockOwned(lock);
   let recovered = 0;
+  const quarantined = [];
   for (const id of listTransactions(targetRoot)) {
     assertLockOwned(lock);
     normalizedRelativePath(id, "transaction id");
@@ -673,16 +839,23 @@ export function recoverUpstreamSyncTransactions(targetRoot, lock) {
     if (journal.owner.pid === process.pid && journal.owner.token !== lock.owner.token) {
       throw new Error(`Upstream sync transaction owner token does not match the current lock: ${transactionPath}`);
     }
-    if (journal.owner.pid !== process.pid && processIsAlive(journal.owner.pid)) {
+    const transactionLiveness = ownerLiveness(journal.owner);
+    if (transactionLiveness === "alive" && journal.owner.token !== lock.owner.token) {
       throw new Error(`Upstream sync transaction is still owned by live process ${journal.owner.pid}: ${transactionPath}`);
     }
-    if (markerExists(transactionPath, "COMMITTED")) validateCommittedTargets(targetRoot, journal);
-    else rollbackJournal(targetRoot, journal);
+    if (transactionLiveness === "unknown") {
+      throw new Error(
+        `Cannot verify the upstream sync transaction owner; verify no sync is running, then inspect ${transactionPath}.`,
+      );
+    }
+    if (!markerExists(transactionPath, "COMMITTED")) {
+      quarantined.push(...rollbackJournal(targetRoot, transactionPath, journal).map((item) => ({ id, ...item })));
+    }
     cleanupTransaction(targetRoot, transactionPath, journal);
     recovered += 1;
   }
   assertLockOwned(lock);
-  return recovered;
+  return { count: recovered, quarantined };
 }
 
 function missingParentDirectories(targetRoot, targetPath) {
@@ -709,9 +882,7 @@ function buildJournal(targetRoot, id, changes, lock) {
       throw new Error(`Invalid upstream sync change ${index}.`);
     }
     const target = normalizedRelativePath(change.target, `change ${index} target`);
-    if (target.split("/").some((part) => [LOCK_NAME, STATE_NAME, SIDECAR_NAME].includes(part))) {
-      throw new Error(`Upstream sync target uses a reserved transaction path: ${target}`);
-    }
+    assertReservedTransactionTarget(target, `change ${index} target`);
     assertTargetDoesNotOverlap(targets, target, "upstream sync transaction");
     targets.push(target);
     const targetPath = resolveInside(targetRoot, target, `change ${index} target`);
@@ -849,6 +1020,7 @@ export function applyUpstreamSyncTransaction(targetRoot, changes, lock) {
   const journal = buildJournal(targetRoot, id, changes, lock);
   const { transactionsRoot } = transactionRoots(targetRoot);
   const transactionPath = resolve(transactionsRoot, id);
+  let quarantined = [];
   try {
     createJournal(targetRoot, journal);
     assertLockOwned(lock);
@@ -862,7 +1034,7 @@ export function applyUpstreamSyncTransaction(targetRoot, changes, lock) {
     }
     try {
       if (existsSync(resolve(transactionPath, "journal.json"))) {
-        rollbackJournal(targetRoot, journal);
+        quarantined = rollbackJournal(targetRoot, transactionPath, journal);
         cleanupTransaction(targetRoot, transactionPath, journal);
       } else if (existsSync(transactionPath)) {
         cleanupAbandonedJournalWrite(targetRoot, transactionPath);
@@ -872,6 +1044,10 @@ export function applyUpstreamSyncTransaction(targetRoot, changes, lock) {
         `${error.message}\nRollback failed; transaction state was retained for recovery:\n${rollbackError.message}`,
         { cause: error },
       );
+    }
+    if (quarantined.length) {
+      const details = quarantined.map(({ target, path }) => `Preserved ${target} at ${path}.`).join("\n");
+      throw new Error(`${error.message}\n${details}`, { cause: error });
     }
     throw error;
   }
