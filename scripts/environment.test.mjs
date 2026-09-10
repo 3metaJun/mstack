@@ -199,7 +199,7 @@ test("remote installer passes an unquoted rsync destination argument", () => {
     'import { appendFileSync } from "node:fs";',
     'const [mode, ...args] = process.argv.slice(2);',
     'appendFileSync(process.env.MSTACK_FAKE_TRANSPORT_LOG, JSON.stringify({ mode, args }) + "\\n");',
-    'if (mode === "ssh" && args.at(-1)?.includes("mktemp -d")) console.log("/srv/mstack remote/pi/skills/.mstack-stage.fake");',
+    'if (mode === "ssh" && args.at(-1)?.includes("mktemp -d")) { console.log("/srv/mstack remote/pi/skills/.mstack-stage.fake"); console.error("Authorized use only"); }',
   ].join("\n"), "utf8");
   writeFileSync(configPath, JSON.stringify({
     fleet: {
@@ -353,8 +353,8 @@ test("remote installer deduplicates shared artifacts and locks every parent in s
       .map((line) => JSON.parse(line));
     assert.equal(calls.filter((call) => call.mode === "rsync").length, 3);
     const lockCalls = calls
-      .filter((call) => call.mode === "ssh" && call.args.at(-1)?.includes(".mstack.install.lock") && call.args.at(-1)?.includes("; mkdir '"))
-      .map((call) => call.args.at(-1).match(/; mkdir '([^']+\.mstack\.install\.lock)'/)?.[1]);
+      .filter((call) => call.mode === "ssh" && call.args.at(-1)?.includes("if mkdir \"$lock\""))
+      .map((call) => call.args.at(-1).match(/; lock='([^']+\.mstack\.install\.lock)'/)?.[1]);
     assert.deepEqual(lockCalls, [
       "/srv/a/docs/.mstack.install.lock",
       "/srv/m/docs/.mstack.install.lock",

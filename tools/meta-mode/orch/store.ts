@@ -352,6 +352,30 @@ async function writeIfMissing(path: string, contents: string): Promise<void> {
   }
 }
 
+async function recoverInterruptedInboxDrain(store: string): Promise<void> {
+  const inbox = join(store, "inbox");
+  const drains = (await readdir(store, { withFileTypes: true }))
+    .filter(
+      (entry) =>
+        entry.isDirectory() && entry.name.startsWith(".inbox-drain-")
+    )
+    .map((entry) => join(store, entry.name));
+  if (drains.length === 0) {
+    return;
+  }
+
+  await mkdir(inbox, { recursive: true });
+  for (const drain of drains) {
+    for (const entry of await readdir(drain, { withFileTypes: true })) {
+      if (!entry.isFile()) {
+        throw new UserError(`invalid interrupted inbox drain entry: ${entry.name}`);
+      }
+      await rename(join(drain, entry.name), join(inbox, entry.name));
+    }
+    await rm(drain, { recursive: true });
+  }
+}
+
 async function requiredFile(path: string): Promise<string> {
   try {
     return await readFile(path, "utf8");
@@ -366,8 +390,9 @@ async function requiredFile(path: string): Promise<string> {
 }
 
 function holderIsDead(holder: string): boolean {
-  const pid = Number.parseInt(holder, 10);
-  if (!Number.isSafeInteger(pid) || pid <= 0 || String(pid) !== holder) {
+  const pidText = holder.split(":", 1)[0];
+  const pid = Number.parseInt(pidText, 10);
+  if (!Number.isSafeInteger(pid) || pid <= 0 || String(pid) !== pidText) {
     return false;
   }
   try {
@@ -383,24 +408,82 @@ async function acquireLock(
   options: OpenStoreOptions
 ): Promise<() => Promise<void>> {
   const path = join(store, LOCK_FILE);
-  const pid = String(process.pid);
+  const owner = `${process.pid}:${randomUUID()}`;
   const create = async (): Promise<void> => {
     const handle = await open(path, "wx");
-    await handle.writeFile(`${pid}\n`);
+    try {
+      await handle.writeFile(`${owner}\n`);
+    } catch (error) {
+      await handle.close();
+      try {
+        if ((await readFile(path, "utf8")).trim() === owner) {
+          await unlink(path);
+        }
+      } catch {
+        // Preserve the original lock write failure.
+      }
+      throw error;
+    }
     await handle.close();
   };
 
   const takeOver = async (): Promise<void> => {
-    await unlink(path);
+    const guardPath = `${path}.takeover`;
+    let guard;
     try {
-      await create();
-    } catch (retryError) {
-      if (errorCode(retryError) === "EEXIST") {
-        const retryHolder =
-          (await readFile(path, "utf8")).trim() || "unknown";
-        throw new UserError(`store lock held by pid ${retryHolder}`);
+      guard = await open(guardPath, "wx");
+      await guard.writeFile(`${owner}\n`);
+    } catch (error) {
+      if (guard !== undefined) {
+        await guard.close();
+        try {
+          if ((await readFile(guardPath, "utf8")).trim() === owner) {
+            await unlink(guardPath);
+          }
+        } catch {
+          // Preserve the original guard acquisition failure.
+        }
       }
-      throw retryError;
+      if (errorCode(error) === "EEXIST") {
+        throw new UserError("store lock takeover already in progress");
+      }
+      throw error;
+    }
+
+    try {
+      let holder = "unknown";
+      try {
+        holder = (await readFile(path, "utf8")).trim() || "unknown";
+      } catch (error) {
+        if (errorCode(error) !== "ENOENT") throw error;
+      }
+      if (holder !== "unknown" && !holderIsDead(holder) && !options.force) {
+        throw new UserError(`store lock held by pid ${holder}`);
+      }
+      if (holder !== "unknown") {
+        if (holderIsDead(holder)) options.onStaleLock?.(holder);
+        else options.onLockStolen?.(holder);
+        await unlink(path);
+      }
+      try {
+        await create();
+      } catch (error) {
+        if (errorCode(error) === "EEXIST") {
+          const retryHolder =
+            (await readFile(path, "utf8")).trim() || "unknown";
+          throw new UserError(`store lock held by pid ${retryHolder}`);
+        }
+        throw error;
+      }
+    } finally {
+      await guard.close();
+      try {
+        if ((await readFile(guardPath, "utf8")).trim() === owner) {
+          await unlink(guardPath);
+        }
+      } catch (error) {
+        if (errorCode(error) !== "ENOENT") throw error;
+      }
     }
   };
 
@@ -410,26 +493,12 @@ async function acquireLock(
     if (errorCode(error) !== "EEXIST") {
       throw error;
     }
-    let holder = "unknown";
-    try {
-      holder = (await readFile(path, "utf8")).trim() || "unknown";
-    } catch {
-      holder = "unknown";
-    }
-    if (holderIsDead(holder)) {
-      options.onStaleLock?.(holder);
-      await takeOver();
-    } else if (options.force) {
-      options.onLockStolen?.(holder);
-      await takeOver();
-    } else {
-      throw new UserError(`store lock held by pid ${holder}`);
-    }
+    await takeOver();
   }
 
   return async (): Promise<void> => {
     try {
-      if ((await readFile(path, "utf8")).trim() === pid) {
+      if ((await readFile(path, "utf8")).trim() === owner) {
         await unlink(path);
       }
     } catch (error) {
@@ -1205,6 +1274,7 @@ export function openStore(
   let closed = false;
   let releaseLock: (() => Promise<void>) | null = null;
   let lockRequest: Promise<void> | null = null;
+  let inboxRecovered = false;
 
   const ensureOpen = (): void => {
     if (closed) {
@@ -1238,6 +1308,10 @@ export function openStore(
       );
     }
     await ensureLock();
+    if (!inboxRecovered) {
+      await recoverInterruptedInboxDrain(store);
+      inboxRecovered = true;
+    }
   };
 
   return {

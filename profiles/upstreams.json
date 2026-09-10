@@ -99,7 +99,8 @@
       "meta-mode-tools": {
         "source": "skills/poteto-mode/scripts",
         "target": "tools/meta-mode",
-        "compareContent": true,
+        "compareContent": false,
+        "reason": "mstack carries reviewed portability and correctness fixes on top of the pinned source",
         "replacements": [
           {
             "from": "@cursor-skill/meta-mode-tools",

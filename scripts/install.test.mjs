@@ -102,6 +102,35 @@ test("dry-run reports a plan without creating target directories", () => {
   }
 });
 
+test("recovers a dead installer lock but preserves a live lock", () => {
+  const { root, env } = fixture();
+  const lockPath = join(env.HARNESS_SKILLS_CODEX_DIR, ".harness-skills-install.lock");
+  try {
+    mkdirSync(env.HARNESS_SKILLS_CODEX_DIR, { recursive: true });
+    const exited = spawnSync(process.execPath, ["-e", ""]);
+    assert.ok(Number.isSafeInteger(exited.pid));
+    writeFileSync(lockPath, `${exited.pid}\n`, "utf8");
+
+    const recovered = run(["--harness", "codex", "--skill", "meta-mode"], env);
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.equal(existsSync(lockPath), false);
+
+    writeFileSync(lockPath, `${process.pid}\n`, "utf8");
+    const blocked = run(["--harness", "codex", "--skill", "meta-mode", "--replace"], env);
+    assert.notEqual(blocked.status, 0);
+    assert.match(blocked.stderr, /Another install may be active/);
+    assert.equal(readFileSync(lockPath, "utf8"), `${process.pid}\n`);
+
+    writeFileSync(lockPath, `${exited.pid}\n`, "utf8");
+    writeFileSync(`${lockPath}.takeover`, `${process.pid}:test\n`, "utf8");
+    const contended = run(["--harness", "codex", "--skill", "meta-mode", "--replace"], env);
+    assert.notEqual(contended.status, 0);
+    assert.match(contended.stderr, /lock recovery is already active/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("uses pi's agent directory for the default skill target", () => {
   const { env } = fixture();
   env.USERPROFILE = join(env.TEMP ?? tmpdir(), "mstack-pi-home");
@@ -327,6 +356,7 @@ test("installs selected optional artifacts without skills", () => {
     assert.equal(existsSync(join(configRoot, "agents", "meta-agent.md")), true);
     assert.equal(existsSync(join(configRoot, "agents", "comment-reviewer.md")), true);
     assert.equal(existsSync(join(configRoot, "tools", "meta-mode", "package.json")), true);
+    assert.equal(existsSync(join(configRoot, "tools", "meta-mode", "node_modules")), false);
     assert.equal(existsSync(env.HARNESS_SKILLS_CODEX_DIR), false);
     assert.match(result.stdout, /Installed 0 skill copies and 2 artifact copies/);
   } finally {

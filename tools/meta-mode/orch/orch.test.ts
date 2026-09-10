@@ -5,6 +5,7 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  rename,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -332,6 +333,37 @@ describe("Store", () => {
     ).toEqual([]);
   });
 
+  it("recovers inbox pointers after an interrupted drain", async () => {
+    const { directory, store } = await initializedStore();
+    await store.inbox.push({
+      agent: "worker-1",
+      unit: "u1",
+      status: "done",
+    });
+    await store.close();
+
+    await rename(
+      join(directory, "inbox"),
+      join(directory, ".inbox-drain-dead-fixture")
+    );
+
+    const recovered = useStore(directory);
+    await recovered.inbox.push({
+      agent: "worker-2",
+      unit: "u2",
+      status: "done",
+    });
+    expect((await recovered.inbox.peek()).map((row) => row.unit).sort()).toEqual([
+      "u1",
+      "u2",
+    ]);
+    expect(
+      (await readdir(directory)).filter((name) =>
+        name.startsWith(".inbox-drain-")
+      )
+    ).toEqual([]);
+  });
+
   it("replaces a stale lock whose holder pid is dead", async () => {
     const { directory } = await initializedStore();
     const exited = Bun.spawn(["true"]);
@@ -348,6 +380,25 @@ describe("Store", () => {
     expect(stale).toEqual([String(exited.pid)]);
     await recovered.close();
     expect(await readdir(directory)).not.toContain(".orch.lock");
+  });
+
+  it("allows only one writer to take over a stale lock", async () => {
+    const { directory, store } = await initializedStore();
+    await store.close();
+    const exited = Bun.spawn(["true"]);
+    await exited.exited;
+    await writeFile(join(directory, ".orch.lock"), `${exited.pid}\n`);
+
+    const first = useStore(directory);
+    const second = useStore(directory);
+    const results = await Promise.allSettled([
+      first.units.add({ id: "u1", track: "build" }),
+      second.units.add({ id: "u2", track: "build" }),
+    ]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    await first.close();
+    await second.close();
   });
 
   it("blocks a writer and steals the pid lock only with force", async () => {

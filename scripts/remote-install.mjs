@@ -161,7 +161,7 @@ function remoteScript(script, allowFailure = false) {
   if (!allowFailure && (result.error || result.status !== 0)) {
     throw new Error(`${result.error?.message ?? result.stderr ?? "ssh command failed"}`.trim());
   }
-  return `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+  return (result.stdout ?? "").trim();
 }
 
 if (dryRun) {
@@ -199,7 +199,14 @@ try {
   const lockRoots = [...new Set(items.map((item) => posix.dirname(item.target)))].sort();
   for (const lockRoot of lockRoots) {
     const lock = posix.join(lockRoot, ".mstack.install.lock");
-    remoteScript(`set -eu; mkdir -p ${quotePosix(lockRoot)}; mkdir ${quotePosix(lock)}`);
+    const owner = `${stamp}-${process.pid}`;
+    remoteScript([
+      "set -eu",
+      `lock=${quotePosix(lock)}`,
+      `owner=${quotePosix(owner)}`,
+      `mkdir -p ${quotePosix(lockRoot)}`,
+      "if mkdir \"$lock\"; then printf '%s\\n' \"$owner\" > \"$lock/owner\"; else printf 'Remote install lock exists: %s' \"$lock\" >&2; if [ -f \"$lock/owner\" ]; then read -r lock_owner < \"$lock/owner\" || lock_owner=unknown; printf ' (owner: %s)\\n' \"$lock_owner\" >&2; else printf '\\n' >&2; fi; exit 73; fi",
+    ].join("; "));
     locks.push(lock);
   }
 
@@ -267,7 +274,9 @@ try {
   throw error;
 } finally {
   for (const stage of stages) remoteScript(`rm -rf ${quotePosix(stage)}`, true);
-  for (const lock of locks) remoteScript(`rmdir ${quotePosix(lock)}`, true);
+  for (const lock of locks) {
+    remoteScript(`rm -f ${quotePosix(posix.join(lock, "owner"))}; rmdir ${quotePosix(lock)}`, true);
+  }
   rmSync(localRoot, { recursive: true, force: true });
 }
 

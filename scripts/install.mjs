@@ -16,7 +16,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
@@ -236,6 +236,7 @@ function copyDirectoryContents(source, target) {
       recursive: entry.isDirectory(),
       errorOnExist: true,
       force: false,
+      filter: (path) => basename(path) !== "node_modules",
     });
   }
 }
@@ -252,6 +253,7 @@ function validateSourceTree(source) {
       throw new Error(`Installer source must be a directory: ${current}`);
     }
     for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === "node_modules") continue;
       const path = join(current, entry.name);
       if (entry.isSymbolicLink()) {
         throw new Error(`Installer rejects symbolic links in source trees: ${path}`);
@@ -416,9 +418,95 @@ if (conflicts.length && !replace) {
 
 const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
 const transactionId = `${stamp}-${process.pid}`;
+const lockOwner = `${process.pid} ${transactionId}`;
 const locks = [];
 const stagedPaths = [];
 const committed = [];
+
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== "ESRCH";
+  }
+}
+
+function createOwnedLock(lockPath, owner) {
+  const descriptor = openSync(lockPath, "wx", 0o600);
+  try {
+    writeFileSync(descriptor, `${owner}\n`, "utf8");
+    return descriptor;
+  } catch (error) {
+    closeSync(descriptor);
+    try {
+      if (readFileSync(lockPath, "utf8").trim() === owner) unlinkSync(lockPath);
+    } catch {
+      // Preserve the original write failure.
+    }
+    throw error;
+  }
+}
+
+function openInstallLock(lockPath, owner) {
+  try {
+    return createOwnedLock(lockPath, owner);
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+  }
+
+  const guardPath = `${lockPath}.takeover`;
+  let guardDescriptor;
+  try {
+    guardDescriptor = openSync(guardPath, "wx", 0o600);
+    writeFileSync(guardDescriptor, `${owner}\n`, "utf8");
+  } catch (error) {
+    if (guardDescriptor !== undefined) {
+      closeSync(guardDescriptor);
+      try {
+        if (readFileSync(guardPath, "utf8").trim() === owner) unlinkSync(guardPath);
+      } catch {
+        // Preserve the original guard acquisition failure.
+      }
+    }
+    if (error.code === "EEXIST") {
+      throw new Error(`Installer lock recovery is already active: ${guardPath}`);
+    }
+    throw error;
+  }
+
+  try {
+    let holder;
+    try {
+      const value = readFileSync(lockPath, "utf8").trim().split(/\s+/, 1)[0];
+      if (/^[1-9]\d*$/.test(value)) holder = Number(value);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    if (holder !== undefined && (!Number.isSafeInteger(holder) || processIsAlive(holder))) {
+      throw new Error(`Another install may be active. Inspect and remove stale lock: ${lockPath}`);
+    }
+    if (holder === undefined && existsSync(lockPath)) {
+      throw new Error(`Another install may be active. Inspect and remove stale lock: ${lockPath}`);
+    }
+    if (holder !== undefined) unlinkSync(lockPath);
+    try {
+      return createOwnedLock(lockPath, owner);
+    } catch (error) {
+      if (error.code === "EEXIST") {
+        throw new Error(`Another install became active while recovering stale lock: ${lockPath}`);
+      }
+      throw error;
+    }
+  } finally {
+    closeSync(guardDescriptor);
+    try {
+      if (readFileSync(guardPath, "utf8").trim() === owner) unlinkSync(guardPath);
+    } catch {
+      // A missing guard is already released; leave a changed guard to its owner.
+    }
+  }
+}
 
 function rollbackCommitted() {
   const results = [];
@@ -462,17 +550,8 @@ try {
   for (const lockRoot of lockRoots) {
     mkdirSync(lockRoot, { recursive: true });
     const lockPath = join(lockRoot, ".harness-skills-install.lock");
-    let descriptor;
-    try {
-      descriptor = openSync(lockPath, "wx", 0o600);
-    } catch (error) {
-      if (error.code === "EEXIST") {
-        throw new Error(`Another install may be active. Inspect and remove stale lock: ${lockPath}`);
-      }
-      throw error;
-    }
-    writeFileSync(descriptor, `${process.pid}\n`, "utf8");
-    locks.push({ descriptor, lockPath });
+    const descriptor = openInstallLock(lockPath, lockOwner);
+    locks.push({ descriptor, lockPath, owner: lockOwner });
   }
 
   for (const [index, item] of plan.entries()) {
@@ -512,9 +591,13 @@ try {
   throw new Error(`${error.message}\nRollback results:\n${results.join("\n")}`, { cause: error });
 } finally {
   for (const staged of stagedPaths) rmSync(staged, { recursive: true, force: true });
-  for (const { descriptor, lockPath } of locks.reverse()) {
+  for (const { descriptor, lockPath, owner } of locks.reverse()) {
     closeSync(descriptor);
-    if (existsSync(lockPath)) unlinkSync(lockPath);
+    try {
+      if (readFileSync(lockPath, "utf8").trim() === owner) unlinkSync(lockPath);
+    } catch {
+      // A missing lock is already released; leave a changed lock to its owner.
+    }
   }
 }
 

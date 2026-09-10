@@ -38,7 +38,8 @@ The installer preserves an existing skill directory. Use `--dry-run` to inspect
 the plan. Use `--replace` to move existing directories into a timestamped
 `.harness-skills-backups/` directory under the replaced target's parent. Skill
 backups therefore stay inside that Harness's `skills/` directory, and custom
-artifact backups stay beside the artifact target.
+artifact backups stay beside the artifact target. mstack retains backups until
+you inspect and remove them.
 
 ## Install optional artifacts
 
@@ -153,6 +154,10 @@ locally, transfers with `rsync`, takes a remote lock, and moves each selected
 directory into place. Add `--dry-run` to print the remote plan without opening
 an SSH connection. Windows remotes can still be used through a mounted path;
 remote installation currently targets POSIX shells.
+
+Remote lock directories record a timestamped owner. After an interrupted
+install, inspect `<target-parent>/.mstack.install.lock/owner`, verify that no
+install is running, remove the lock directory, and retry.
 
 The SSH/rsync path has been verified end to end against a disposable POSIX
 target, including remote locking, atomic installation, checksum comparison,
