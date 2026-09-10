@@ -21,6 +21,7 @@ git -C "$repo" commit -m "test fixture" >/dev/null
 git -C "$repo" remote add origin "$remote"
 git -C "$repo" push --set-upstream origin main >/dev/null
 git -C "$repo" worktree add -b audit-worktree "$worktree" >/dev/null
+worktree=$(cd "$worktree" && pwd -P)
 
 mkdir -p "$transcripts" "$fake_bin"
 printf '{"cwd":"%s/"}\n' "$worktree" > "$transcripts/session.jsonl"
