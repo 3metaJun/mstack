@@ -5,7 +5,6 @@ import {
   readFileSync,
   readdirSync,
   realpathSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -14,6 +13,7 @@ import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import { createReadStream } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { filesModifiedSince, walkFiles } from "./audit-context-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const userHome = homedir();
@@ -76,21 +76,6 @@ function parseFrontmatter(path) {
     }
   }
   return { content, fields };
-}
-
-function walkFiles(root, predicate = () => true, seenDirectories = new Set()) {
-  if (!existsSync(root)) return [];
-  const realRoot = realpathSync(root).toLowerCase();
-  if (seenDirectories.has(realRoot)) return [];
-  seenDirectories.add(realRoot);
-  const files = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const path = join(root, entry.name);
-    const directory = entry.isDirectory() || (entry.isSymbolicLink() && statSync(path).isDirectory());
-    if (directory) files.push(...walkFiles(path, predicate, seenDirectories));
-    else if (entry.isFile() && predicate(path)) files.push(path);
-  }
-  return files;
 }
 
 function enabledPlugins() {
@@ -233,9 +218,10 @@ function overlapCandidates(skills) {
 function sessionFiles() {
   const root = join(codexHome, "sessions");
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  const files = walkFiles(root, (path) => path.endsWith(".jsonl"))
-    .filter((path) => statSync(path).mtimeMs >= cutoff)
-    .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
+  const files = filesModifiedSince(
+    walkFiles(root, (path) => path.endsWith(".jsonl")),
+    cutoff,
+  );
   return excludeLatest ? files.slice(1) : files;
 }
 

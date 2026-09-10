@@ -303,4 +303,30 @@ describe("context and stack discovery", () => {
     ]);
     expect(ordered.map((item) => Number(item.number))).toEqual([41, 42, 43]);
   });
+
+  it("rejects a cyclic head/base stack", () => {
+    try {
+      orderStack(context, [
+        {
+          number: context.number,
+          headRefName: "branch-a",
+          baseRefName: "branch-b",
+        },
+        {
+          number: parsePrNumber(43),
+          headRefName: "branch-b",
+          baseRefName: "branch-a",
+        },
+      ]);
+      throw new Error("expected stack ordering to reject a cycle");
+    } catch (error) {
+      expect(error).toBeInstanceOf(WatcherQueryError);
+      if (!(error instanceof WatcherQueryError)) throw error;
+      expect(error.failure).toEqual({
+        kind: "invalid-stack",
+        retryable: false,
+        detail: "open pull request stack contains a cycle through PR #42",
+      });
+    }
+  });
 });

@@ -661,17 +661,21 @@ export function orderStack(
   const start = byNumber.get(context.number);
   if (start === undefined) return [context];
   const down: T.OpenPullRequest[] = [];
+  const seen = new Set<T.PrNumber>([start.number]);
   let current = start;
   while (byHead.has(current.baseRefName)) {
     const parent = byHead.get(current.baseRefName);
     if (parent === undefined) break;
+    if (seen.has(parent.number))
+      throw new WatcherQueryError({
+        kind: "invalid-stack",
+        retryable: false,
+        detail: `open pull request stack contains a cycle through PR #${parent.number}`,
+      });
+    seen.add(parent.number);
     down.push(parent);
     current = parent;
   }
-  const seen = new Set<T.PrNumber>([
-    ...down.map((pr) => pr.number),
-    start.number,
-  ]);
   const up: T.OpenPullRequest[] = [];
   const visit = (parent: T.OpenPullRequest): void => {
     for (const child of children.get(parent.headRefName) ?? []) {

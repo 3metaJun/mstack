@@ -29,6 +29,22 @@ gh pr list --author "@me" --state all --limit 1000 \
 transcripts="${MSTACK_TRANSCRIPTS_DIR:-}"
 now=$(date +%s)
 
+if stat -c '%Y' -- "$prs" >/dev/null 2>&1; then
+	file_mtime() { stat -c '%Y' -- "$1"; }
+elif stat -f '%m' "$prs" >/dev/null 2>&1; then
+	file_mtime() { stat -f '%m' "$1"; }
+else
+	file_mtime() { return 1; }
+fi
+
+if date -d '@0' '+%Y-%m-%d' >/dev/null 2>&1; then
+	format_epoch_date() { date -d "@$1" '+%Y-%m-%d'; }
+elif date -r 0 '+%Y-%m-%d' >/dev/null 2>&1; then
+	format_epoch_date() { date -r "$1" '+%Y-%m-%d'; }
+else
+	format_epoch_date() { return 1; }
+fi
+
 printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tLAST_CHAT\tBUCKET\tWORKTREE\n"
 
 git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt; do
@@ -66,10 +82,13 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	# followed by "/" or a quote so glint-482 does not match glint-482-r37.
 	last="-"; last_ts=0
 	if [ -d "$transcripts" ]; then
-		f=$(rg -l -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null \
-			| xargs stat -f '%m %N' 2>/dev/null | sort -rn | head -1)
-		if [ -n "$f" ]; then last_ts=$(echo "$f" | awk '{print $1}')
-			last=$(date -r "$last_ts" '+%Y-%m-%d' 2>/dev/null); fi
+		while IFS= read -r -d '' transcript; do
+			transcript_ts=$(file_mtime "$transcript" 2>/dev/null) || continue
+			if [ "$transcript_ts" -gt "$last_ts" ] 2>/dev/null; then last_ts=$transcript_ts; fi
+		done < <(rg -l -0 -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null)
+		if [ "$last_ts" -gt 0 ] 2>/dev/null; then
+			last=$(format_epoch_date "$last_ts" 2>/dev/null || echo "-")
+		fi
 	fi
 	recent=$([ "$last_ts" -gt 0 ] 2>/dev/null && [ $(( (now - last_ts) / 86400 )) -le 4 ] && echo yes || echo no)
 

@@ -22,7 +22,7 @@
     "install-skills": "node scripts/install.mjs",
     "optimize-context": "node scripts/optimize-context.mjs",
     "reconcile-context": "node scripts/reconcile-context.mjs",
-    "test": "node scripts/validate.mjs && node --test scripts/install.test.mjs scripts/context.test.mjs scripts/sync-upstream.test.mjs scripts/runtime.test.mjs scripts/environment.test.mjs"
+    "test": "node scripts/validate.mjs && node --test scripts/install.test.mjs scripts/context.test.mjs scripts/audit-context.test.mjs scripts/worktree-audit.test.mjs scripts/sync-upstream.test.mjs scripts/runtime.test.mjs scripts/environment.test.mjs"
   },
   "bin": {
     "mstack": "scripts/install.mjs"
