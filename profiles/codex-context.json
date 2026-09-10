@@ -1,0 +1,34 @@
+{
+  "explicitOnly": [
+    "embedded-captions",
+    "faceless-explainer",
+    "figma",
+    "general-video",
+    "gpt-image-2",
+    "hyperframes-animation",
+    "hyperframes-audio",
+    "hyperframes-cli",
+    "hyperframes-core",
+    "hyperframes-creative",
+    "hyperframes-keyframes",
+    "hyperframes-registry",
+    "lark-minutes",
+    "lark-note",
+    "lark-vc",
+    "lark-vc-agent",
+    "media-use",
+    "motion-graphics",
+    "music-to-video",
+    "pr-to-video",
+    "product-launch-video",
+    "remotion-to-hyperframes",
+    "slideshow",
+    "talking-head-recut"
+  ],
+  "descriptionOverrides": {
+    "hyperframes": "Entry point for creating, editing, diagnosing, or rendering video, animation, motion graphics, captioned clips, slideshows, or HyperFrames HTML. Route website, PR, Figma, text, footage, and music inputs to installed workflows. Do not use for browser-only recordings or when the user explicitly chooses another framework.",
+    "landing-page-design": "Design or critique conversion-focused landing pages, especially hero layout, CTA placement, social proof, and mobile reading order. Use for landing pages and product marketing pages, not general app UI.",
+    "lark-apps": "开发或托管飞书妙搭（Spark/Miaoda）应用，包括静态站点、全栈应用、部署、日志、环境变量、AI/飞书能力集成和自动化触发器。用户提到妙搭、Spark、Miaoda、aiforce.cloud，或要求把 HTML/应用发布到妙搭时使用。不处理普通云盘文件、云文档或原生幻灯片。",
+    "lark-event": "监听或消费飞书/Lark 实时事件，包括消息、任务、会议、妙记和画板变更。用于机器人、长运行订阅、Webhook/push 处理和有界 NDJSON 消费，不用于查询历史记录。"
+  }
+}

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import {
   closeSync,
   cpSync,
@@ -13,17 +15,23 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { stagingPath, targetPathsOverlap } from "./install-paths.mjs";
 
 if (Number.parseInt(process.versions.node, 10) < 18) {
-  console.error("harness-skills requires Node.js 18 or newer");
+  console.error("mstack requires Node.js 18 or newer");
   process.exit(1);
 }
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoot = join(repoRoot, "skills");
 const args = process.argv.slice(2);
-const validHarnesses = ["codex", "claude", "opencode"];
+const harnessRegistry = JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8"));
+const artifactProfile = JSON.parse(readFileSync(join(repoRoot, "profiles", "artifacts.json"), "utf8"));
+const artifactRegistry = artifactProfile.artifacts ?? {};
+const validHarnesses = Object.keys(harnessRegistry);
+const validArtifacts = Object.keys(artifactRegistry);
 
 function valueAfter(flag) {
   const index = args.indexOf(flag);
@@ -31,10 +39,11 @@ function valueAfter(flag) {
 }
 
 if (args.includes("--help") || !args.includes("--harness")) {
-  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|all> [--skill <name[,name...]>] [--dry-run] [--replace]
+  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|all> [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace]
 
-Installs all or selected canonical skills into user-level harness directories.
-Existing skill directories are preserved unless --replace is supplied.`);
+Installs canonical skills and optional artifacts into user-level harness directories.
+Artifacts: ${validArtifacts.join(", ")} (use --artifact all for installable artifacts).
+Existing directories are preserved unless --replace is supplied.`);
   process.exit(args.includes("--help") ? 0 : 1);
 }
 
@@ -51,6 +60,37 @@ const harnesses = [...requestedHarnesses];
 const dryRun = args.includes("--dry-run");
 const replace = args.includes("--replace");
 const userHome = homedir();
+const hasEnvironment = args.includes("--environment");
+const environmentName = valueAfter("--environment");
+if (hasEnvironment && (!environmentName || environmentName.startsWith("--"))) {
+  throw new Error("--environment requires a name");
+}
+
+function loadEnvironment(name) {
+  if (!name) return { name: undefined, transport: "local", targets: {}, artifacts: {} };
+  const path = process.env.MSTACK_ENVIRONMENTS_FILE
+    ? configuredPath(process.env.MSTACK_ENVIRONMENTS_FILE, "", "MSTACK_ENVIRONMENTS_FILE")
+    : join(userHome, ".config", "mstack", "environments.json");
+  if (!existsSync(path)) throw new Error(`Environment file not found: ${path}`);
+  const data = JSON.parse(readFileSync(path, "utf8"));
+  const environment = data[name];
+  if (!environment || typeof environment !== "object" || Array.isArray(environment)) {
+    throw new Error(`Unknown environment: ${name}`);
+  }
+  const targets = environment.targets;
+  if (!targets || typeof targets !== "object" || Array.isArray(targets)) {
+    throw new Error(`Environment ${name} must define a targets object`);
+  }
+  const artifacts = environment.artifacts ?? {};
+  if (typeof artifacts !== "object" || Array.isArray(artifacts)) {
+    throw new Error(`Environment ${name} artifacts must be an object`);
+  }
+  const transport = environment.transport ?? "local";
+  if (!['local', 'ssh'].includes(transport)) {
+    throw new Error(`Environment ${name} has unsupported transport: ${transport}`);
+  }
+  return { ...environment, name, transport, targets, artifacts };
+}
 
 function expandHome(path) {
   if (path === "~") return userHome;
@@ -66,26 +106,89 @@ function configuredPath(value, fallback, label) {
   return resolve(expanded);
 }
 
-const targets = {
-  codex: configuredPath(
-    process.env.HARNESS_SKILLS_CODEX_DIR,
-    join(userHome, ".agents", "skills"),
-    "HARNESS_SKILLS_CODEX_DIR",
-  ),
-  claude: process.env.HARNESS_SKILLS_CLAUDE_DIR
-    ? configuredPath(process.env.HARNESS_SKILLS_CLAUDE_DIR, "", "HARNESS_SKILLS_CLAUDE_DIR")
-    : join(configuredPath(process.env.CLAUDE_CONFIG_DIR, join(userHome, ".claude"), "CLAUDE_CONFIG_DIR"), "skills"),
-  opencode: process.env.HARNESS_SKILLS_OPENCODE_DIR
-    ? configuredPath(process.env.HARNESS_SKILLS_OPENCODE_DIR, "", "HARNESS_SKILLS_OPENCODE_DIR")
-    : join(configuredPath(process.env.XDG_CONFIG_HOME, join(userHome, ".config"), "XDG_CONFIG_HOME"), "opencode", "skills"),
-};
+function pathFromParts(parts) {
+  return parts.reduce((current, part) => join(current, part), userHome);
+}
+
+const environment = loadEnvironment(environmentName);
+if (environment.transport === "ssh") {
+  const remote = spawnSync(process.execPath, [join(repoRoot, "scripts", "remote-install.mjs"), ...args], {
+    cwd: repoRoot,
+    env: process.env,
+    encoding: "utf8",
+    stdio: "inherit",
+  });
+  process.exit(remote.error ? 1 : remote.status ?? 1);
+}
+const environmentTargets = environment.targets;
+const environmentArtifacts = environment.artifacts;
+if (environmentName) {
+  const missingTargets = harnesses.filter((harness) => typeof environmentTargets[harness] !== "string");
+  if (missingTargets.length) {
+    throw new Error(`Environment ${environmentName} has no target for: ${missingTargets.join(", ")}`);
+  }
+}
+
+function harnessTarget(harness) {
+  const config = harnessRegistry[harness];
+  if (environmentTargets[harness]) {
+    return configuredPath(environmentTargets[harness], "", `${environmentName}.${harness}`);
+  }
+  const directory = process.env[config.directoryVariable];
+  if (directory) return configuredPath(directory, "", config.directoryVariable);
+
+  if (config.fallback) return pathFromParts(config.fallback);
+
+  const configRoot = process.env[config.configVariable]
+    ? configuredPath(process.env[config.configVariable], "", config.configVariable)
+    : pathFromParts([config.configFallback]);
+  return join(configRoot, ...(config.prefix ?? []), ...(config.suffix ?? []));
+}
+
+const targets = Object.fromEntries(validHarnesses.map((harness) => [harness, harnessTarget(harness)]));
+
+function artifactEnvironmentPath(name, harness) {
+  const byArtifact = environmentArtifacts[name];
+  if (byArtifact && typeof byArtifact === "object" && !Array.isArray(byArtifact)) {
+    const value = byArtifact[harness];
+    if (value !== undefined && typeof value !== "string") {
+      throw new Error(`Environment ${environmentName} artifact ${name}.${harness} must be a path`);
+    }
+    if (value) return value;
+  }
+
+  const byHarness = environmentArtifacts[harness];
+  if (byHarness && typeof byHarness === "object" && !Array.isArray(byHarness)) {
+    const value = byHarness[name];
+    if (value !== undefined && typeof value !== "string") {
+      throw new Error(`Environment ${environmentName} artifact ${harness}.${name} must be a path`);
+    }
+    if (value) return value;
+  }
+
+  return undefined;
+}
+
+function artifactVariable(name, harness) {
+  const normalized = name.replaceAll(/[^A-Za-z0-9]+/g, "_").toUpperCase();
+  return `MSTACK_ARTIFACT_${normalized}_${harness.toUpperCase()}_DIR`;
+}
+
+function artifactTarget(name, harness) {
+  const definition = artifactRegistry[name];
+  const environmentPath = artifactEnvironmentPath(name, harness);
+  const variable = artifactVariable(name, harness);
+  const override = environmentPath ?? process.env[variable];
+  if (override) return configuredPath(override, "", environmentPath ? `${environmentName}.artifacts.${name}.${harness}` : variable);
+  if (!Array.isArray(definition.path) || definition.path.some((part) => typeof part !== "string" || !part)) {
+    throw new Error(`Artifact ${name} must define a non-empty path array`);
+  }
+  return join(dirname(targets[harness]), ...definition.path);
+}
 
 const targetKeys = harnesses.map((harness) =>
   process.platform === "win32" ? targets[harness].toLowerCase() : targets[harness],
 );
-if (new Set(targetKeys).size !== targetKeys.length) {
-  throw new Error("Selected harnesses resolve to the same target directory");
-}
 
 const adapters = Object.fromEntries(
   validHarnesses.map((harness) => [
@@ -176,18 +279,115 @@ if (requestedSkills && new Set(requestedSkills).size !== requestedSkills.length)
 }
 const unknownSkills = requestedSkills?.filter((skill) => !availableSkills.includes(skill)) ?? [];
 if (unknownSkills.length) throw new Error(`Unknown skill: ${unknownSkills.join(", ")}`);
-const skills = requestedSkills ?? availableSkills;
+if (args.includes("--no-skills") && hasSkillFilter) {
+  throw new Error("--no-skills cannot be combined with --skill");
+}
+const skills = args.includes("--no-skills") ? [] : requestedSkills ?? availableSkills;
 
-const plan = harnesses.flatMap((harness) =>
-  skills.map((skill) => ({ harness, skill, target: join(targets[harness], skill) })),
+const hasArtifactFilter = args.includes("--artifact");
+const artifactFilter = valueAfter("--artifact");
+if (hasArtifactFilter && (!artifactFilter || artifactFilter.startsWith("--"))) {
+  throw new Error("--artifact requires one or more comma-separated artifact names");
+}
+const requestedArtifacts = hasArtifactFilter
+  ? artifactFilter === "all"
+    ? validArtifacts.filter((name) => artifactRegistry[name].installable !== false)
+    : artifactFilter.split(",").filter(Boolean)
+  : [];
+if (hasArtifactFilter && requestedArtifacts.length === 0) {
+  throw new Error("--artifact requires at least one artifact name");
+}
+if (new Set(requestedArtifacts).size !== requestedArtifacts.length) {
+  throw new Error(`Duplicate artifact in --artifact: ${requestedArtifacts.join(",")}`);
+}
+const unknownArtifacts = requestedArtifacts.filter((name) => !validArtifacts.includes(name));
+if (unknownArtifacts.length) throw new Error(`Unknown artifact: ${unknownArtifacts.join(", ")}`);
+const unsupportedArtifacts = requestedArtifacts.filter((name) => artifactRegistry[name].installable === false);
+if (unsupportedArtifacts.length) {
+  const details = unsupportedArtifacts
+    .map((name) => `${name}: ${artifactRegistry[name].reason ?? "not installable by this command"}`)
+    .join("\n");
+  throw new Error(`Unsupported artifact selection:\n${details}`);
+}
+for (const name of requestedArtifacts) {
+  const source = join(repoRoot, artifactRegistry[name].source ?? "");
+  if (!artifactRegistry[name].source || !existsSync(source)) {
+    throw new Error(`Artifact ${name} source is missing: ${source}`);
+  }
+}
+
+const artifactTargets = Object.fromEntries(
+  requestedArtifacts.flatMap((name) =>
+    harnesses.map((harness) => [`${harness}:${name}`, artifactTarget(name, harness)]),
+  ),
 );
+const rawArtifactPlan = harnesses.flatMap((harness) =>
+  requestedArtifacts.map((name) => ({
+    kind: "artifact",
+    harness,
+    name,
+    source: join(repoRoot, artifactRegistry[name].source),
+    target: artifactTargets[`${harness}:${name}`],
+  })),
+);
+const artifactPlan = [];
+const artifactTargetsByPath = new Map();
+for (const item of rawArtifactPlan) {
+  const key = process.platform === "win32" ? item.target.toLowerCase() : item.target;
+  const existing = artifactTargetsByPath.get(key);
+  if (existing) {
+    if (existing.name === item.name && existing.source === item.source) continue;
+    throw new Error("Selected skills and artifacts resolve to the same target directory");
+  }
+  artifactTargetsByPath.set(key, item);
+  artifactPlan.push(item);
+}
+const allTargetKeys = [
+  ...targetKeys,
+  ...artifactPlan.map(({ target }) => (process.platform === "win32" ? target.toLowerCase() : target)),
+];
+if (new Set(allTargetKeys).size !== allTargetKeys.length) {
+  throw new Error("Selected skills and artifacts resolve to the same target directory");
+}
+
+const plan = [
+  ...harnesses.flatMap((harness) =>
+    skills.map((skill) => ({
+      kind: "skill",
+      harness,
+      name: skill,
+      skill,
+      source: join(sourceRoot, skill),
+      target: join(targets[harness], skill),
+    })),
+  ),
+  ...artifactPlan,
+];
+if (plan.length === 0) throw new Error("Nothing selected: choose skills or --artifact");
+for (const item of plan) {
+  if (dirname(item.target) === item.target) {
+    throw new Error(`Install target cannot be a filesystem root: ${item.target}`);
+  }
+}
+for (let left = 0; left < plan.length; left += 1) {
+  for (let right = left + 1; right < plan.length; right += 1) {
+    if (targetPathsOverlap(plan[left].target, plan[right].target)) {
+      throw new Error(
+        `Selected install targets overlap: ${plan[left].target} and ${plan[right].target}`,
+      );
+    }
+  }
+}
 const conflicts = plan.filter(({ target }) => existsSync(target));
 
 for (const harness of harnesses) console.log(`${harness}: ${targets[harness]}`);
+for (const item of plan.filter(({ kind }) => kind === "artifact")) {
+  console.log(`  artifact ${item.name}: ${item.target}`);
+}
 if (dryRun) {
   for (const item of plan) {
     const action = existsSync(item.target) ? (replace ? "replace with backup" : "conflict") : "install";
-    console.log(`  ${action}: ${item.skill}`);
+    console.log(`  ${action}: ${item.kind === "skill" ? item.skill : `artifact/${item.name}`}`);
   }
   if (conflicts.length && !replace) process.exitCode = 2;
   else console.log("Dry run complete.");
@@ -202,15 +402,22 @@ if (conflicts.length && !replace) {
 }
 
 const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
+const transactionId = `${stamp}-${process.pid}`;
 const locks = [];
-const stageRoots = new Map();
+const stagedPaths = [];
 const committed = [];
 
 try {
-  for (const harness of harnesses) {
-    const targetRoot = targets[harness];
-    mkdirSync(targetRoot, { recursive: true });
-    const lockPath = join(targetRoot, ".harness-skills-install.lock");
+  const lockRootsByPath = new Map();
+  for (const item of plan) {
+    const lockRoot = dirname(item.target);
+    const key = process.platform === "win32" ? lockRoot.toLowerCase() : lockRoot;
+    if (!lockRootsByPath.has(key)) lockRootsByPath.set(key, lockRoot);
+  }
+  const lockRoots = [...lockRootsByPath.values()].sort((left, right) => left.localeCompare(right));
+  for (const lockRoot of lockRoots) {
+    mkdirSync(lockRoot, { recursive: true });
+    const lockPath = join(lockRoot, ".harness-skills-install.lock");
     let descriptor;
     try {
       descriptor = openSync(lockPath, "wx", 0o600);
@@ -222,38 +429,44 @@ try {
     }
     writeFileSync(descriptor, `${process.pid}\n`, "utf8");
     locks.push({ descriptor, lockPath });
-
-    const stageRoot = join(dirname(targetRoot), `.harness-skills-stage-${stamp}-${harness}`);
-    mkdirSync(stageRoot, { recursive: false, mode: 0o700 });
-    stageRoots.set(harness, stageRoot);
-    for (const skill of skills) {
-      const staged = join(stageRoot, skill);
-      copyDirectoryContents(join(sourceRoot, skill), staged);
-      applyAdapter(staged, harness, skill);
-      validateAdaptedSkill(staged, skill);
-    }
   }
 
-  for (const { harness, skill, target } of plan) {
+  for (const [index, item] of plan.entries()) {
+    mkdirSync(dirname(item.target), { recursive: true });
+    const staged = stagingPath(item.target, transactionId, index);
+    stagedPaths.push(staged);
+    copyDirectoryContents(item.source, staged);
+    if (item.kind === "skill") {
+      applyAdapter(staged, item.harness, item.skill);
+      validateAdaptedSkill(staged, item.skill);
+    }
+    item.staged = staged;
+  }
+
+  for (const item of plan) {
+    const { harness, target } = item;
     if (existsSync(target) && !replace) {
       throw new Error(`Refusing to replace ${target} without --replace`);
     }
 
     let backup;
     if (existsSync(target)) {
-      backup = join(dirname(targets[harness]), ".harness-skills-backups", stamp, skill);
+      const backupName = item.kind === "skill" ? item.name : `artifact-${item.harness}-${item.name}`;
+      backup = join(dirname(target), ".harness-skills-backups", stamp, backupName);
       mkdirSync(dirname(backup), { recursive: true, mode: 0o700 });
       renameSync(target, backup);
     }
 
-    const entry = { harness, skill, target, backup };
+    const entry = { ...item, harness, target, backup };
     committed.push(entry);
-    renameSync(join(stageRoots.get(harness), skill), target);
+    mkdirSync(dirname(target), { recursive: true });
+    renameSync(item.staged, target);
   }
 } catch (error) {
   for (const item of committed.reverse()) {
     if (existsSync(item.target)) {
-      const failed = join(dirname(targets[item.harness]), ".harness-skills-failed", stamp, item.skill);
+      const failedName = item.kind === "skill" ? item.name : `artifact-${item.harness}-${item.name}`;
+      const failed = join(dirname(item.target), ".harness-skills-failed", stamp, failedName);
       mkdirSync(dirname(failed), { recursive: true, mode: 0o700 });
       renameSync(item.target, failed);
     }
@@ -261,11 +474,13 @@ try {
   }
   throw error;
 } finally {
-  for (const stageRoot of stageRoots.values()) rmSync(stageRoot, { recursive: true, force: true });
+  for (const staged of stagedPaths) rmSync(staged, { recursive: true, force: true });
   for (const { descriptor, lockPath } of locks.reverse()) {
     closeSync(descriptor);
     if (existsSync(lockPath)) unlinkSync(lockPath);
   }
 }
 
-console.log(`Installed ${plan.length} skill copies; replaced ${conflicts.length}.`);
+const skillCount = plan.filter(({ kind }) => kind === "skill").length;
+const artifactCount = plan.length - skillCount;
+console.log(`Installed ${skillCount} skill copies and ${artifactCount} artifact copies; replaced ${conflicts.length}.`);

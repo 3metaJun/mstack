@@ -1,0 +1,132 @@
+{
+  "pstack": {
+    "repository": "https://github.com/cursor/plugins/tree/main/pstack",
+    "commit": "7366ac128bdf95f45e6734f412b49a4031800169",
+    "renames": {
+      "poteto-mode": "meta-mode",
+      "setup-pstack": "setup-mstack",
+      "poteto-agent": "meta-agent"
+    },
+    "artifacts": {
+      "agents": {
+        "source": "agents",
+        "target": "agents",
+        "compareContent": false,
+        "renameFiles": {
+          "poteto-agent.md": "meta-agent.md",
+          "comment-sicko.md": "comment-reviewer.md"
+        }
+      },
+      "automations": {
+        "source": "automations",
+        "target": "automations",
+        "compareContent": true
+      },
+      "guide": {
+        "source": "docs/guide",
+        "target": "docs/guide",
+        "compareContent": true,
+        "renameFiles": {
+          "02-poteto-mode.md": "02-meta-mode.md"
+        },
+        "replacements": [
+          {
+            "from": "## Install the plugin",
+            "to": "## Install the skills"
+          },
+          {
+            "from": "In a Cursor chat, run:",
+            "to": "From a terminal, install the skills for the Harness you use:"
+          },
+          {
+            "from": "```text\n/add-plugin mstack\n```",
+            "to": "```bash\nnpx @3metajun/mstack --harness <codex|claude|opencode|pi>\n```"
+          },
+          {
+            "from": "Cursor confirms the plugin is installed.",
+            "to": "The installer reports the target directory and the number of skills it staged.\nRun it again for another Harness when you use more than one."
+          },
+          {
+            "from": "`~/.cursor/rules/mstack-models.mdc`, a small rule every mstack skill reads.",
+            "to": "`~/.config/mstack/models.json`, the portable configuration every mstack skill reads."
+          },
+          {
+            "from": "A role with no line in the rule keeps the skill's default. To restore a default later, delete that role's line, or just run `/setup-mstack` again.",
+            "to": "A role with no entry keeps the skill's default. To restore it later, delete that role's entry, or run `/setup-mstack` again."
+          },
+          {
+            "from": "`.cursor/skills/verify-<app>/`, a project-local skill that teaches agents to drive your app the way a user does. It proves the skill works once before handing it over.",
+            "to": "`verify-<app>/` under the active Harness's project skill root. See [the project skill paths](../../skills/create-verification-skill/references/harness-paths.md) for the root used by each Harness. The generated skill teaches agents to drive your app the way a user does, and setup proves it once before handing it over."
+          },
+          {
+            "from": "After setup, start a new chat. The model rule applies to new sessions.",
+            "to": "After setup, start a new session. The model configuration applies to new sessions."
+          },
+          {
+            "from": "The [Opening a PR playbook](../../skills/meta-mode/playbooks/opening-a-pr.md) runs `/deslop` on the diff before each commit and applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. `/deslop` ships in the `cursor-team-kit` plugin, not in mstack. If you don't have it, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits.",
+            "to": "The [Opening a PR playbook](../../skills/meta-mode/playbooks/opening-a-pr.md) runs the active Harness's code-cleanup command on the diff before each commit and applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. Some Harnesses provide `/deslop`; others use a different command or no built-in equivalent. When no cleanup command is available, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits."
+          },
+          {
+            "from": "[Comment Sicko](../../agents/comment-sicko.md)",
+            "to": "[Comment Reviewer](../../agents/comment-reviewer.md)"
+          },
+          {
+            "from": "It writes `.cursor/skills/verify-<app>/`, agent-facing instructions with exact Launch, Doctor, Drive, Evidence, and Cleanup sections, plus a feature map under `features/` that indexes what the app does and what result proves each feature works. The skill ships a [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) with a README index and one file per feature using the four required H2s. Before handing it over, the generator proves the skill once end to end: launch, doctor check, drive one feature, capture evidence, clean up. If that proof fails, don't use the output.",
+            "to": "It writes `verify-<app>/` under the active Harness's project skill root. See [the project skill paths](../../skills/create-verification-skill/references/harness-paths.md) for the root used by each Harness. The generated skill contains exact Launch, Doctor, Drive, Evidence, and Cleanup sections, plus a feature map under `features/` that indexes what the app does and what result proves each feature works. The skill ships a [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) with a README index and one file per feature using the four required H2s. Before handing it over, the generator proves the skill once end to end: launch, doctor check, drive one feature, capture evidence, and clean up. If that proof fails, don't use the output."
+          },
+          {
+            "from": "/loop until done. if you're truly stuck after a few hours, stop and write up why.",
+            "to": "Use the active Harness's loop or background command until done. If it has no such command, keep the autonomous run in a persistent session. If you're truly stuck after a few hours, stop and write up why."
+          },
+          {
+            "from": "`/loop` is Cursor's built-in wake mechanism, not a mstack skill. The [Autonomous run playbook](../../skills/meta-mode/playbooks/autonomous-run.md) uses it to re-check the finish condition on events or a heartbeat.",
+            "to": "A Harness loop or background job is the wake mechanism. The [Autonomous run playbook](../../skills/meta-mode/playbooks/autonomous-run.md) uses the active Harness's native mechanism when it has one, or a persistent local process with a saved log as its fallback."
+          },
+          {
+            "from": "Give `/loop` a predicate that can pass or fail.",
+            "to": "Give the loop a predicate that can pass or fail."
+          },
+          {
+            "from": "You don't describe your style, because [`/automate-me`](../../skills/automate-me/SKILL.md) reads it out of your history. It mines your recent transcripts in the active workspace for repeated preferences, in how you like replies, delegation, verification, code, prose, and process, then asks you which patterns are really you. It drafts `.cursor/skills/<your-name>-mode/SKILL.md` through Cursor's built-in `create-skill` flow, runs the draft through [`/unslop`](../../skills/unslop/SKILL.md), and opens a PR from a worktree so you review it like any other change.",
+            "to": "You don't describe your style, because [`/automate-me`](../../skills/automate-me/SKILL.md) reads it through the active Harness's history adapter. It mines recent transcripts in the active workspace for repeated preferences in replies, delegation, verification, code, prose, and process, then asks you which patterns are really you. It drafts `<project-skill-root>/<your-name>-mode/SKILL.md` through the active Harness's skill-authoring flow. See [the project skill paths](../../skills/create-verification-skill/references/harness-paths.md) for the root used by each Harness. It runs the draft through [`/unslop`](../../skills/unslop/SKILL.md) and opens a PR from a worktree so you review it like any other change."
+          },
+          {
+            "from": "Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/meta-mode/playbooks/authoring-a-skill.md), which routes through Cursor's built-in `create-skill`, validates the frontmatter and links, and ships the result through the Opening a PR playbook.",
+            "to": "Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/meta-mode/playbooks/authoring-a-skill.md), which routes through the active Harness's skill-authoring flow, validates the frontmatter and links, and ships the result through the Opening a PR playbook."
+          }
+        ]
+      },
+      "meta-mode-tools": {
+        "source": "skills/poteto-mode/scripts",
+        "target": "tools/meta-mode",
+        "compareContent": true,
+        "replacements": [
+          {
+            "from": "@cursor-skill/meta-mode-tools",
+            "to": "@mstack/meta-mode-tools"
+          },
+          {
+            "from": "const LANES = \"Ten lanes on `grok-4.6-fast-xhigh` at the PR head\";",
+            "to": "const LANES = \"Ten lanes\";"
+          },
+          {
+            "from": "# Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)",
+            "to": "# Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)\n# Set MSTACK_TRANSCRIPTS_DIR to include session history in LAST_CHAT. The\n# directory must already be scoped to this workspace by the active Harness."
+          },
+          {
+            "from": "# Transcripts dir: ~/.cursor/projects/<slugified-repo-path>/agent-transcripts.",
+            "to": "# Session history is Harness-specific, so callers provide the workspace-scoped\n# directory instead of making the audit depend on one vendor's storage layout."
+          },
+          {
+            "from": "slug=$(printf '%s' \"$main_wt\" | sed 's#^/##; s#/#-#g')\ntranscripts=\"$HOME/.cursor/projects/$slug/agent-transcripts\"",
+            "to": "transcripts=\"${MSTACK_TRANSCRIPTS_DIR:-}\""
+          }
+        ]
+      }
+    }
+  },
+  "mattpocock/skills": {
+    "repository": "https://github.com/mattpocock/skills",
+    "commit": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
+  }
+}

@@ -1,31 +1,50 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
-const EXPECTED_SKILLS = [
-  "blast-radius",
-  "codebase-design",
-  "create-verification-skill",
-  "diagnosing-bugs",
-  "principle-boundary-discipline",
-  "principle-build-the-lever",
-  "principle-fix-root-causes",
-  "principle-make-operations-idempotent",
-  "principle-model-the-domain",
-  "principle-prove-it-works",
-  "principle-separate-before-serializing-shared-state",
-  "principle-sequence-verifiable-units",
-  "principle-type-system-discipline",
-  "recall",
-  "show-me-your-work",
-  "tdd",
-  "typescript-best-practices",
-  "writing-for-agents",
-].sort();
+const EXPECTED_SKILLS = JSON.parse(readFileSync(join(repoRoot, "profiles", "skills.json"), "utf8")).skills;
+const artifactsProfilePath = join(repoRoot, "profiles", "artifacts.json");
 
 const errors = [];
+
+try {
+  const profile = JSON.parse(readFileSync(artifactsProfilePath, "utf8"));
+  if (!profile.artifacts || typeof profile.artifacts !== "object" || Array.isArray(profile.artifacts)) {
+    errors.push("profiles/artifacts.json must define an artifacts object");
+  } else {
+    for (const [name, artifact] of Object.entries(profile.artifacts)) {
+      if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) {
+        errors.push(`artifact ${name} must be an object`);
+        continue;
+      }
+      if (typeof artifact.source !== "string" || !artifact.source) {
+        errors.push(`artifact ${name} is missing source`);
+      } else {
+        const source = resolve(repoRoot, artifact.source);
+        if (!source.startsWith(`${repoRoot}${sep}`) || !existsSync(source)) {
+          errors.push(`artifact ${name} source is outside the repository or missing: ${artifact.source}`);
+        }
+      }
+      if (artifact.installable !== false) {
+        if (!Array.isArray(artifact.path) || artifact.path.length === 0 || artifact.path.some((part) => typeof part !== "string" || !part || part === "." || part === ".." || part.includes("/") || part.includes("\\"))) {
+          errors.push(`artifact ${name} must define a safe non-empty path array`);
+        }
+      } else if (typeof artifact.reason !== "string" || !artifact.reason) {
+        errors.push(`unsupported artifact ${name} must explain its reason`);
+      }
+    }
+  }
+  const unsupported = profile.unsupported;
+  for (const name of ["commands", "hooks", "settings", "automations"]) {
+    if (typeof unsupported?.[name] !== "string" || !unsupported[name]) {
+      errors.push(`profiles/artifacts.json must document unsupported ${name}`);
+    }
+  }
+} catch (error) {
+  errors.push(`invalid profiles/artifacts.json: ${error.message}`);
+}
 const actual = readdirSync(skillsRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
@@ -44,16 +63,9 @@ const forbidden = [
   /\bAskQuestion\b/i,
 ];
 
-const adapterAllowedFields = {
-  codex: new Set(["metadata"]),
-  claude: new Set(["compatibility", "metadata"]),
-  opencode: new Set(["compatibility", "metadata"]),
-};
-const adapterRemovableFields = {
-  codex: new Set(),
-  claude: new Set(["metadata"]),
-  opencode: new Set(["metadata"]),
-};
+const harnesses = Object.keys(JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8")));
+const adapterAllowedFields = new Set(["compatibility", "metadata"]);
+const adapterRemovableFields = new Set(["metadata"]);
 
 for (const skill of actual) {
   const path = join(skillsRoot, skill, "SKILL.md");
@@ -77,7 +89,7 @@ for (const skill of actual) {
   }
 }
 
-for (const [harness, allowedFields] of Object.entries(adapterAllowedFields)) {
+for (const harness of harnesses) {
   const adapterPath = join(repoRoot, "adapters", `${harness}.json`);
   try {
     const adapter = JSON.parse(readFileSync(adapterPath, "utf8"));
@@ -85,7 +97,7 @@ for (const [harness, allowedFields] of Object.entries(adapterAllowedFields)) {
       if (!EXPECTED_SKILLS.includes(skill)) errors.push(`${harness} adapter removes fields from unknown skill ${skill}`);
       if (!Array.isArray(fields)) errors.push(`${harness} adapter removeFrontmatter for ${skill} must be an array`);
       else for (const field of fields) {
-        if (!adapterRemovableFields[harness].has(field)) {
+        if (!adapterRemovableFields.has(field) || (harness === "codex" && field !== "metadata")) {
           errors.push(`${harness} adapter may not remove frontmatter field ${field}`);
         }
       }
@@ -93,7 +105,9 @@ for (const [harness, allowedFields] of Object.entries(adapterAllowedFields)) {
     for (const [skill, fields] of Object.entries(adapter.frontmatter ?? {})) {
       if (!EXPECTED_SKILLS.includes(skill)) errors.push(`${harness} adapter references unknown skill ${skill}`);
       for (const field of Object.keys(fields)) {
-        if (!allowedFields.has(field)) errors.push(`${harness} adapter uses unsupported field ${field}`);
+        if (!adapterAllowedFields.has(field) || (harness === "codex" && field !== "metadata")) {
+          errors.push(`${harness} adapter uses unsupported field ${field}`);
+        }
       }
     }
   } catch (error) {
@@ -110,7 +124,7 @@ if (/requires? Node\.js|Node\.js .*required/i.test(showWorkBody)) {
 const manifestPath = join(repoRoot, ".codex-plugin", "plugin.json");
 try {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  if (manifest.name !== "harness-skills") errors.push("plugin manifest has the wrong name");
+  if (manifest.name !== "mstack") errors.push("plugin manifest has the wrong name");
   if (manifest.skills !== "./skills/") errors.push("plugin manifest does not expose ./skills/");
 } catch (error) {
   errors.push(`invalid plugin manifest: ${error.message}`);
@@ -118,7 +132,7 @@ try {
 
 function walk(directory) {
   return readdirSync(directory).flatMap((name) => {
-    if (directory === repoRoot && name === ".git") return [];
+    if (directory === repoRoot && (name === ".git" || name === ".audit")) return [];
     const path = join(directory, name);
     return statSync(path).isDirectory() ? walk(path) : [path];
   });

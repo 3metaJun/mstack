@@ -1,13 +1,15 @@
 # Project skill paths and drivers
 
-Use the path for the active harness. Do not generate three copies unless the
-user explicitly wants project-local copies for all three.
+Use the path for the active harness. Do not generate copies for every harness
+unless the user explicitly wants project-local copies for all supported
+harnesses.
 
 | Harness | Project skill root | Typical user-level root |
 | --- | --- | --- |
 | Codex | `.agents/skills/` | `~/.agents/skills/` |
 | Claude Code | `.claude/skills/` | `~/.claude/skills/` |
 | OpenCode | `.opencode/skills/` | `~/.config/opencode/skills/` |
+| pi | `.pi/skills/` | `~/.pi/agent/skills/` |
 
 Driver names vary by installation. Discover capabilities before writing the
 workflow:
