@@ -56,6 +56,18 @@ The canonical skill tree uses capability names. Adapters map those names to a
 Harness. Do not put vendor-specific paths, commands, transcript formats, or
 model names in this skill.
 
+## Resolve installed paths
+
+Playbooks use `<mstack-skills>` for the directory that contains the installed
+mstack skills. They use `<meta-mode-tools>` for the optional `meta-mode-tools`
+artifact directory. Resolve both paths from the active `meta-mode` skill before
+you run a command. In this repository, the paths are `<repo>/skills` and
+`<repo>/tools/meta-mode`. The default installer places them at
+`<Harness root>/skills` and `<Harness root>/tools/meta-mode`, so the tools are
+at `../../tools/meta-mode` from the `meta-mode` skill directory. If the install
+uses an artifact destination override, use the destination that the installer
+reports.
+
 ## Configure models
 
 Copy `profiles/models.example.json` to `~/.config/mstack/models.json` and replace
