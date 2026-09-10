@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { stagingPath, targetPathsOverlap } from "./install-paths.mjs";
+import { localPathKey, stagingPath, targetPathsOverlap } from "./install-paths.mjs";
 
 const installer = resolve("scripts", "install.mjs");
 
@@ -30,6 +40,34 @@ function run(arguments_, env) {
   });
 }
 
+function copiedInstallerFixture() {
+  const root = mkdtempSync(join(tmpdir(), "mstack-copied-installer-test-"));
+  const repository = join(root, "repository");
+  mkdirSync(repository);
+  for (const directory of ["scripts", "profiles", "adapters", "agents"]) {
+    cpSync(resolve(directory), join(repository, directory), { recursive: true });
+  }
+  mkdirSync(join(repository, "skills"));
+  return {
+    root,
+    repository,
+    installer: join(repository, "scripts", "install.mjs"),
+    remoteInstaller: join(repository, "scripts", "remote-install.mjs"),
+    env: {
+      ...process.env,
+      HARNESS_SKILLS_CODEX_DIR: join(root, "install", "skills"),
+    },
+  };
+}
+
+function runCopied(script, arguments_, env, cwd) {
+  return spawnSync(process.execPath, [script, ...arguments_], {
+    cwd,
+    env,
+    encoding: "utf8",
+  });
+}
+
 test("stages each item beside its final target", () => {
   const target = join("custom-volume", "shared", "agents");
   const staged = stagingPath(target, "2026-09-10-1234", 2);
@@ -40,6 +78,14 @@ test("stages each item beside its final target", () => {
 test("detects overlapping install targets", () => {
   assert.equal(targetPathsOverlap(join("root", "skills", "meta-mode"), join("root", "skills", "meta-mode", "agents")), true);
   assert.equal(targetPathsOverlap(join("root", "skills", "meta-mode"), join("root", "skills", "setup-mstack")), false);
+});
+
+test("treats local macOS targets as case-insensitive", () => {
+  const upper = join("root", "Skills", "Meta-Mode");
+  const lower = join("root", "skills", "meta-mode");
+  assert.equal(localPathKey(upper, "darwin"), localPathKey(lower, "darwin"));
+  assert.equal(targetPathsOverlap(upper, join(lower, "agents"), "darwin"), true);
+  assert.notEqual(localPathKey(upper, "linux"), localPathKey(lower, "linux"));
 });
 
 test("dry-run reports a plan without creating target directories", () => {
@@ -134,6 +180,43 @@ test("keeps skill backups and failed replacements beside their actual targets", 
   }
 });
 
+test("continues rollback after one target cannot be restored", () => {
+  const { root, env } = fixture();
+  const targets = Object.fromEntries(
+    ["codex", "claude", "opencode"].map((harness) => [
+      harness,
+      join(env[`HARNESS_SKILLS_${harness.toUpperCase()}_DIR`], "meta-mode"),
+    ]),
+  );
+  for (const [harness, target] of Object.entries(targets)) {
+    mkdirSync(target, { recursive: true });
+    writeFileSync(join(target, "marker.txt"), `old ${harness}`, "utf8");
+  }
+  writeFileSync(join(env.HARNESS_SKILLS_CLAUDE_DIR, ".harness-skills-failed"), "block rollback", "utf8");
+  writeFileSync(join(env.HARNESS_SKILLS_OPENCODE_DIR, ".harness-skills-backups"), "block commit", "utf8");
+
+  try {
+    const result = run(
+      ["--harness", "codex,claude,opencode", "--skill", "meta-mode", "--replace"],
+      env,
+    );
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /\.harness-skills-backups/);
+    assert.match(result.stderr, /Rollback results:/);
+    assert.match(result.stderr, /restored original/);
+    assert.match(result.stderr, /rollback failed/);
+    assert.match(result.stderr, /backup retained/);
+    assert.equal(readFileSync(join(targets.codex, "marker.txt"), "utf8"), "old codex");
+    assert.equal(readFileSync(join(targets.opencode, "marker.txt"), "utf8"), "old opencode");
+    assert.equal(
+      readFileSync(findFile(join(env.HARNESS_SKILLS_CLAUDE_DIR, ".harness-skills-backups"), "marker.txt"), "utf8"),
+      "old claude",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects duplicate harnesses and aliased target roots", () => {
   const duplicateFixture = fixture();
   const aliasFixture = fixture();
@@ -205,6 +288,30 @@ test("uses a named environment for selected harness targets", () => {
     assert.match(result.stdout, new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects empty and whitespace-only environment targets", () => {
+  for (const invalidTarget of ["", "   "]) {
+    const { root, env } = fixture();
+    const environmentFile = join(root, "environments.json");
+    writeFileSync(
+      environmentFile,
+      JSON.stringify({ fleet: { targets: { codex: invalidTarget } } }),
+      "utf8",
+    );
+    env.MSTACK_ENVIRONMENTS_FILE = environmentFile;
+    try {
+      const result = run(
+        ["--harness", "codex", "--environment", "fleet", "--skill", "meta-mode", "--dry-run"],
+        env,
+      );
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /has no target for: codex/);
+      assert.equal(existsSync(env.HARNESS_SKILLS_CODEX_DIR), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   }
 });
 
@@ -342,6 +449,93 @@ test("rejects unsupported artifacts and invalid artifact filters", () => {
     assert.match(unknown.stderr, /Unknown artifact/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects symlinks in selected source trees", () => {
+  const fixture_ = copiedInstallerFixture();
+  const outside = join(fixture_.root, "outside");
+  mkdirSync(outside);
+  writeFileSync(join(outside, "marker.txt"), "outside", "utf8");
+  symlinkSync(
+    outside,
+    join(fixture_.repository, "agents", "linked-outside"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+
+  try {
+    const result = runCopied(
+      fixture_.installer,
+      ["--harness", "codex", "--no-skills", "--artifact", "agents", "--dry-run"],
+      fixture_.env,
+      fixture_.repository,
+    );
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /rejects symbolic links/i);
+    assert.equal(existsSync(join(fixture_.root, "install", "agents")), false);
+  } finally {
+    rmSync(fixture_.root, { recursive: true, force: true });
+  }
+});
+
+test("rejects unsafe artifact paths in local and remote dry runs", () => {
+  const fixture_ = copiedInstallerFixture();
+  const profilePath = join(fixture_.repository, "profiles", "artifacts.json");
+  const profile = JSON.parse(readFileSync(profilePath, "utf8"));
+  profile.artifacts.agents.path = ["..", "escaped-agents"];
+  writeFileSync(profilePath, JSON.stringify(profile), "utf8");
+  const environmentFile = join(fixture_.root, "environments.json");
+  writeFileSync(environmentFile, JSON.stringify({
+    fleet: {
+      transport: "ssh",
+      host: "dev@example",
+      targets: { codex: "/srv/codex/skills" },
+    },
+  }), "utf8");
+
+  try {
+    const local = runCopied(
+      fixture_.installer,
+      ["--harness", "codex", "--no-skills", "--artifact", "agents", "--dry-run"],
+      fixture_.env,
+      fixture_.repository,
+    );
+    assert.notEqual(local.status, 0);
+    assert.match(local.stderr, /safe non-empty path array/);
+
+    const remote = runCopied(
+      fixture_.remoteInstaller,
+      ["--harness", "codex", "--environment", "fleet", "--no-skills", "--artifact", "agents", "--dry-run"],
+      { ...fixture_.env, MSTACK_ENVIRONMENTS_FILE: environmentFile },
+      fixture_.repository,
+    );
+    assert.notEqual(remote.status, 0);
+    assert.match(remote.stderr, /safe non-empty path array/);
+    assert.equal(existsSync(join(fixture_.root, "escaped-agents")), false);
+  } finally {
+    rmSync(fixture_.root, { recursive: true, force: true });
+  }
+});
+
+test("rejects artifact sources outside the repository", () => {
+  const fixture_ = copiedInstallerFixture();
+  const profilePath = join(fixture_.repository, "profiles", "artifacts.json");
+  const profile = JSON.parse(readFileSync(profilePath, "utf8"));
+  profile.artifacts.agents.source = "../outside";
+  writeFileSync(profilePath, JSON.stringify(profile), "utf8");
+  mkdirSync(join(fixture_.root, "outside"));
+
+  try {
+    const result = runCopied(
+      fixture_.installer,
+      ["--harness", "codex", "--no-skills", "--artifact", "agents", "--dry-run"],
+      fixture_.env,
+      fixture_.repository,
+    );
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /source must stay within the repository/);
+  } finally {
+    rmSync(fixture_.root, { recursive: true, force: true });
   }
 });
 

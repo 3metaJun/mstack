@@ -5,8 +5,10 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  lstatSync,
   openSync,
   readFileSync,
+  realpathSync,
   readdirSync,
   renameSync,
   rmSync,
@@ -17,7 +19,14 @@ import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { stagingPath, targetPathsOverlap } from "./install-paths.mjs";
+import { readEnvironment } from "./environment-lib.mjs";
+import {
+  artifactPathParts,
+  localPathKey,
+  pathIsWithin,
+  stagingPath,
+  targetPathsOverlap,
+} from "./install-paths.mjs";
 
 if (Number.parseInt(process.versions.node, 10) < 18) {
   console.error("mstack requires Node.js 18 or newer");
@@ -66,32 +75,6 @@ if (hasEnvironment && (!environmentName || environmentName.startsWith("--"))) {
   throw new Error("--environment requires a name");
 }
 
-function loadEnvironment(name) {
-  if (!name) return { name: undefined, transport: "local", targets: {}, artifacts: {} };
-  const path = process.env.MSTACK_ENVIRONMENTS_FILE
-    ? configuredPath(process.env.MSTACK_ENVIRONMENTS_FILE, "", "MSTACK_ENVIRONMENTS_FILE")
-    : join(userHome, ".config", "mstack", "environments.json");
-  if (!existsSync(path)) throw new Error(`Environment file not found: ${path}`);
-  const data = JSON.parse(readFileSync(path, "utf8"));
-  const environment = data[name];
-  if (!environment || typeof environment !== "object" || Array.isArray(environment)) {
-    throw new Error(`Unknown environment: ${name}`);
-  }
-  const targets = environment.targets;
-  if (!targets || typeof targets !== "object" || Array.isArray(targets)) {
-    throw new Error(`Environment ${name} must define a targets object`);
-  }
-  const artifacts = environment.artifacts ?? {};
-  if (typeof artifacts !== "object" || Array.isArray(artifacts)) {
-    throw new Error(`Environment ${name} artifacts must be an object`);
-  }
-  const transport = environment.transport ?? "local";
-  if (!['local', 'ssh'].includes(transport)) {
-    throw new Error(`Environment ${name} has unsupported transport: ${transport}`);
-  }
-  return { ...environment, name, transport, targets, artifacts };
-}
-
 function expandHome(path) {
   if (path === "~") return userHome;
   if (/^~[\\/]/.test(path)) return join(userHome, path.slice(2));
@@ -110,7 +93,7 @@ function pathFromParts(parts) {
   return parts.reduce((current, part) => join(current, part), userHome);
 }
 
-const environment = loadEnvironment(environmentName);
+const environment = readEnvironment(environmentName, harnesses);
 if (environment.transport === "ssh") {
   const remote = spawnSync(process.execPath, [join(repoRoot, "scripts", "remote-install.mjs"), ...args], {
     cwd: repoRoot,
@@ -122,13 +105,6 @@ if (environment.transport === "ssh") {
 }
 const environmentTargets = environment.targets;
 const environmentArtifacts = environment.artifacts;
-if (environmentName) {
-  const missingTargets = harnesses.filter((harness) => typeof environmentTargets[harness] !== "string");
-  if (missingTargets.length) {
-    throw new Error(`Environment ${environmentName} has no target for: ${missingTargets.join(", ")}`);
-  }
-}
-
 function harnessTarget(harness) {
   const config = harnessRegistry[harness];
   if (environmentTargets[harness]) {
@@ -180,15 +156,15 @@ function artifactTarget(name, harness) {
   const variable = artifactVariable(name, harness);
   const override = environmentPath ?? process.env[variable];
   if (override) return configuredPath(override, "", environmentPath ? `${environmentName}.artifacts.${name}.${harness}` : variable);
-  if (!Array.isArray(definition.path) || definition.path.some((part) => typeof part !== "string" || !part)) {
-    throw new Error(`Artifact ${name} must define a non-empty path array`);
+  const root = dirname(targets[harness]);
+  const target = resolve(root, ...artifactPathParts(name, definition));
+  if (!pathIsWithin(root, target)) {
+    throw new Error(`Artifact ${name} target must stay within the harness configuration directory`);
   }
-  return join(dirname(targets[harness]), ...definition.path);
+  return target;
 }
 
-const targetKeys = harnesses.map((harness) =>
-  process.platform === "win32" ? targets[harness].toLowerCase() : targets[harness],
-);
+const targetKeys = harnesses.map((harness) => localPathKey(targets[harness]));
 
 const adapters = Object.fromEntries(
   validHarnesses.map((harness) => [
@@ -264,6 +240,44 @@ function copyDirectoryContents(source, target) {
   }
 }
 
+function validateSourceTree(source) {
+  const pending = [source];
+  while (pending.length) {
+    const current = pending.pop();
+    const status = lstatSync(current);
+    if (status.isSymbolicLink()) {
+      throw new Error(`Installer rejects symbolic links in source trees: ${current}`);
+    }
+    if (!status.isDirectory()) {
+      throw new Error(`Installer source must be a directory: ${current}`);
+    }
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (entry.isSymbolicLink()) {
+        throw new Error(`Installer rejects symbolic links in source trees: ${path}`);
+      }
+      if (entry.isDirectory()) pending.push(path);
+      else if (!entry.isFile()) throw new Error(`Installer source contains an unsupported entry: ${path}`);
+    }
+  }
+}
+
+function resolveArtifactSource(name) {
+  const configured = artifactRegistry[name].source;
+  if (typeof configured !== "string" || configured.trim().length === 0 || isAbsolute(configured)) {
+    throw new Error(`Artifact ${name} source must stay within the repository`);
+  }
+  const source = resolve(repoRoot, configured);
+  if (!pathIsWithin(repoRoot, source)) {
+    throw new Error(`Artifact ${name} source must stay within the repository`);
+  }
+  if (!existsSync(source)) throw new Error(`Artifact ${name} source is missing: ${source}`);
+  if (!pathIsWithin(realpathSync(repoRoot), realpathSync(source))) {
+    throw new Error(`Artifact ${name} source must stay within the repository`);
+  }
+  return source;
+}
+
 const availableSkills = await (await import("node:fs/promises"))
   .readdir(sourceRoot, { withFileTypes: true })
   .then((entries) => entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort());
@@ -309,12 +323,10 @@ if (unsupportedArtifacts.length) {
     .join("\n");
   throw new Error(`Unsupported artifact selection:\n${details}`);
 }
-for (const name of requestedArtifacts) {
-  const source = join(repoRoot, artifactRegistry[name].source ?? "");
-  if (!artifactRegistry[name].source || !existsSync(source)) {
-    throw new Error(`Artifact ${name} source is missing: ${source}`);
-  }
-}
+for (const name of requestedArtifacts) artifactPathParts(name, artifactRegistry[name]);
+const artifactSources = Object.fromEntries(
+  requestedArtifacts.map((name) => [name, resolveArtifactSource(name)]),
+);
 
 const artifactTargets = Object.fromEntries(
   requestedArtifacts.flatMap((name) =>
@@ -326,14 +338,14 @@ const rawArtifactPlan = harnesses.flatMap((harness) =>
     kind: "artifact",
     harness,
     name,
-    source: join(repoRoot, artifactRegistry[name].source),
+    source: artifactSources[name],
     target: artifactTargets[`${harness}:${name}`],
   })),
 );
 const artifactPlan = [];
 const artifactTargetsByPath = new Map();
 for (const item of rawArtifactPlan) {
-  const key = process.platform === "win32" ? item.target.toLowerCase() : item.target;
+  const key = localPathKey(item.target);
   const existing = artifactTargetsByPath.get(key);
   if (existing) {
     if (existing.name === item.name && existing.source === item.source) continue;
@@ -344,7 +356,7 @@ for (const item of rawArtifactPlan) {
 }
 const allTargetKeys = [
   ...targetKeys,
-  ...artifactPlan.map(({ target }) => (process.platform === "win32" ? target.toLowerCase() : target)),
+  ...artifactPlan.map(({ target }) => localPathKey(target)),
 ];
 if (new Set(allTargetKeys).size !== allTargetKeys.length) {
   throw new Error("Selected skills and artifacts resolve to the same target directory");
@@ -378,6 +390,7 @@ for (let left = 0; left < plan.length; left += 1) {
     }
   }
 }
+for (const source of new Set(plan.map((item) => item.source))) validateSourceTree(source);
 const conflicts = plan.filter(({ target }) => existsSync(target));
 
 for (const harness of harnesses) console.log(`${harness}: ${targets[harness]}`);
@@ -407,11 +420,42 @@ const locks = [];
 const stagedPaths = [];
 const committed = [];
 
+function rollbackCommitted() {
+  const results = [];
+  for (const item of [...committed].reverse()) {
+    let failed;
+    try {
+      if (existsSync(item.target)) {
+        const failedName = item.kind === "skill" ? item.name : `artifact-${item.harness}-${item.name}`;
+        failed = join(dirname(item.target), ".harness-skills-failed", stamp, failedName);
+        mkdirSync(dirname(failed), { recursive: true, mode: 0o700 });
+        renameSync(item.target, failed);
+      }
+      if (item.backup) {
+        renameSync(item.backup, item.target);
+        const retained = failed ? `; failed replacement retained at ${failed}` : "";
+        results.push(`${item.target}: restored original${retained}`);
+      } else if (failed) {
+        results.push(`${item.target}: removed new install; failed replacement retained at ${failed}`);
+      } else {
+        results.push(`${item.target}: no installed target remained`);
+      }
+    } catch (rollbackError) {
+      const retained = [];
+      if (item.backup && existsSync(item.backup)) retained.push(`backup retained at ${item.backup}`);
+      if (failed && existsSync(failed)) retained.push(`failed replacement retained at ${failed}`);
+      const detail = retained.length ? `; ${retained.join("; ")}` : "";
+      results.push(`${item.target}: rollback failed: ${rollbackError.message}${detail}`);
+    }
+  }
+  return results;
+}
+
 try {
   const lockRootsByPath = new Map();
   for (const item of plan) {
     const lockRoot = dirname(item.target);
-    const key = process.platform === "win32" ? lockRoot.toLowerCase() : lockRoot;
+    const key = localPathKey(lockRoot);
     if (!lockRootsByPath.has(key)) lockRootsByPath.set(key, lockRoot);
   }
   const lockRoots = [...lockRootsByPath.values()].sort((left, right) => left.localeCompare(right));
@@ -463,16 +507,9 @@ try {
     renameSync(item.staged, target);
   }
 } catch (error) {
-  for (const item of committed.reverse()) {
-    if (existsSync(item.target)) {
-      const failedName = item.kind === "skill" ? item.name : `artifact-${item.harness}-${item.name}`;
-      const failed = join(dirname(item.target), ".harness-skills-failed", stamp, failedName);
-      mkdirSync(dirname(failed), { recursive: true, mode: 0o700 });
-      renameSync(item.target, failed);
-    }
-    if (item.backup) renameSync(item.backup, item.target);
-  }
-  throw error;
+  if (!committed.length) throw error;
+  const results = rollbackCommitted();
+  throw new Error(`${error.message}\nRollback results:\n${results.join("\n")}`, { cause: error });
 } finally {
   for (const staged of stagedPaths) rmSync(staged, { recursive: true, force: true });
   for (const { descriptor, lockPath } of locks.reverse()) {

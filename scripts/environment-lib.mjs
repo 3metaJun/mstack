@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, posix } from "node:path";
+import { isAbsolute, join, posix, resolve } from "node:path";
 
 const POSIX_SHELL = "posix";
 const POWERSHELL = "powershell";
@@ -8,11 +8,17 @@ const ENVIRONMENT_TRANSPORTS = new Set(["local", "ssh"]);
 
 function expandHome(value) {
   if (value === "~") return homedir();
-  return value?.startsWith("~/") ? join(homedir(), value.slice(2)) : value;
+  return /^~[\\/]/.test(value) ? join(homedir(), value.slice(2)) : value;
 }
 
 function environmentFilePath() {
-  return expandHome(process.env.MSTACK_ENVIRONMENTS_FILE ?? "~/.config/mstack/environments.json");
+  const configured = process.env.MSTACK_ENVIRONMENTS_FILE;
+  if (configured === undefined) return join(homedir(), ".config", "mstack", "environments.json");
+  const expanded = expandHome(configured);
+  if (!isAbsolute(expanded)) {
+    throw new Error("MSTACK_ENVIRONMENTS_FILE must be an absolute path or start with ~/");
+  }
+  return resolve(expanded);
 }
 
 export function readEnvironment(name, harnesses = []) {
@@ -32,7 +38,8 @@ export function readEnvironment(name, harnesses = []) {
   if (!targets || typeof targets !== "object" || Array.isArray(targets)) {
     throw new Error(`Environment ${name} must define a targets object`);
   }
-  const missingTargets = harnesses.filter((harness) => typeof targets[harness] !== "string" || !targets[harness]);
+  const missingTargets = harnesses.filter((harness) =>
+    typeof targets[harness] !== "string" || targets[harness].trim().length === 0);
   if (missingTargets.length) {
     throw new Error(`Environment ${name} has no target for: ${missingTargets.join(", ")}`);
   }

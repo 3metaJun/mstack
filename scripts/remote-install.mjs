@@ -11,6 +11,7 @@ import { dirname, join, posix, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parseRemoteStage, quotePosix, readEnvironment } from "./environment-lib.mjs";
+import { artifactPathParts } from "./install-paths.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const profilesRoot = join(repoRoot, "profiles");
@@ -79,6 +80,9 @@ const unknownArtifacts = artifacts.filter((name) => !Object.hasOwn(artifactRegis
 if (unknownArtifacts.length) throw new Error(`Unknown artifact: ${unknownArtifacts.join(", ")}`);
 const unsupported = artifacts.filter((name) => artifactRegistry[name].installable === false);
 if (unsupported.length) throw new Error(`Unsupported artifact selection: ${unsupported.join(", ")}`);
+const artifactPaths = Object.fromEntries(
+  artifacts.map((name) => [name, artifactPathParts(name, artifactRegistry[name])]),
+);
 
 function artifactEnvironmentPath(name, harness) {
   const byArtifact = environment.artifacts?.[name];
@@ -91,7 +95,7 @@ function artifactEnvironmentPath(name, harness) {
 function remoteArtifactTarget(name, harness) {
   const custom = artifactEnvironmentPath(name, harness);
   if (custom) return custom;
-  return posix.join(posix.dirname(environment.targets[harness]), ...artifactRegistry[name].path);
+  return posix.join(posix.dirname(environment.targets[harness]), ...artifactPaths[name]);
 }
 
 const requestedItems = harnesses.flatMap((harness) => [
@@ -202,7 +206,7 @@ try {
   for (const item of items) {
     const localSource = item.kind === "skill"
       ? join(localRoot, item.harness, "skills", item.name)
-      : join(localRoot, item.harness, ...artifactRegistry[item.name].path);
+      : join(localRoot, item.harness, ...artifactPaths[item.name]);
     if (!existsSync(localSource)) throw new Error(`Staged source is missing: ${localSource}`);
     const parent = posix.dirname(item.target);
     const stageOutput = remoteScript(`set -eu; mkdir -p ${quotePosix(parent)}; mktemp -d ${quotePosix(posix.join(parent, ".mstack-stage.XXXXXX"))}`);

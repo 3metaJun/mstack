@@ -75,6 +75,39 @@ test("run-role emits an SSH plan for a named environment", () => {
   }
 });
 
+test("environment consumers reject a relative MSTACK_ENVIRONMENTS_FILE", () => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-relative-environment-test-"));
+  const configPath = join(root, "environments.json");
+  writeFileSync(configPath, JSON.stringify({
+    fleet: {
+      targets: { codex: join(root, "codex", "skills") },
+    },
+  }), "utf8");
+  const env = { ...process.env, MSTACK_ENVIRONMENTS_FILE: "environments.json" };
+  try {
+    const installResult = spawnSync(process.execPath, [installer,
+      "--harness", "codex",
+      "--environment", "fleet",
+      "--skill", "meta-mode",
+      "--dry-run",
+    ], { cwd: root, env, encoding: "utf8" });
+    const roleResult = spawnSync(process.execPath, [runRole,
+      "--harness", "codex",
+      "--role", "explorer",
+      "--prompt", "inspect",
+      "--environment", "fleet",
+      "--file", join(root, "missing-models.json"),
+    ], { cwd: root, env, encoding: "utf8" });
+
+    for (const result of [installResult, roleResult]) {
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /MSTACK_ENVIRONMENTS_FILE must be an absolute path or start with ~\//);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("Codex runtime uses flags supported by the current exec CLI", () => {
   const result = spawnSync(process.execPath, [runRole,
     "--harness", "codex",
