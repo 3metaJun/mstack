@@ -28,7 +28,11 @@ cat > "$fake_bin/gh" <<'EOF'
 #!/usr/bin/env bash
 printf '[]\n'
 EOF
-chmod +x "$fake_bin/gh"
+cat > "$fake_bin/rg" <<'EOF'
+#!/usr/bin/env bash
+exit 127
+EOF
+chmod +x "$fake_bin/gh" "$fake_bin/rg"
 
 output=$(PATH="$fake_bin:$PATH" MSTACK_TRANSCRIPTS_DIR="$transcripts" bash "$script_dir/worktree-audit.sh" "$repo")
 row=$(printf '%s\n' "$output" | awk -F '\t' -v worktree="$worktree" '$9 == worktree')

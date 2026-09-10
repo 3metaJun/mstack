@@ -83,9 +83,10 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	last="-"; last_ts=0
 	if [ -d "$transcripts" ]; then
 		while IFS= read -r -d '' transcript; do
+			grep -Fq -e "${wt}/" -e "${wt}\"" -- "$transcript" 2>/dev/null || continue
 			transcript_ts=$(file_mtime "$transcript" 2>/dev/null) || continue
 			if [ "$transcript_ts" -gt "$last_ts" ] 2>/dev/null; then last_ts=$transcript_ts; fi
-		done < <(rg -l -0 -e "${wt}/" -e "${wt}\"" "$transcripts" 2>/dev/null)
+		done < <(find "$transcripts" -type f -print0 2>/dev/null)
 		if [ "$last_ts" -gt 0 ] 2>/dev/null; then
 			last=$(format_epoch_date "$last_ts" 2>/dev/null || echo "-")
 		fi
