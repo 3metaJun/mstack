@@ -3,17 +3,22 @@
 import {
   existsSync,
   lstatSync,
-  mkdirSync,
   readFileSync,
   realpathSync,
   readdirSync,
-  unlinkSync,
-  writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { dirname, extname, isAbsolute, join, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  acquireUpstreamSyncLock,
+  applyUpstreamSyncTransaction,
+  assertUpstreamSyncTargetReadable,
+  captureUpstreamSyncFingerprint,
+  recoverUpstreamSyncTransactions,
+  releaseUpstreamSyncLock,
+} from "./sync-upstream-transaction.mjs";
 
 const args = process.argv.slice(2);
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -41,17 +46,33 @@ if (!source) {
 }
 
 const sourceRoot = resolve(source);
-if (!existsSync(sourceRoot)) throw new Error(`Upstream checkout not found: ${sourceRoot}`);
 const targetRoot = resolve(valueAfter("--target") ?? repoRoot);
-const profilesRoot = resolveInside(targetRoot, "profiles", "profiles directory");
+const apply = args.includes("--apply");
+const force = args.includes("--force");
+if (force && !apply) throw new Error("--force requires --apply");
+
+const syncLock = acquireUpstreamSyncLock(targetRoot, { recoverStale: apply });
+const releaseReadLockAtExit = () => {
+  try {
+    releaseUpstreamSyncLock(syncLock);
+  } catch {
+    // A stale read lock is recoverable by the next apply.
+  }
+};
+if (!apply) process.once("exit", releaseReadLockAtExit);
+
+try {
+const recoveredTransactions = apply ? recoverUpstreamSyncTransactions(targetRoot, syncLock) : 0;
+if (!apply) assertUpstreamSyncTargetReadable(targetRoot, syncLock);
+if (recoveredTransactions) {
+  console.log(`Recovered ${recoveredTransactions} interrupted upstream sync transaction(s).`);
+}
+if (!existsSync(sourceRoot)) throw new Error(`Upstream checkout not found: ${sourceRoot}`);
 const upstreamsPath = resolveInside(targetRoot, "profiles/upstreams.json", "upstream profile");
 if (!existsSync(upstreamsPath)) throw new Error(`mstack upstream profile not found: ${upstreamsPath}`);
 const upstreams = JSON.parse(readFileSync(upstreamsPath, "utf8"));
 const pstack = upstreams.pstack;
 if (!pstack || typeof pstack !== "object") throw new Error("profiles/upstreams.json has no pstack entry");
-const apply = args.includes("--apply");
-const force = args.includes("--force");
-if (force && !apply) throw new Error("--force requires --apply");
 
 function gitOutput(arguments_) {
   try {
@@ -288,15 +309,17 @@ for (const [name, configured] of Object.entries(artifacts)) {
     }
     expectedTargets.set(targetRelative, `${name}:${normalizePath(sourceFile)}`);
     const expected = transformedBuffer(sourcePath, spec.replacements);
-    const current = existsSync(targetPath) ? readFileSync(targetPath) : undefined;
+    const before = captureUpstreamSyncFingerprint(targetPath);
+    const current = before.kind === "file" ? readFileSync(targetPath) : undefined;
     let kind = "unchanged";
     if (!current) kind = "new";
     else if (!equalContent(targetPath, current, expected)) kind = "changed";
-    operations.push({ name, spec, sourceFile, sourcePath, targetPath, expected, kind });
+    operations.push({ name, spec, sourceFile, sourcePath, targetPath, expected, before, kind });
   }
 }
 
 const manifestPath = resolveInside(targetRoot, "profiles/upstream-manifest.json", "upstream manifest");
+const manifestBefore = captureUpstreamSyncFingerprint(manifestPath);
 let previousManifest;
 if (existsSync(manifestPath)) {
   try {
@@ -328,6 +351,7 @@ for (const [targetRelative, previous] of previousTargets) {
   if (expectedTargets.has(targetRelative) || missingSourceNames.has(previous.name)) continue;
   const targetPath = resolveInside(targetRoot, targetRelative, `upstream manifest artifact ${previous.name}`);
   if (!existsSync(targetPath)) continue;
+  const before = captureUpstreamSyncFingerprint(targetPath);
   const current = readFileSync(targetPath);
   const matchesBaseline = digest(
     textExtensions.has(extname(targetPath).toLowerCase())
@@ -339,6 +363,7 @@ for (const [targetRelative, previous] of previousTargets) {
     kind: "removed",
     targetPath,
     targetRelative,
+    before,
     matchesBaseline,
   });
 }
@@ -418,19 +443,12 @@ if ((conflicts.length || removalConflicts.length) && !force) {
   );
 }
 
-const written = [];
-for (const operation of operations) {
-  if (operation.kind === "unchanged" || operation.kind === "removed") continue;
-  if (operation.kind === "changed" && operation.spec?.compareContent === false && !force) continue;
-  mkdirSync(dirname(operation.targetPath), { recursive: true });
-  writeFileSync(operation.targetPath, operation.expected);
-  written.push(operation);
-}
-const removed = [];
-for (const operation of removals) {
-  unlinkSync(operation.targetPath);
-  removed.push(operation);
-}
+const written = operations.filter((operation) =>
+  operation.kind !== "unchanged" &&
+  operation.kind !== "removed" &&
+  (operation.kind !== "changed" || operation.spec?.compareContent !== false || force)
+);
+const removed = removals;
 
 const manifest = {
   source: pstack.repository,
@@ -453,7 +471,29 @@ const manifest = {
     ]),
   ),
 };
-writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+applyUpstreamSyncTransaction(targetRoot, [
+  ...written.map((operation) => ({
+    kind: "write",
+    target: normalizePath(relative(targetRoot, operation.targetPath)),
+    content: operation.expected,
+    before: operation.before,
+  })),
+  ...removed.map((operation) => ({
+    kind: "remove",
+    target: operation.targetRelative,
+    before: operation.before,
+  })),
+  {
+    kind: "manifest",
+    target: "profiles/upstream-manifest.json",
+    content: Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
+    before: manifestBefore,
+  },
+], syncLock);
 console.log(`Applied ${written.length} file(s).`);
 console.log(`Removed ${removed.length} file(s).`);
 console.log(`Wrote ${relative(targetRoot, manifestPath)}.`);
+} finally {
+  releaseUpstreamSyncLock(syncLock);
+  if (!apply) process.removeListener("exit", releaseReadLockAtExit);
+}

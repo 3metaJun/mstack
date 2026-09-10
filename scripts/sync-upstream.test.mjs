@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import test from "node:test";
 
 const synchronizer = resolve("scripts", "sync-upstream.mjs");
@@ -26,6 +29,205 @@ function run(script, arguments_) {
     cwd: resolve("."),
     encoding: "utf8",
   });
+}
+
+const faultPreload = String.raw`
+const fs = require("node:fs");
+const { syncBuiltinESMExports } = require("node:module");
+
+const plan = JSON.parse(fs.readFileSync(process.env.MSTACK_SYNC_TEST_FAULT_PLAN, "utf8"));
+const originals = Object.fromEntries(
+  ["closeSync", "copyFileSync", "existsSync", "linkSync", "mkdirSync", "openSync", "renameSync", "rmSync", "unlinkSync", "writeFileSync"]
+    .map((name) => [name, fs[name].bind(fs)]),
+);
+const descriptorPaths = new Map();
+const hits = new Map();
+
+function normalized(value) {
+  if (typeof value === "number") return descriptorPaths.get(value) ?? String(value);
+  return String(value).replaceAll("\\", "/");
+}
+
+function ruleMatches(rule, paths) {
+  const [path, destination] = paths.map(normalized);
+  return (!rule.pathEndsWith || path.endsWith(rule.pathEndsWith)) &&
+    (!rule.pathIncludes || path.includes(rule.pathIncludes)) &&
+    (!rule.fromEndsWith || path.endsWith(rule.fromEndsWith)) &&
+    (!rule.fromIncludes || path.includes(rule.fromIncludes)) &&
+    (!rule.toEndsWith || destination?.endsWith(rule.toEndsWith)) &&
+    (!rule.toIncludes || destination?.includes(rule.toIncludes));
+}
+
+function trigger(method, phase, paths) {
+  for (const [index, rule] of plan.rules.entries()) {
+    if (rule.method !== method || rule.phase !== phase || !ruleMatches(rule, paths)) continue;
+    const count = (hits.get(index) ?? 0) + 1;
+    hits.set(index, count);
+    if (count !== (rule.occurrence ?? 1)) continue;
+
+    if (rule.action === "exit") process.exit(rule.exitCode ?? 86);
+    if (rule.action === "gate") {
+      originals.writeFileSync(rule.ready, "ready\n", "utf8");
+      const deadline = Date.now() + (rule.timeoutMs ?? 10000);
+      const sleeper = new Int32Array(new SharedArrayBuffer(4));
+      while (!originals.existsSync(rule.release)) {
+        if (Date.now() >= deadline) process.exit(87);
+        Atomics.wait(sleeper, 0, 0, 20);
+      }
+      return;
+    }
+
+    const error = new Error(rule.message ?? "injected filesystem failure");
+    error.code = rule.code ?? "EIO";
+    throw error;
+  }
+}
+
+for (const method of ["copyFileSync", "linkSync", "mkdirSync", "renameSync", "rmSync", "unlinkSync"]) {
+  fs[method] = (...args) => {
+    trigger(method, "before", args);
+    const result = originals[method](...args);
+    trigger(method, "after", args);
+    return result;
+  };
+}
+
+fs.openSync = (...args) => {
+  trigger("openSync", "before", args);
+  const descriptor = originals.openSync(...args);
+  descriptorPaths.set(descriptor, normalized(args[0]));
+  trigger("openSync", "after", args);
+  return descriptor;
+};
+
+fs.writeFileSync = (...args) => {
+  trigger("writeFileSync", "before", args);
+  const result = originals.writeFileSync(...args);
+  trigger("writeFileSync", "after", args);
+  return result;
+};
+
+fs.closeSync = (descriptor) => {
+  try {
+    return originals.closeSync(descriptor);
+  } finally {
+    descriptorPaths.delete(descriptor);
+  }
+};
+
+syncBuiltinESMExports();
+`;
+
+function writeFaultPlan(root, rules) {
+  const preloadPath = join(root, "sync-upstream-fault-preload.cjs");
+  const planPath = join(root, "sync-upstream-fault-plan.json");
+  write(preloadPath, faultPreload);
+  write(planPath, JSON.stringify({ rules }));
+  return {
+    preloadPath,
+    env: { ...process.env, MSTACK_SYNC_TEST_FAULT_PLAN: planPath },
+  };
+}
+
+function runWithFaults(script, arguments_, root, rules, options = {}) {
+  const fault = writeFaultPlan(root, rules);
+  return spawnSync(process.execPath, ["--require", fault.preloadPath, script, ...arguments_], {
+    cwd: resolve("."),
+    encoding: "utf8",
+    env: fault.env,
+    timeout: options.timeout ?? 10000,
+  });
+}
+
+function spawnWithFaults(script, arguments_, root, rules) {
+  const fault = writeFaultPlan(root, rules);
+  const child = spawn(process.execPath, ["--require", fault.preloadPath, script, ...arguments_], {
+    cwd: resolve("."),
+    env: fault.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  let stdout = "";
+  let stderr = "";
+  child.stdout.on("data", (chunk) => { stdout += chunk; });
+  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  const completed = new Promise((resolveResult, reject) => {
+    child.once("error", reject);
+    child.once("close", (status, signal) => resolveResult({ status, signal, stdout, stderr }));
+  });
+  return { child, completed };
+}
+
+async function waitForPath(path, timeout = 5000) {
+  const deadline = Date.now() + timeout;
+  while (!existsSync(path)) {
+    if (Date.now() >= deadline) throw new Error(`Timed out waiting for ${path}`);
+    await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+  }
+}
+
+function snapshotTree(root, { excludeTransactionState = false } = {}) {
+  const snapshot = [];
+  function visit(directory) {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const path = join(directory, entry.name);
+      const relativePath = relative(root, path).replaceAll("\\", "/");
+      if (
+        excludeTransactionState &&
+        (relativePath.startsWith(".mstack-sync-upstream.lock") ||
+          relativePath === ".mstack-sync-upstream" ||
+          relativePath.startsWith(".mstack-sync-upstream/") ||
+          relativePath === ".mstack-sync-upstream-tx" ||
+          relativePath.includes("/.mstack-sync-upstream-tx"))
+      ) continue;
+      if (entry.isDirectory()) {
+        snapshot.push(["directory", relativePath]);
+        visit(path);
+      } else {
+        const status = lstatSync(path);
+        snapshot.push([
+          status.isSymbolicLink() ? "symlink" : "file",
+          relativePath,
+          status.isSymbolicLink() ? undefined : readFileSync(path).toString("base64"),
+        ]);
+      }
+    }
+  }
+  visit(root);
+  return snapshot;
+}
+
+function assertNoTransactionState(target) {
+  const leftovers = snapshotTree(target)
+    .map(([, path]) => path)
+    .filter((path) =>
+      path === ".mstack-sync-upstream.lock" ||
+      path === ".mstack-sync-upstream" ||
+      path.startsWith(".mstack-sync-upstream/") ||
+      path === ".mstack-sync-upstream-tx" ||
+      path.includes("/.mstack-sync-upstream-tx"),
+    );
+  assert.deepEqual(leftovers, [], `transaction state was not removed: ${leftovers.join(", ")}`);
+}
+
+function applyBaseline(source, target) {
+  const result = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+  assert.equal(result.status, 0, result.stderr);
+}
+
+function advanceSource(source, target, update, message) {
+  update();
+  const commit = commitSourceChange(source, message);
+  updateProfile(target, (pstack) => { pstack.commit = commit; });
+}
+
+function transactionDirectory(target, id) {
+  return join(target, ".mstack-sync-upstream", "transactions", id);
+}
+
+function sha256(content) {
+  return createHash("sha256").update(content).digest("hex");
 }
 
 function runGit(directory, arguments_) {
@@ -356,3 +558,501 @@ test("locally adapted removed artifacts require force before deletion", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("rolls back every target when a file replacement fails during commit", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      write(join(source, "automations", "benny", "README.md"), "changed pstack automation\n");
+      write(
+        join(source, "docs", "guide", "02-poteto-mode.md"),
+        "Changed /poteto-mode guide for pstack.\nCursor confirms.\n",
+      );
+    }, "change two managed files");
+    const before = snapshotTree(target);
+
+    const failed = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "before",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/docs/guide/02-meta-mode.md",
+        message: "injected target replacement failure",
+      }],
+    );
+
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /injected target replacement failure/);
+    assert.deepEqual(snapshotTree(target), before);
+    assertNoTransactionState(target);
+
+    const retried = run(synchronizer, ["--source", source, "--target", target, "--apply", "--force"]);
+    assert.equal(retried.status, 0, retried.stderr);
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rolls back file writes and removals when manifest replacement fails", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      unlinkSync(join(source, "automations", "benny", "README.md"));
+      write(
+        join(source, "docs", "guide", "02-poteto-mode.md"),
+        "Changed /poteto-mode guide for pstack.\nCursor confirms.\n",
+      );
+    }, "change and remove managed files");
+    const before = snapshotTree(target);
+
+    const failed = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "before",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/profiles/upstream-manifest.json",
+        message: "injected manifest replacement failure",
+      }],
+    );
+
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /injected manifest replacement failure/);
+    assert.deepEqual(snapshotTree(target), before);
+    assertNoTransactionState(target);
+
+    const retried = run(synchronizer, ["--source", source, "--target", target, "--apply", "--force"]);
+    assert.equal(retried.status, 0, retried.stderr);
+    assert.equal(existsSync(join(target, "automations", "benny", "README.md")), false);
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("retains recoverable state when rollback fails after a primary commit failure", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      write(join(source, "automations", "benny", "README.md"), "recovery pstack automation\n");
+      write(
+        join(source, "docs", "guide", "02-poteto-mode.md"),
+        "Recovery /poteto-mode guide for pstack.\nCursor confirms.\n",
+      );
+    }, "prepare rollback failure recovery");
+
+    const failed = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [
+        {
+          method: "renameSync",
+          phase: "before",
+          fromIncludes: "/.mstack-sync-upstream-tx/",
+          toEndsWith: "/profiles/upstream-manifest.json",
+          message: "injected primary manifest failure",
+        },
+        {
+          method: "renameSync",
+          phase: "before",
+          fromIncludes: "/.mstack-sync-upstream-tx/",
+          fromEndsWith: ".old",
+          toEndsWith: "/automations/benny/README.md",
+          message: "injected rollback restore failure",
+        },
+      ],
+    );
+
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /injected primary manifest failure/);
+    assert.match(failed.stderr, /Rollback failed; transaction state was retained for recovery/);
+    assert.match(failed.stderr, /injected rollback restore failure/);
+    assert.equal(existsSync(join(target, ".mstack-sync-upstream.lock")), false);
+
+    const transactionsRoot = join(target, ".mstack-sync-upstream", "transactions");
+    const transactionIds = readdirSync(transactionsRoot);
+    assert.equal(transactionIds.length, 1);
+    const transaction = join(transactionsRoot, transactionIds[0]);
+    const journalPath = join(transaction, "journal.json");
+    assert.equal(existsSync(journalPath), true);
+    const journal = JSON.parse(readFileSync(journalPath, "utf8"));
+    const automation = journal.operations.find(
+      (operation) => operation.target === "automations/benny/README.md",
+    );
+    assert.ok(automation, "journal did not retain the failed rollback operation");
+    const backupPath = resolve(target, ...automation.backup.split("/"));
+    assert.equal(existsSync(backupPath), true, "rollback removed the only recoverable backup");
+
+    const recovered = run(synchronizer, ["--source", source, "--target", target, "--apply", "--force"]);
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.equal(
+      readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
+      "recovery mstack automation\n",
+    );
+    assert.equal(
+      readFileSync(join(target, "docs", "guide", "02-meta-mode.md"), "utf8"),
+      "Recovery /meta-mode guide for mstack.\nHarness confirms.\n",
+    );
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("recovers a stale transaction after the process exits between a rename and journal progress", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      write(join(source, "automations", "benny", "README.md"), "changed pstack automation\n");
+      write(
+        join(source, "docs", "guide", "02-poteto-mode.md"),
+        "Changed /poteto-mode guide for pstack.\nCursor confirms.\n",
+      );
+    }, "prepare interrupted sync");
+
+    const interrupted = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "after",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/automations/benny/README.md",
+        action: "exit",
+        exitCode: 86,
+      }],
+    );
+
+    assert.equal(interrupted.status, 86, interrupted.stderr);
+    assert.equal(existsSync(join(target, ".mstack-sync-upstream.lock")), true);
+    const transactionsRoot = join(target, ".mstack-sync-upstream", "transactions");
+    const transactionIds = readdirSync(transactionsRoot);
+    assert.equal(transactionIds.length, 1);
+    assert.equal(existsSync(join(transactionsRoot, transactionIds[0], "journal.json")), true);
+
+    const recovered = run(synchronizer, ["--source", source, "--target", target, "--apply", "--force"]);
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.equal(
+      readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
+      "changed mstack automation\n",
+    );
+    assert.equal(
+      readFileSync(join(target, "docs", "guide", "02-meta-mode.md"), "utf8"),
+      "Changed /meta-mode guide for mstack.\nHarness confirms.\n",
+    );
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("cleans up a committed transaction without rolling it back after the committed marker rename", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      write(join(source, "automations", "benny", "README.md"), "committed pstack automation\n");
+      write(
+        join(source, "docs", "guide", "02-poteto-mode.md"),
+        "Committed /poteto-mode guide for pstack.\nCursor confirms.\n",
+      );
+    }, "prepare committed sync cleanup");
+
+    const interrupted = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "after",
+        fromEndsWith: "/COMMITTED.tmp",
+        toEndsWith: "/COMMITTED",
+        action: "exit",
+        exitCode: 86,
+      }],
+    );
+
+    assert.equal(interrupted.status, 86, interrupted.stderr);
+    const transactionsRoot = join(target, ".mstack-sync-upstream", "transactions");
+    const transactionIds = readdirSync(transactionsRoot);
+    assert.equal(transactionIds.length, 1);
+    assert.equal(existsSync(join(transactionsRoot, transactionIds[0], "COMMITTED")), true);
+    assert.equal(
+      readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
+      "committed mstack automation\n",
+    );
+
+    const recovered = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "before",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/automations/benny/README.md",
+        message: "committed transaction attempted rollback",
+      }],
+    );
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.doesNotMatch(recovered.stderr, /committed transaction attempted rollback/);
+    assert.equal(
+      readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
+      "committed mstack automation\n",
+    );
+    assert.equal(
+      readFileSync(join(target, "docs", "guide", "02-meta-mode.md"), "utf8"),
+      "Committed /meta-mode guide for mstack.\nHarness confirms.\n",
+    );
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("removes newly created nested target directories and sidecars after a first apply fails", () => {
+  const { root, source, target } = fixture();
+  try {
+    updateProfile(target, (pstack) => {
+      pstack.artifacts.guide.target = "generated/deep/guide";
+    });
+    const before = snapshotTree(target);
+
+    const failed = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "before",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/profiles/upstream-manifest.json",
+        message: "injected first apply commit failure",
+      }],
+    );
+
+    assert.notEqual(failed.status, 0);
+    assert.match(failed.stderr, /injected first apply commit failure/);
+    assert.deepEqual(snapshotTree(target), before);
+    assert.equal(existsSync(join(target, "generated")), false);
+    assertNoTransactionState(target);
+
+    const retried = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+    assert.equal(retried.status, 0, retried.stderr);
+    assert.equal(
+      readFileSync(join(target, "generated", "deep", "guide", "02-meta-mode.md"), "utf8"),
+      "Use /meta-mode with mstack.\nHarness confirms.\n",
+    );
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("dry-run and upstream checks refuse stale state without recovering it", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    advanceSource(source, target, () => {
+      write(join(source, "automations", "benny", "README.md"), "stale pstack automation\n");
+    }, "prepare stale read-only checks");
+
+    const interrupted = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply", "--force"],
+      root,
+      [{
+        method: "renameSync",
+        phase: "after",
+        fromIncludes: "/.mstack-sync-upstream-tx/",
+        toEndsWith: "/automations/benny/README.md",
+        action: "exit",
+        exitCode: 86,
+      }],
+    );
+    assert.equal(interrupted.status, 86, interrupted.stderr);
+    const stale = snapshotTree(target);
+
+    const dryRun = run(synchronizer, ["--source", source, "--target", target]);
+    assert.notEqual(dryRun.status, 0);
+    assert.match(dryRun.stderr, /active or interrupted upstream sync/i);
+    assert.deepEqual(snapshotTree(target), stale);
+
+    const checkedWhileStale = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.notEqual(checkedWhileStale.status, 0);
+    assert.match(checkedWhileStale.stderr, /active or interrupted upstream sync/i);
+    assert.deepEqual(snapshotTree(target), stale);
+
+    const recovered = run(synchronizer, ["--source", source, "--target", target, "--apply", "--force"]);
+    assert.equal(recovered.status, 0, recovered.stderr);
+    assert.equal(
+      readFileSync(join(target, "automations", "benny", "README.md"), "utf8"),
+      "stale mstack automation\n",
+    );
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects a concurrent apply while a live process owns the sync lock", async () => {
+  const { root, source, target } = fixture();
+  const ready = join(root, "lock-ready");
+  const release = join(root, "lock-release");
+  let first;
+  try {
+    const before = snapshotTree(target, { excludeTransactionState: true });
+    first = spawnWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply"],
+      root,
+      [{
+        method: "linkSync",
+        phase: "after",
+        toEndsWith: "/.mstack-sync-upstream.lock",
+        action: "gate",
+        ready,
+        release,
+      }],
+    );
+    await waitForPath(ready);
+
+    const concurrent = runWithFaults(
+      synchronizer,
+      ["--source", source, "--target", target, "--apply"],
+      root,
+      [],
+      { timeout: 5000 },
+    );
+    assert.equal(concurrent.error, undefined, concurrent.error?.message);
+    assert.notEqual(concurrent.status, 0);
+    assert.match(concurrent.stderr, /(?:another|active|live).*sync|sync.*(?:lock|active)/i);
+    assert.deepEqual(snapshotTree(target, { excludeTransactionState: true }), before);
+
+    write(release, "release\n");
+    const completed = await first.completed;
+    assert.equal(completed.status, 0, completed.stderr);
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+    assertNoTransactionState(target);
+  } finally {
+    if (!existsSync(release)) write(release, "release\n");
+    if (first?.child.exitCode === null && first?.child.signalCode === null) {
+      const result = await Promise.race([
+        first.completed,
+        new Promise((resolveWait) => setTimeout(() => resolveWait(undefined), 5000)),
+      ]);
+      if (!result) {
+        first.child.kill();
+        await first.completed.catch(() => undefined);
+      }
+    }
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("takes over dead sync locks and stale takeover guards", () => {
+  const { root, source, target } = fixture();
+  try {
+    write(join(target, ".mstack-sync-upstream.lock"), `${JSON.stringify({
+      version: 1,
+      pid: 2147483647,
+      token: "dead-owner",
+    })}\n`);
+    write(join(target, ".mstack-sync-upstream.lock.takeover"), `${JSON.stringify({
+      version: 1,
+      pid: 2147483646,
+      token: "dead-takeover-owner",
+    })}\n`);
+    const result = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+    assert.equal(result.status, 0, result.stderr);
+    assertNoTransactionState(target);
+    const checked = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.equal(checked.status, 0, checked.stderr);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+for (const [kind, description] of [["malformed", "malformed"], ["escaping", "path-escaping"]]) {
+  test(`refuses a ${description} interrupted transaction journal without mutating files`, () => {
+    const { root, source, target } = fixture();
+    try {
+      applyBaseline(source, target);
+      const transactionId = `invalid-${kind}`;
+      const transaction = transactionDirectory(target, transactionId);
+      mkdirSync(transaction, { recursive: true });
+      write(join(transaction, "COMMITTING"), "\n");
+      const outside = join(root, "outside.txt");
+      write(outside, "outside remains unchanged\n");
+
+      if (kind === "malformed") {
+        write(join(transaction, "journal.json"), "{not json\n");
+      } else {
+        const staged = join(target, ".mstack-sync-upstream-tx", transactionId, "0.new");
+        const backup = join(target, ".mstack-sync-upstream-tx", transactionId, "0.old");
+        write(staged, "outside replacement\n");
+        write(backup, "outside backup\n");
+        write(join(transaction, "journal.json"), `${JSON.stringify({
+          version: 1,
+          id: transactionId,
+          owner: { pid: 2147483647, token: "interrupted-test-owner" },
+          targetRoot: target,
+          createdDirectories: [],
+          operations: [{
+            kind: "write",
+            target: "../outside.txt",
+            stage: staged,
+            backup,
+            before: {
+              kind: "file",
+              sha256: sha256("outside backup\n"),
+              mode: 0o600,
+            },
+            after: {
+              kind: "file",
+              sha256: sha256("outside replacement\n"),
+              mode: 0o600,
+            },
+          }],
+        }, null, 2)}\n`);
+      }
+
+      const before = snapshotTree(target);
+      const result = run(synchronizer, ["--source", source, "--target", target, "--apply"]);
+      assert.notEqual(result.status, 0, `${kind} journal was accepted`);
+      assert.match(result.stderr, /journal|transaction|path|checkout|invalid/i);
+      assert.deepEqual(snapshotTree(target), before);
+      assert.equal(readFileSync(outside, "utf8"), "outside remains unchanged\n");
+      assert.equal(existsSync(join(target, ".mstack-sync-upstream.lock")), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}

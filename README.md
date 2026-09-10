@@ -276,6 +276,14 @@ content still matches the previous manifest. Pass `--apply --force` after
 reviewing a diff when overwriting or removing a locally changed file is
 intentional.
 
+Only one `--apply` can run against a target at a time. Writes and removals are
+staged and journaled before the target is changed; an ordinary failure rolls
+the whole refresh back. If the process is interrupted, the next `--apply`
+recovers the unfinished transaction before rebuilding the sync plan. Dry runs
+and `check-upstream` refuse to inspect a target while a sync is active or needs
+recovery. The transaction prevents persistent partial refreshes, but readers
+that ignore the sync lock can still observe files changing during the commit.
+
 `--apply` writes `profiles/upstream-manifest.json`. Its hashes describe the
 transformed upstream baseline, not package integrity. Files configured with
 `compareContent: false`, including the adapted agents, may intentionally differ
