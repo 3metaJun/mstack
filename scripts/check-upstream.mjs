@@ -3,6 +3,11 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  acquireUpstreamSyncLock,
+  assertUpstreamSyncTargetReadable,
+  releaseUpstreamSyncLock,
+} from "./sync-upstream-transaction.mjs";
 
 const args = process.argv.slice(2);
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -23,6 +28,16 @@ if (args.includes("--help")) {
 }
 
 const targetRoot = resolve(valueAfter("--target") ?? repoRoot);
+const syncLock = acquireUpstreamSyncLock(targetRoot, { recoverStale: false });
+const releaseReadLockAtExit = () => {
+  try {
+    releaseUpstreamSyncLock(syncLock);
+  } catch {
+    // A stale read lock is recoverable by the next apply.
+  }
+};
+process.once("exit", releaseReadLockAtExit);
+assertUpstreamSyncTargetReadable(targetRoot, syncLock);
 const upstreamsPath = resolveInside(targetRoot, "profiles/upstreams.json", "upstream profile");
 if (!existsSync(upstreamsPath)) throw new Error(`mstack upstream profile not found: ${upstreamsPath}`);
 const upstreams = JSON.parse(readFileSync(upstreamsPath, "utf8"));
@@ -338,3 +353,5 @@ if (!existsSync(manifestPath)) {
 
 console.log(`Matched ${expected.length} pstack skills at ${pstack.commit}.`);
 if (artifactProblems && strict) process.exit(1);
+releaseUpstreamSyncLock(syncLock);
+process.removeListener("exit", releaseReadLockAtExit);

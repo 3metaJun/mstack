@@ -10,3 +10,6 @@ artifacts/
 screenshots/
 traces/
 *.log
+.mstack-sync-upstream.lock*
+.mstack-sync-upstream/
+**/.mstack-sync-upstream-tx/
