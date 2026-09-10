@@ -10,4 +10,3 @@ artifacts/
 screenshots/
 traces/
 *.log
-.audit/

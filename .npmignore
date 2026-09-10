@@ -1,0 +1,5 @@
+**/node_modules/
+tools/meta-mode/node_modules/
+.audit/
+*.key
+*.pem
