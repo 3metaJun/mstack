@@ -132,7 +132,9 @@ try {
 
 function walk(directory) {
   return readdirSync(directory).flatMap((name) => {
-    if (directory === repoRoot && (name === ".git" || name === ".audit")) return [];
+    if (name === "node_modules" || (directory === repoRoot && (name === ".git" || name === ".audit"))) {
+      return [];
+    }
     const path = join(directory, name);
     return statSync(path).isDirectory() ? walk(path) : [path];
   });
@@ -152,7 +154,7 @@ for (const file of walk(skillsRoot)) {
 
 const privateMarkers = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
-  /C:\\Users\\\d+/i,
+  /[A-Za-z]:\\Users\\[^\\/\r\n]+/i,
   /\/home\/[A-Za-z0-9._-]+\/\.codex\/sessions\//,
   /\b100\.(?:64|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}\b/,
 ];

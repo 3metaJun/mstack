@@ -110,6 +110,14 @@
             "to": "const LANES = \"Ten lanes\";"
           },
           {
+            "from": "\"bun-types\": \"latest\"",
+            "to": "\"bun-types\": \"1.3.14\""
+          },
+          {
+            "from": "\"typescript\": \"latest\"",
+            "to": "\"typescript\": \"7.0.2\""
+          },
+          {
             "from": "# Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)",
             "to": "# Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)\n# Set MSTACK_TRANSCRIPTS_DIR to include session history in LAST_CHAT. The\n# directory must already be scoped to this workspace by the active Harness."
           },
