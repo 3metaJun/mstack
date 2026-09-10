@@ -1,15 +1,52 @@
 {
-  "name": "harness-skills",
+  "name": "@3metajun/mstack",
   "version": "0.2.0",
-  "private": true,
-  "description": "Portable agent skills for Codex, Claude Code, and OpenCode.",
+  "description": "Portable engineering skills for Codex, Claude Code, OpenCode, and pi.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3metaJun/mstack.git"
+  },
+  "homepage": "https://github.com/3metaJun/mstack#readme",
+  "bugs": {
+    "url": "https://github.com/3metaJun/mstack/issues"
+  },
   "type": "module",
   "scripts": {
+    "audit-context": "node scripts/audit-context.mjs",
+    "check-package": "node scripts/check-package.mjs",
+    "check-models": "node scripts/model-config.mjs",
+    "check-upstream": "node scripts/check-upstream.mjs",
+    "run-role": "node scripts/run-role.mjs",
+    "remote-install": "node scripts/remote-install.mjs",
+    "smoke-harnesses": "node scripts/smoke-harnesses.mjs",
+    "sync-upstream": "node scripts/sync-upstream.mjs",
     "install-skills": "node scripts/install.mjs",
-    "test": "node scripts/validate.mjs && node --test scripts/install.test.mjs"
+    "optimize-context": "node scripts/optimize-context.mjs",
+    "reconcile-context": "node scripts/reconcile-context.mjs",
+    "test": "node scripts/validate.mjs && node --test scripts/install.test.mjs scripts/context.test.mjs scripts/audit-context.test.mjs scripts/worktree-audit.test.mjs scripts/sync-upstream.test.mjs scripts/runtime.test.mjs scripts/environment.test.mjs"
   },
+  "bin": {
+    "mstack": "scripts/install.mjs"
+  },
+  "files": [
+    "skills",
+    "automations",
+    "docs",
+    "tools",
+    "adapters",
+    "profiles",
+    "scripts",
+    "agents",
+    ".codex-plugin",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "license": "MIT"
 }

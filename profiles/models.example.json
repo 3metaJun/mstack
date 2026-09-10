@@ -1,0 +1,17 @@
+{
+  "roles": {
+    "implementer": "inherit-parent",
+    "reviewer": "inherit-parent",
+    "judge": "inherit-parent",
+    "explorer": "inherit-parent",
+    "synthesizer": "inherit-parent",
+    "candidate": "inherit-parent",
+    "operator": "inherit-parent"
+  },
+  "overrides": {
+    "codex": {},
+    "claude": {},
+    "opencode": {},
+    "pi": {}
+  }
+}

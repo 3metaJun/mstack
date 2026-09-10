@@ -1,18 +1,18 @@
 {
-  "name": "harness-skills",
+  "name": "mstack",
   "version": "0.2.0",
-  "description": "Portable engineering skills for Codex, Claude Code, and OpenCode.",
+  "description": "Portable engineering skills for Codex, Claude Code, OpenCode, and pi.",
   "author": {
     "name": "3metaJun"
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "Harness Skills",
-    "shortDescription": "Portable, evidence-first engineering workflows.",
-    "longDescription": "A curated collection of portable skills for verification, diagnosis, type-safe design, agent instruction writing, and auditable work.",
+    "displayName": "mstack",
+    "shortDescription": "Portable engineering workflows for agent harnesses.",
+    "longDescription": "Portable skills for verification, diagnosis, type-safe design, agent instruction writing, and auditable work.",
     "developerName": "3metaJun",
     "category": "Developer Tools",
     "capabilities": ["skills"],
-    "defaultPrompt": "Use the relevant Harness Skills workflow for this engineering task."
+    "defaultPrompt": "Use the relevant mstack workflow for this engineering task."
   }
 }

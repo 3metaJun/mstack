@@ -1,0 +1,65 @@
+{
+  "source": "https://github.com/cursor/plugins/tree/main/pstack",
+  "commit": "7366ac128bdf95f45e6734f412b49a4031800169",
+  "artifacts": {
+    "agents": {
+      "agents/comment-reviewer.md": "c0fd0383008da45fc78cfac17b9007d62c42f87ad1c8d5c2fb658b1fd01f7c82",
+      "agents/meta-agent.md": "98bfec1538a77982d5e5e2534c69de6b64077c172d0a4108fd9da7b36c95b5cb"
+    },
+    "automations": {
+      "automations/benny/FOR_AGENTS.md": "9e86916edf7fdddf3325dac869d947d5cab767ee40f1b5eaf5d16e31f2a5322a",
+      "automations/benny/README.md": "339fa6a5e1b07dbd708e87bc423e31e25ab3ac7e4292b80d3330abe992ee3245",
+      "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
+      "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
+      "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
+      "automations/benny/skills/reproduce-and-fix-issues/SKILL.md": "2cb174442390be10cb7e7767e89bb1e94fda4d014426c40888397ad8286060ff",
+      "automations/benny/skills/setup-benny/SKILL.md": "c5bbca8d97cc6975d34e84c42ac4fd59e04c7f77892e0af534b3e58ca0fd43df",
+      "automations/benny/skills/triage-issue-reports/references/routing.example.md": "e5e53013692568cf69da8e8b302fff929fe2fbc9aec1a4651fd7997e2c7a4025",
+      "automations/benny/skills/triage-issue-reports/SKILL.md": "92a17e4d2927457541b7e903f6def93e79e22f886c4b821c56bb5c9797db4193",
+      "automations/benny/templates/configuration.example.yaml": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
+      "automations/benny/templates/reproduce-automation-prompt.md": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
+      "automations/benny/templates/triage-automation-prompt.md": "e0bba594547834f013ec805915610eb597e7929efe3ffbe85ae00339ee16d474"
+    },
+    "guide": {
+      "docs/guide/01-setup.md": "b6ef89aa895f1fe19cec0385e3657d1ca3bb3bf888fc7a247c9efdbbcb56dc2b",
+      "docs/guide/02-meta-mode.md": "c169bbee5eae6ea6b16ea4d3df1442b05031778b20eb9af8cc19c1a7bac5282a",
+      "docs/guide/03-understand.md": "5db58a1fc2cc7bf1843945fcc7d93eba4f73e26fde5cd097d006be641fe5883e",
+      "docs/guide/04-design.md": "216bc41d25e3481333acfffef4ea486ce8dabcc5dfa736d16eb0afd979aa03a1",
+      "docs/guide/05-build-and-clean.md": "40a1d2b189e8a889022934d23dd79c661edbd13ee27b2f496543f8d8d03bac17",
+      "docs/guide/06-verify-and-ship.md": "53a6bc8b3e850e34c4d8b1785a488eb7fbcbfe94ed588aeeaca252a5eb6e442c",
+      "docs/guide/07-overnight.md": "060294d4dbda952e3211e285f75e471c8d454d7705767b42377c4e1963841ad2",
+      "docs/guide/08-principles.md": "4dba3340352310e432905a27dd70552b4e034bb7d37a55dcab59a4b378e59ef1",
+      "docs/guide/09-make-it-yours.md": "04b21905a0a152ea9e57dcbecf25112112a1e7584037feabf501132f2d8cc64c",
+      "docs/guide/10-recipes-and-pitfalls.md": "425b08f452cf1ca2b95ce8c035ae8c8d0e1b315794ac35c45c3c8e45cc3f15a5",
+      "docs/guide/images/design.jpg": "b8ed07427f6a0c37dd8ba97961fc0eb5071efeee6c4a230648bdb7547f6f2a8f",
+      "docs/guide/images/overnight.jpg": "4b4405e4df8925c5b3abbe702f681af0f3b1f5f32271b599f95717f578f1a0c8",
+      "docs/guide/images/recipes.jpg": "9fa2d51b476635712737795ddef81806efaa0086bb3bfa9f9f45695d9ab0f8e8",
+      "docs/guide/images/router.jpg": "525843055a4efd2b10acc50a8652fd02b0834ea733a8a2f895c1eb89036017da",
+      "docs/guide/images/understanding.jpg": "b60587e9a9bbe2550e93be9819cf0cd4acf77d90fac769a0c43d82bd8e34e279",
+      "docs/guide/images/verification.jpg": "2a76b52007a1cd2866ba67fd47d7d9ef3e1118bb5a09c4665eee8c3f161bd09a",
+      "docs/guide/README.md": "e76f2e20364a4021707394b0557751e3aa81be2c819b19aaa705de08086515a5"
+    },
+    "meta-mode-tools": {
+      "tools/meta-mode/bootstrap.ts": "d9d39f235da5512de6122f1ff28584b3a0120b170f5447a7a5868f7cf187d12a",
+      "tools/meta-mode/bun.lock": "6413513594536785c3fd52b14934dd52d1ce179ad3ffe99d77535f5b637435a2",
+      "tools/meta-mode/check-plan.mjs": "ddcdb05af01b37d7513b2017d44e29c30bdaa79ca360c5913d701c16dde70907",
+      "tools/meta-mode/orch/orch.test.ts": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
+      "tools/meta-mode/orch/orch.ts": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
+      "tools/meta-mode/orch/store.ts": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
+      "tools/meta-mode/package.json": "c7ac7fd69bb925415cdc15cd636567304ee40f8d665986e45ed8c0ee658f6caf",
+      "tools/meta-mode/watch-pr/cli.test.ts": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "tools/meta-mode/watch-pr/cli.ts": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
+      "tools/meta-mode/watch-pr/fakes.test-helper.ts": "e53e31b7f03068063f53a99a3591b052aaed66e4e2b196b3a364980f60324ab1",
+      "tools/meta-mode/watch-pr/github.test.ts": "0cbce011050522938523e36bb42a260e92b812dcd2076930fa681672ad316b24",
+      "tools/meta-mode/watch-pr/github.ts": "d1bbbafbe8e2c703c84da2029de7f2c4011412512f8cf65a42100f46bcb92c8a",
+      "tools/meta-mode/watch-pr/policy.test.ts": "a9fedb25feefd1f57ef6a662f80c99018690170a3a8070773a08eaf694d1d3d9",
+      "tools/meta-mode/watch-pr/policy.ts": "68d240505852cf23c9b2dea463342e9e61243f486b3cc86c735d140f9ee7be49",
+      "tools/meta-mode/watch-pr/render.ts": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
+      "tools/meta-mode/watch-pr/tsconfig.json": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "tools/meta-mode/watch-pr/types.compile.ts": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "tools/meta-mode/watch-pr/types.ts": "64ba6221e3bfe61bbb292337d199cdec6309455477280efb060203dba34e0e91",
+      "tools/meta-mode/watch-pr/watch-pr": "a17825c7862730dd7c897c1ac076971c0f11d2f9ff8fe37c4a74ebc6db92d549",
+      "tools/meta-mode/worktree-audit.sh": "9f14b5f4f70a6ada93778e49701f854796b11776edccb9f73816ee2a8b8b623c"
+    }
+  }
+}

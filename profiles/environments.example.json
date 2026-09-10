@@ -1,0 +1,51 @@
+{
+  "fleet": {
+    "transport": "local",
+    "targets": {
+      "codex": "C:\\path\\to\\Fleet\\codex\\skills",
+      "claude": "C:\\path\\to\\Fleet\\claude\\skills",
+      "opencode": "C:\\path\\to\\Fleet\\opencode\\skills",
+      "pi": "C:\\path\\to\\Fleet\\pi\\agent\\skills"
+    },
+    "artifacts": {
+      "agents": {
+        "codex": "C:\\path\\to\\Fleet\\shared\\agents",
+        "claude": "C:\\path\\to\\Fleet\\shared\\agents",
+        "opencode": "C:\\path\\to\\Fleet\\shared\\agents",
+        "pi": "C:\\path\\to\\Fleet\\shared\\agents"
+      },
+      "meta-mode-tools": {
+        "codex": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
+        "claude": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
+        "opencode": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
+        "pi": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode"
+      }
+    }
+  },
+  "fleet-ssh": {
+    "transport": "ssh",
+    "host": "dev@tailnet-host",
+    "shell": "posix",
+    "cwd": "/srv/project",
+    "targets": {
+      "codex": "/home/dev/.agents/skills",
+      "claude": "/home/dev/.claude/skills",
+      "opencode": "/home/dev/.config/opencode/skills",
+      "pi": "/home/dev/.pi/agent/skills"
+    },
+    "artifacts": {
+      "agents": {
+        "codex": "/home/dev/.agents/agents",
+        "claude": "/home/dev/.claude/agents",
+        "opencode": "/home/dev/.config/opencode/agents",
+        "pi": "/home/dev/.pi/agent/agents"
+      },
+      "meta-mode-tools": {
+        "codex": "/home/dev/.agents/tools/meta-mode",
+        "claude": "/home/dev/.claude/tools/meta-mode",
+        "opencode": "/home/dev/.config/opencode/tools/meta-mode",
+        "pi": "/home/dev/.pi/agent/tools/meta-mode"
+      }
+    }
+  }
+}

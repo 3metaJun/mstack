@@ -1,0 +1,31 @@
+{
+  "artifacts": {
+    "agents": {
+      "source": "agents",
+      "path": ["agents"],
+      "description": "Portable agent role definitions for harnesses that support agent files."
+    },
+    "meta-mode-tools": {
+      "source": "tools/meta-mode",
+      "path": ["tools", "meta-mode"],
+      "description": "Optional Bun orchestration and pull-request watcher tools."
+    },
+    "guide": {
+      "source": "docs/guide",
+      "path": ["docs", "guide"],
+      "description": "The adapted mstack workflow guide and its images."
+    },
+    "benny": {
+      "source": "automations/benny",
+      "installable": false,
+      "description": "Cursor-specific Benny automation pack; install it in a project repository after review.",
+      "reason": "Benny depends on Cursor Automations, .cursor/settings.json, Slack, and project-owned configuration."
+    }
+  },
+  "unsupported": {
+    "commands": "No commands/ tree is shipped. Harness slash commands are vendor-specific and remain out of the portable installer.",
+    "hooks": "No hooks/ tree is shipped. Hooks need project lifecycle and security policy, so mstack does not install them implicitly.",
+    "settings": "No settings/ tree is shipped. Harness settings are user- or project-owned configuration and must be merged explicitly.",
+    "automations": "Benny is retained as the optional Cursor-only automations/benny source; it is not a cross-harness artifact."
+  }
+}
