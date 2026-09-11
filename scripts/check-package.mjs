@@ -1,4 +1,17 @@
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const packageManifest = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
+const pluginManifest = JSON.parse(readFileSync(join(repoRoot, ".codex-plugin", "plugin.json"), "utf8"));
+if (packageManifest.version !== pluginManifest.version) {
+  throw new Error(
+    `Package and Codex plugin versions must match (package.json=${packageManifest.version}, ` +
+      `.codex-plugin/plugin.json=${pluginManifest.version}).`,
+  );
+}
 
 const npmArgs = ["pack", "--dry-run", "--json"];
 const npmExecutable = process.env.npm_execpath ? process.execPath : "npm";

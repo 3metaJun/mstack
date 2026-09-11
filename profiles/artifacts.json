@@ -3,6 +3,13 @@
     "agents": {
       "source": "agents",
       "path": ["agents"],
+      "harnesses": {
+        "codex": {
+          "path": ["agents"],
+          "base": "codex-home",
+          "format": "codex-toml"
+        }
+      },
       "description": "Portable agent role definitions for harnesses that support agent files."
     },
     "meta-mode-tools": {

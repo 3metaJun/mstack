@@ -59,11 +59,24 @@ npx @3metajun/mstack --harness all --no-skills --artifact all
 
 The available installable artifacts are:
 
-| Artifact | Default destination (beside the harness `skills/` directory) |
+| Artifact | Default destination |
 | --- | --- |
-| `agents` | `agents/` |
-| `meta-mode-tools` | `tools/meta-mode/` |
-| `guide` | `docs/guide/` |
+| `agents` | Codex: `$CODEX_HOME/agents/` as TOML; other harnesses: `agents/` beside `skills/` as Markdown |
+| `meta-mode-tools` | `tools/meta-mode/` beside `skills/` |
+| `guide` | `docs/guide/` beside `skills/` |
+
+Codex skills default to `~/.agents/skills/`, while Codex agents default to
+`~/.codex/agents/`. An unset or empty `CODEX_HOME` uses `~/.codex`.
+`HARNESS_SKILLS_CODEX_DIR` relocates skills only; agents follow `CODEX_HOME`
+unless an artifact override is supplied. Codex TOML and Markdown agents must
+use separate target directories. Shared targets are allowed only when the
+artifact source and output format match.
+
+For SSH installs, both `/home/dev/.agents/skills` and
+`/home/dev/.codex/skills` map agents to `/home/dev/.codex/agents`.
+For a custom remote layout or remote `CODEX_HOME`, set
+`artifacts.agents.codex` to that remote agent directory. The installer cannot
+infer a remote home from an arbitrary skill path or the local `CODEX_HOME`.
 
 Artifact destinations can be overridden per harness with
 `MSTACK_ARTIFACT_<ARTIFACT>_<HARNESS>_DIR`, for example
@@ -78,7 +91,7 @@ overrides in either shape below (artifact-first is the documented form):
     },
     "artifacts": {
       "agents": {
-        "codex": "C:\\path\\to\\Fleet\\shared\\agents"
+        "codex": "C:\\path\\to\\Fleet\\codex\\agents"
       }
     }
   }

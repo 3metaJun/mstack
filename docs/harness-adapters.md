@@ -28,7 +28,14 @@ their official references support it.
 ## Delegation and session records
 
 Codex stores agent configuration in `.codex/agents/*.toml` and
-`~/.codex/agents/*.toml`. Claude Code stores subagent definitions in
+`~/.codex/agents/*.toml`. The installer converts the portable Markdown agent
+artifacts to Codex TOML with `name`, `description`, and
+`developer_instructions`. Canonical agent files must be top-level Markdown
+with non-empty, single-line `name` and `description` strings. Plain, JSON
+double-quoted, and YAML single-quoted strings are supported. Unsupported
+metadata and nested agent directories fail conversion before installation;
+an existing same-name TOML file is never overwritten by conversion.
+Claude Code stores subagent definitions in
 `.claude/agents/`. OpenCode stores agent definitions in `.opencode/agents/` or
 `~/.config/opencode/agents/`. pi does not require a separate agent file for
 skill use; it loads skills through discovery, the `--skill` flag, or the
