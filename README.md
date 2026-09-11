@@ -261,10 +261,12 @@ To compare the local inventory with a pstack checkout, run:
 npm run check-upstream -- --source /path/to/pstack
 ```
 
-The check applies the renames in `profiles/upstreams.json`, reports the
-portable skill count, and reports the state of the agents, Benny automation,
-guide, and meta-mode tools. Add `--strict` to fail when a configured artifact
-is missing, differs, or remains after removal upstream. Strict mode requires
+The check applies the renames in `profiles/upstreams.json`, verifies the
+reviewed body digest for every canonical pstack skill, reports the portable
+skill count, and reports the state of the agents, Benny automation, guide, and
+meta-mode tools. Add `--strict` to fail when a canonical skill body or
+configured artifact is missing, differs, or remains after removal upstream.
+Strict mode requires
 the source to be a clean Git checkout whose `HEAD` exactly matches the pinned
 commit.
 
@@ -305,8 +307,9 @@ directory handle. The transaction provides process-crash recovery, but it does
 not provide a power-loss durability guarantee on that platform. Readers that
 ignore the sync lock can still observe files changing during the commit.
 
-`--apply` writes `profiles/upstream-manifest.json`. Its hashes describe the
-transformed upstream baseline, not package integrity. Files configured with
+`--apply` writes `profiles/upstream-manifest.json`. Its artifact hashes describe
+the transformed upstream baseline, while `canonicalSkills` records the pinned
+source body and reviewed target body for each canonical skill. Files configured with
 `compareContent: false`, including the adapted agents, may intentionally differ
 from those hashes. A different checkout can be used as the destination with
 `--target /path/to/mstack`.

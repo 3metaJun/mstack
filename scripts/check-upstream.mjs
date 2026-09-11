@@ -246,6 +246,14 @@ function digest(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function normalizedText(value) {
+  return value.toString("utf8").replace(/\r\n/g, "\n");
+}
+
+function normalizedDigest(value) {
+  return digest(normalizedText(value));
+}
+
 function equalContent(path, current, expected) {
   if (textExtensions.has(extname(path).toLowerCase())) {
     return current.toString("utf8").replace(/\r\n/g, "\n") === expected.toString("utf8").replace(/\r\n/g, "\n");
@@ -325,6 +333,41 @@ if (!existsSync(manifestPath)) {
     if (strict) artifactProblems += 1;
   }
   if (manifest) {
+    const canonicalSkills = manifest.canonicalSkills;
+    if (!canonicalSkills || typeof canonicalSkills !== "object" || Array.isArray(canonicalSkills)) {
+      console.warn("Upstream manifest has no canonicalSkills body baselines; skill body drift was not checked.");
+    } else {
+      const canonicalProblems = [];
+      for (const sourceName of readdirSync(sourceSkills, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)) {
+        const targetName = renames[sourceName] ?? sourceName;
+        const entry = canonicalSkills[targetName];
+        const sourcePath = resolveInside(sourceRoot, join("skills", sourceName, "SKILL.md"), `canonical source skill ${sourceName}`);
+        const targetPath = resolveInside(targetRoot, join("skills", targetName, "SKILL.md"), `canonical target skill ${targetName}`);
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          canonicalProblems.push(`${targetName}: missing manifest entry`);
+          continue;
+        }
+        if (entry.source !== normalizedDigest(transformBuffer(sourcePath))) {
+          canonicalProblems.push(`${targetName}: upstream source body changed`);
+        }
+        if (!existsSync(targetPath)) {
+          canonicalProblems.push(`${targetName}: target SKILL.md is missing`);
+        } else if (entry.target !== normalizedDigest(readFileSync(targetPath))) {
+          canonicalProblems.push(`${targetName}: target body changed (possible truncation)`);
+        }
+      }
+      const knownTargets = new Set(expected);
+      for (const targetName of Object.keys(canonicalSkills)) {
+        if (!knownTargets.has(targetName)) canonicalProblems.push(`${targetName}: stale manifest entry`);
+      }
+      console.log(`canonical skill bodies: ${canonicalProblems.length ? `${canonicalProblems.length} problem(s)` : "all match manifest"}`);
+      if (strict && canonicalProblems.length) {
+        for (const problem of canonicalProblems) console.error(`  ${problem}`);
+        artifactProblems += canonicalProblems.length;
+      }
+    }
     const removed = [];
     for (const [name, files] of Object.entries(manifest.artifacts ?? {})) {
       if (!files || typeof files !== "object" || Array.isArray(files)) {

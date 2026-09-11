@@ -161,6 +161,22 @@ test("model configuration resolves harness overrides and rejects unknown roles",
   }
 });
 
+test("model configuration uses the platform home directory by default", () => {
+  const root = fixture("model-config-default");
+  try {
+    const expectedPath = resolve(root, ".config", "mstack", "models.json");
+    const result = run(modelConfig, ["--harness", "codex"], {
+      HOME: root,
+      USERPROFILE: root,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(result.stdout.includes(`No model configuration found at ${expectedPath}`));
+    assert.doesNotMatch(result.stdout, /[\\/]~[\\/]/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("run-role emits a harness command and omits inherited model flags", () => {
   const result = run(runRole, [
     "--harness",
