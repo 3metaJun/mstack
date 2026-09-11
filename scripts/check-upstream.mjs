@@ -369,9 +369,9 @@ if (!existsSync(manifestPath)) {
         if (!knownTargets.has(targetName)) canonicalProblems.push(`${targetName}: stale manifest entry`);
       }
       console.log(`canonical skill bodies: ${canonicalProblems.length ? `${canonicalProblems.length} problem(s)` : "all match manifest"}`);
-      if (strict && canonicalProblems.length) {
+      if (canonicalProblems.length) {
         for (const problem of canonicalProblems) console.error(`  ${problem}`);
-        artifactProblems += canonicalProblems.length;
+        if (strict) artifactProblems += canonicalProblems.length;
       }
     }
     const removed = [];

@@ -46,10 +46,16 @@ jobs:
           ref: 7366ac128bdf95f45e6734f412b49a4031800169
           path: .upstream/cursor-plugins
           sparse-checkout: pstack
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: mattpocock/skills
+          ref: 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76
+          path: .upstream/mattpocock-skills
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
       - run: node scripts/check-upstream.mjs --source .upstream/cursor-plugins/pstack --strict
+      - run: node scripts/skill-baseline.mjs --check --source .upstream/cursor-plugins/pstack --matt-source .upstream/mattpocock-skills
 
   package:
     runs-on: ubuntu-latest

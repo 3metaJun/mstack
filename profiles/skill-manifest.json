@@ -1,0 +1,851 @@
+{
+  "version": 1,
+  "sources": {
+    "pstack": "7366ac128bdf95f45e6734f412b49a4031800169",
+    "mattpocock/skills": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
+  },
+  "files": {
+    "skills/architect/references/design-red-flags.md": {
+      "upstream": "pstack",
+      "source": "skills/architect/references/design-red-flags.md",
+      "sourceDigest": "905066f9bbac81c573c2b325be47751d2c0f9325e0a0772bd4384e82dafe9336",
+      "targetDigest": "905066f9bbac81c573c2b325be47751d2c0f9325e0a0772bd4384e82dafe9336"
+    },
+    "skills/architect/references/rationale-template.md": {
+      "upstream": "pstack",
+      "source": "skills/architect/references/rationale-template.md",
+      "sourceDigest": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3",
+      "targetDigest": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3"
+    },
+    "skills/architect/references/runner-prompt.md": {
+      "upstream": "pstack",
+      "source": "skills/architect/references/runner-prompt.md",
+      "sourceDigest": "983bf2820cc14ed8ecab6e448e1033e5cfe6031967d0a9287b48c7fa9c33d925",
+      "targetDigest": "983bf2820cc14ed8ecab6e448e1033e5cfe6031967d0a9287b48c7fa9c33d925"
+    },
+    "skills/architect/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/architect/SKILL.md",
+      "sourceDigest": "897a59beaa3cab107d98c256206e062cc4a5e9421a45b9d462fbded19291fea5",
+      "targetDigest": "cc8a035aa7a2aa417676c4e364b86f4a3e2b85748bf2d0916402105b011a1083"
+    },
+    "skills/arena/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/arena/SKILL.md",
+      "sourceDigest": "8d431f7b1aa19daf6300366fc876c4d1aadac06417ec5502407345ffaf4e90d9",
+      "targetDigest": "f100383e190b806567015d2cbbaf90b9a1b0151ae60b08aa6185fc6eca3c9552"
+    },
+    "skills/automate-me/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/automate-me/SKILL.md",
+      "sourceDigest": "1510979b0b71b54284427a19c09918f8b1fdfc168f9b7f9e30098793a5ec88ef",
+      "targetDigest": "b87d5af4db107ca6e3c2019f41875e36aeeda32b8748d8d92fbe133091529bb5"
+    },
+    "skills/blast-radius/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/blast-radius/SKILL.md",
+      "sourceDigest": "20cb2945f5fe62055166f745107274af5f19428ca033e53a9b8bc69650d3ded1",
+      "targetDigest": "ca63c902c065c3de95d5c7f5db665b4cf8c3b881eafbef9dde3db66ca340a752"
+    },
+    "skills/bro/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/bro/SKILL.md",
+      "sourceDigest": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
+      "targetDigest": "8b822d47b9299627f5e4fe42684a031105792c8531443da1ae3423adfa2de96f"
+    },
+    "skills/codebase-design/references/deepening.md": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/codebase-design/DEEPENING.md",
+      "sourceDigest": "f3dd099ce99289bd213914d8ee3e2429b78309c3957ca4583f7659551b1d53c1",
+      "targetDigest": "5176f5fcf2606d7d53d9d6d7560c489fc349571e65f03df8ec44862b1b7ed9f0",
+      "reason": "The adapted dependency guidance lives beside the other design references."
+    },
+    "skills/codebase-design/references/design-alternatives.md": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/codebase-design/DESIGN-IT-TWICE.md",
+      "sourceDigest": "8e740bf98446dbd4dfdc132ac4346d9a7eedaf93de6a495889171cf7f99f16bd",
+      "targetDigest": "fe64a751fc7e1a5399126886b1c0832b484364cfeaa7929d1c8e77b6a49eb208",
+      "reason": "The adapted design comparison workflow lives under references."
+    },
+    "skills/codebase-design/SKILL.md": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/codebase-design/SKILL.md",
+      "sourceDigest": "2c20617f87ec8af6a434859f381b2f061a69b530444e74eb39e78bb016a6d1e2",
+      "targetDigest": "2033d2660df023eddc9a72d840daf997bbbe15e9e768228948dbde906e03cf80"
+    },
+    "skills/create-verification-skill/references/feature-map-example/create-note.md": {
+      "upstream": "pstack",
+      "source": "skills/create-verification-skill/references/feature-map-example/create-note.md",
+      "sourceDigest": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7",
+      "targetDigest": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7"
+    },
+    "skills/create-verification-skill/references/feature-map-example/README.md": {
+      "upstream": "pstack",
+      "source": "skills/create-verification-skill/references/feature-map-example/README.md",
+      "sourceDigest": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
+      "targetDigest": "3810cf289bdd6657f3f23f974262536304a7365ee038e125b7a80343ce7000bf"
+    },
+    "skills/create-verification-skill/references/feature-map-example/search.md": {
+      "upstream": "pstack",
+      "source": "skills/create-verification-skill/references/feature-map-example/search.md",
+      "sourceDigest": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823",
+      "targetDigest": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823"
+    },
+    "skills/create-verification-skill/references/harness-paths.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "9b785b0c2dd47b2c9216710641107864a34db2940dd3633869c5d7ccdae182e5"
+    },
+    "skills/create-verification-skill/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/create-verification-skill/SKILL.md",
+      "sourceDigest": "644f2551403c1bca01a2855b34611b6e7be0ce0dc5b204514c376c0f6a6e6ac4",
+      "targetDigest": "7242b478eb0face01b1f1d27950efa69e415219b278993bc3e75f297707bba48"
+    },
+    "skills/diagnosing-bugs/references/feedback-loops.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "47ee0c6c9e64a3ae26d9009f0b3cee004cad7e0f559fd4ca455a2a09d9964a88"
+    },
+    "skills/diagnosing-bugs/references/performance.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "242bcf8a05319c0ccb214d39a6d0cadbddda49403f0751e2fa5ae5df6dfde1a9"
+    },
+    "skills/diagnosing-bugs/scripts/hitl-loop.template.sh": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/diagnosing-bugs/scripts/hitl-loop.template.sh",
+      "sourceDigest": "35103539fc36873eea36074769ad454f9379d6fc8b2dc0e26ce987fd3bfe5503",
+      "targetDigest": "35103539fc36873eea36074769ad454f9379d6fc8b2dc0e26ce987fd3bfe5503"
+    },
+    "skills/diagnosing-bugs/SKILL.md": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/diagnosing-bugs/SKILL.md",
+      "sourceDigest": "77f3cf31bc99b2f49af943222526531fcc9fc41d047626d3640e875e85af3e84",
+      "targetDigest": "ecc513932a6cbc3e83a0e8fbd6e6a80d669e8f86c473586b878be58712d58a81"
+    },
+    "skills/figure-it-out/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/figure-it-out/SKILL.md",
+      "sourceDigest": "e041c64a39f1084a20e60ee99762c4dbd3ec8be56ed33fd68ea867b8bd8bd3e4",
+      "targetDigest": "a892d780bae548ec537ad1edea44b11ab85c3223345c84276f567ef30bfdca97"
+    },
+    "skills/how/references/explainer-prompt.md": {
+      "upstream": "pstack",
+      "source": "skills/how/references/explainer-prompt.md",
+      "sourceDigest": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff",
+      "targetDigest": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff"
+    },
+    "skills/how/references/explorer-prompt.md": {
+      "upstream": "pstack",
+      "source": "skills/how/references/explorer-prompt.md",
+      "sourceDigest": "3a6965276d23be7d8da6c305bfd5d7bf29d2aef09e5dae4119463ac72022a02d",
+      "targetDigest": "3a6965276d23be7d8da6c305bfd5d7bf29d2aef09e5dae4119463ac72022a02d"
+    },
+    "skills/how/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/how/SKILL.md",
+      "sourceDigest": "06b714dbd830bc829bfb89e33a1c39daf6d72ea412e488ea9d65f5f33b885a0c",
+      "targetDigest": "a3e2acb068e126bad1ddadb4b16bb14154d5687fffc8ce2fe8209660b83c2e4b"
+    },
+    "skills/interrogate/references/code-quality-review.md": {
+      "upstream": "pstack",
+      "source": "skills/interrogate/references/code-quality-review.md",
+      "sourceDigest": "623d3d8122d075c303b562783b471a732992e84166b318f85ab6d6c118b13304",
+      "targetDigest": "623d3d8122d075c303b562783b471a732992e84166b318f85ab6d6c118b13304"
+    },
+    "skills/interrogate/references/lead-judgment.md": {
+      "upstream": "pstack",
+      "source": "skills/interrogate/references/lead-judgment.md",
+      "sourceDigest": "6e5bdf5670eb34017692e9b6c546f36ac7552e6bb9f3f2f3429164fcc46a9361",
+      "targetDigest": "6e5bdf5670eb34017692e9b6c546f36ac7552e6bb9f3f2f3429164fcc46a9361"
+    },
+    "skills/interrogate/references/reviewer-prompt.md": {
+      "upstream": "pstack",
+      "source": "skills/interrogate/references/reviewer-prompt.md",
+      "sourceDigest": "a397cc61102add709803d917fb23d726920525bf23e7c06dc4ed0b5cbeb00e54",
+      "targetDigest": "a397cc61102add709803d917fb23d726920525bf23e7c06dc4ed0b5cbeb00e54"
+    },
+    "skills/interrogate/references/rubric.md": {
+      "upstream": "pstack",
+      "source": "skills/interrogate/references/rubric.md",
+      "sourceDigest": "59e9b7cc4556e735e1b859a7dd1f7637b013a2426a84825ac1c51979942c158a",
+      "targetDigest": "59e9b7cc4556e735e1b859a7dd1f7637b013a2426a84825ac1c51979942c158a"
+    },
+    "skills/interrogate/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/interrogate/SKILL.md",
+      "sourceDigest": "2867910309e81411123ae4edca68ffca5795e66521d3f3bc0876f6213b542fb9",
+      "targetDigest": "8772ecf8ed7e64118459160d4cd61096877b52cc557104a3ae305b036be16ac9"
+    },
+    "skills/maintain-verification-skill/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/maintain-verification-skill/SKILL.md",
+      "sourceDigest": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
+      "targetDigest": "bfa8b97a5ca35d618228c37eb02c74589c0fcb1af13d06201b10e0eb3274e32c"
+    },
+    "skills/make-bot-ui/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/make-bot-ui/SKILL.md",
+      "sourceDigest": "3624c8ef16cf2e48deb2a4049e72c6962a9431c8d6c6af90e7bd7ea0375224ec",
+      "targetDigest": "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
+    },
+    "skills/meta-mode/playbooks/authoring-a-skill.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "sourceDigest": "f6a13a445c360b48d6cd72780ac01955f45b82826476efe0e67c7559329407aa",
+      "targetDigest": "bf3af363613b131a1bcbd37173853f223e1aed8cdf22db1bdfd310e3de9e9eaf"
+    },
+    "skills/meta-mode/playbooks/autonomous-run.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/autonomous-run.md",
+      "sourceDigest": "15e54ad3ac92565613980772d8708de6e19cc4690bfd4bb3fb8836522407377b",
+      "targetDigest": "ccfacb171d67c4a2b2ec8aec87c78ecba00234ccd99a15e4fe088f43413b1e60"
+    },
+    "skills/meta-mode/playbooks/autopilot-full.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/autopilot-full.md",
+      "sourceDigest": "52f69170bd7fa6b436992d90d3ef7fba893201e0b497297b416e9aea0e567d5f",
+      "targetDigest": "0a649471ca2e98d91e2a83c05437ff6c5e4137769df8e12352cc8651c9c27579"
+    },
+    "skills/meta-mode/playbooks/autopilot-stack.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
+      "sourceDigest": "66364cd3a2286cbecfb73d3a7bf7d1fa387ede8525d37ef22b69d4ac03c2c5b2",
+      "targetDigest": "eb6f902e29a3546d50d95a6f5989654a5ecaa83c94a07a91495e812a923c803f"
+    },
+    "skills/meta-mode/playbooks/babysit.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/babysit.md",
+      "sourceDigest": "51be21872152f97612d37258273269b88212b6696432d25d678cac30f02f4157",
+      "targetDigest": "a62385a3c3c3f9f7a54a04b313f76cc5176c188d7b25c32e510208451b3ed026"
+    },
+    "skills/meta-mode/playbooks/bug-fix.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/bug-fix.md",
+      "sourceDigest": "e958c67d5454fc12d76ec645b50dfd85c423082aac13a49e2913ef2815948216",
+      "targetDigest": "930fd89634d0377fc9a3209baca2452fd5143827ebdfa38047b81450aa7d11b1"
+    },
+    "skills/meta-mode/playbooks/eval.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/eval.md",
+      "sourceDigest": "b862bfa2fae2399abf047a8e80d3e3dddb64003af96fb1cebb625216131e36bb",
+      "targetDigest": "7541b311046f930691e77ab6a71f23b2587a41cbff4804d4b8d097adc92be4d7"
+    },
+    "skills/meta-mode/playbooks/feature.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/feature.md",
+      "sourceDigest": "430dae0fd736554ff7dffc3ef0644c9f0c845e25742f69e598c35b9b89660301",
+      "targetDigest": "975a25bc49aa6d6e3d7c1ce984bde5814cab6af4eba6758449b0f81f7d47e876"
+    },
+    "skills/meta-mode/playbooks/hillclimb.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/hillclimb.md",
+      "sourceDigest": "bc1fc4052c1ee918a56115a219cbcbbc4c147fa1a8080e77c7d58068eecac299",
+      "targetDigest": "1581e5ef7551e1495b7737bf344612707540ee96e69755e1c8e729b25617608a"
+    },
+    "skills/meta-mode/playbooks/investigation.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/investigation.md",
+      "sourceDigest": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
+      "targetDigest": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46"
+    },
+    "skills/meta-mode/playbooks/multi-phase-plan.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "sourceDigest": "63426a55519fbc4fb9f00baf5cc7b1148f70dfb62ad360a0f6533d287dd36edf",
+      "targetDigest": "62c9a4b1d6bd6e5ad718af0d4972432773afa5af10ae05b8b751f0fc117ac78f"
+    },
+    "skills/meta-mode/playbooks/opening-a-pr.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/opening-a-pr.md",
+      "sourceDigest": "b173ff9638ff62f91f6813c1a0ed3417cdf9f6545a659be0c1fb1f42130e0e66",
+      "targetDigest": "143945e5ded37c8d5b2bc0b3889d2af95ecf884dca1edfe597c59abf387a4200"
+    },
+    "skills/meta-mode/playbooks/orchestrate.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/orchestrate.md",
+      "sourceDigest": "d42b4375f1bd4ce23da0b575a198571a2117df7eea10c3c9fc6d92ae1053f7be",
+      "targetDigest": "c25dcc2662e15ccb91ff19fbe1a156b7fb97d7d49d0c3478dcd9f001e643e398"
+    },
+    "skills/meta-mode/playbooks/pause-safely.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/pause-safely.md",
+      "sourceDigest": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd",
+      "targetDigest": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd"
+    },
+    "skills/meta-mode/playbooks/perf-issue.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/perf-issue.md",
+      "sourceDigest": "b2ee9aed1466583361cb61b4e8d79ebb3b61f7f9f6540be7633852afacab1d89",
+      "targetDigest": "708f59dbe6d969ef8388b575b0b4a614133fb24e207541184eb0d3b62f8e0bb3"
+    },
+    "skills/meta-mode/playbooks/prototype.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/prototype.md",
+      "sourceDigest": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
+      "targetDigest": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962"
+    },
+    "skills/meta-mode/playbooks/refactoring.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/refactoring.md",
+      "sourceDigest": "53bac1f1fe886600dd1991b5511b7975e6a206168038f9d282d88e45408e93cf",
+      "targetDigest": "4b71e75dc42e0ebf3a459a4cb6e36f88d6ba850dad4713f93e9f6f46c17abaf9"
+    },
+    "skills/meta-mode/playbooks/runtime-forensics.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/runtime-forensics.md",
+      "sourceDigest": "594f02c40c243a346e1f57b688ecf2ed5e882f21b3d24ed2204d1ac6f1c24a8a",
+      "targetDigest": "594f02c40c243a346e1f57b688ecf2ed5e882f21b3d24ed2204d1ac6f1c24a8a"
+    },
+    "skills/meta-mode/playbooks/session-pickup.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/session-pickup.md",
+      "sourceDigest": "1604fb463f7c7410d43fa024ca76c1c1824c166a01fd69d61f073d06fdca2a47",
+      "targetDigest": "97a3d7b0fcecf53c5c3fce9ec17f105196745086911c363d2dc7841bc56e40e2"
+    },
+    "skills/meta-mode/playbooks/shipping.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/shipping.md",
+      "sourceDigest": "c301902136e0a9a0a55403c35374f6f5738e501aee66c27458dc197b87557550",
+      "targetDigest": "09ff98c955958fdf9b062ddafa292e1b6d2f9ae5d3a3eb11e3d979b950568828"
+    },
+    "skills/meta-mode/playbooks/trace-forensics.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/trace-forensics.md",
+      "sourceDigest": "137ce3984fb96e45971fdff4d3c79fa4ccc647c5b30ae4945783b9fb23f8cec7",
+      "targetDigest": "137ce3984fb96e45971fdff4d3c79fa4ccc647c5b30ae4945783b9fb23f8cec7"
+    },
+    "skills/meta-mode/playbooks/visual-parity.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/visual-parity.md",
+      "sourceDigest": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c",
+      "targetDigest": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c"
+    },
+    "skills/meta-mode/playbooks/worktree-cleanup.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "sourceDigest": "fc464dc4121926df1704f483c5feca83717c0a40b4651d3e11bd3aedd89441b6",
+      "targetDigest": "db0c8eeef5dc5054e79c1b3b8215159f48e12a4fb81225d551080f8773fe1b2c"
+    },
+    "skills/meta-mode/references/bugbot-triage.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/references/bugbot-triage.md",
+      "sourceDigest": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
+      "targetDigest": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309"
+    },
+    "skills/meta-mode/references/capability-matrix.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "2b57fe4aef9b300ea5b5e5a8ae93c1a5dbc266d6b9e47bd1ba26c84f1f7f7d39"
+    },
+    "skills/meta-mode/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/SKILL.md",
+      "sourceDigest": "6bbf35cb2111c358461c7ba90f210dad4573f3a3ada92f6459eac0c69d83b01a",
+      "targetDigest": "65337fe034b2b34f782f2184e7df15bee535b58918a18efbe969206016c96b1e"
+    },
+    "skills/no-comments/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/no-comments/SKILL.md",
+      "sourceDigest": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
+      "targetDigest": "f5bc3892fd057751d5928cffbebabbcde58804021a520bf67fac6b550d3399f5"
+    },
+    "skills/principle-attack-the-premise/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-attack-the-premise/SKILL.md",
+      "sourceDigest": "c87bd7536f772f8a403ad8155535ee17a1bbec9a353156693eb3bb1520c87ae3",
+      "targetDigest": "58c2998cbe0318b648d2f78c080003c5d3685a0ede2a98e56bc29e2fdfa7417a"
+    },
+    "skills/principle-boundary-discipline/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-boundary-discipline/SKILL.md",
+      "sourceDigest": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28",
+      "targetDigest": "0ebee28a5f8bf5cac890dc37a18f3cdf66c360d85336fe8efa0be04430ecdddf"
+    },
+    "skills/principle-build-the-lever/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-build-the-lever/SKILL.md",
+      "sourceDigest": "458b269eab8e95a1573276955312f7d2a13ae8599879a9efc748248f6bc34b56",
+      "targetDigest": "b49623e8e41c072ce14e6479a0a93cb932cd1a320642334cf0ac8f9e7cf31ded"
+    },
+    "skills/principle-encode-lessons-in-structure/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-encode-lessons-in-structure/SKILL.md",
+      "sourceDigest": "77044c83a9ac6df78fc643887ea5f1f11f082adaf14b717c060cdaed03cce863",
+      "targetDigest": "e66d95bd954a1e8ba298bc451ba1e9190c758f6d77c240540bedf8f28c895694"
+    },
+    "skills/principle-exhaust-the-design-space/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-exhaust-the-design-space/SKILL.md",
+      "sourceDigest": "8583310d7297b7823d75494faa57b003564d436807febecdecbd8321abe5cf6e",
+      "targetDigest": "67e7e29ab4f484bfddcac55ece4d70f6efc25ccbf91de7de31fcec385f9f059e"
+    },
+    "skills/principle-experience-first/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-experience-first/SKILL.md",
+      "sourceDigest": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
+      "targetDigest": "3013367ce42fabb55799ffbcc51ad20b2ae7ec1b898bad4ac4ceaa2f093edbe1"
+    },
+    "skills/principle-fix-root-causes/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-fix-root-causes/SKILL.md",
+      "sourceDigest": "ba4cd38da1dcc8fe5432feb64457cba95594736a9b21b2ebf8f8c52aee068707",
+      "targetDigest": "2f48a508674c8b9f3339aba95929079af54fb7fbd367b4eb45175388f1e170f9"
+    },
+    "skills/principle-foundational-thinking/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-foundational-thinking/SKILL.md",
+      "sourceDigest": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2",
+      "targetDigest": "e69eea824d81c4bb32cbcdb26513bf964882daeeb647bb99210978e86bec1a49"
+    },
+    "skills/principle-guard-the-context-window/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-guard-the-context-window/SKILL.md",
+      "sourceDigest": "9f60e2c79b35f865cb103462f9128c6760b70f603475d1e535e5930f61840f66",
+      "targetDigest": "d42b8f8b02cdcb4f84b466ffcd623ca911a8bbf93b46b545d8b3ca4e950b2580"
+    },
+    "skills/principle-laziness-protocol/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-laziness-protocol/SKILL.md",
+      "sourceDigest": "9006579e9e3f33955d17569733db688ae65f22577dc3b21803d219a5a8445aff",
+      "targetDigest": "f45159ad7ea5f01a08d364897307f69ca18fa57b87d6ed6b89ca222a2388bf7d"
+    },
+    "skills/principle-make-operations-idempotent/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-make-operations-idempotent/SKILL.md",
+      "sourceDigest": "540738217c3da7bf513b9886924ad6a2bc77e58be867f5bd2e1831c74bf2ce70",
+      "targetDigest": "5cf54da6cc34714fbe97e45fd61a4678662d087d7f6f6dc81cace3f34041f541"
+    },
+    "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "sourceDigest": "09978915a4a11990cf0a9a02d9c08cc59e0b7a04c5c24b83aa560fbe4146f75b",
+      "targetDigest": "388e9cbc9e52bd72d9044d7e37126bd3355c4e8f1188447e2a6850fe4fc549d7"
+    },
+    "skills/principle-minimize-reader-load/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-minimize-reader-load/SKILL.md",
+      "sourceDigest": "42551c5dc74cd578163c148da552db3ff67d29b78600ef216bfd311fb828fe69",
+      "targetDigest": "d44ded81ac7cfc194dca65c9943a55fe8a058660485049a6e607e6bdf5d70738"
+    },
+    "skills/principle-model-the-domain/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-model-the-domain/SKILL.md",
+      "sourceDigest": "bbadbb9a723fac3f76e782ae45665eb94058ec10993e4bae36d4dc6b0e4eac07",
+      "targetDigest": "4464cc1a0a2366ff8249659c30f525dba6206947f037f07f5931238ed0e96f82"
+    },
+    "skills/principle-never-block-on-the-human/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-never-block-on-the-human/SKILL.md",
+      "sourceDigest": "d82bce9ab9193249d1ec0d514202d89602f0fd3d312174d622c2dd222bae5a2e",
+      "targetDigest": "15d583bb6125a88dd0ff375bfdbdc1ac874027bf741cda5f6f4d3e939363051e"
+    },
+    "skills/principle-outcome-oriented-execution/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-outcome-oriented-execution/SKILL.md",
+      "sourceDigest": "beedcaed75572a6a1662d47f16da203c2bd2c9dbffbbd678d4ba187d67b7e670",
+      "targetDigest": "f2fe80adf2da1e1e15aa1d1b465f1cb963acb05114be9032a89ae6ead06df288"
+    },
+    "skills/principle-prove-it-works/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-prove-it-works/SKILL.md",
+      "sourceDigest": "ae13d287984a5864312b6286899d4ee2b60f8272b5e5e8fcc586a7c3ea51020b",
+      "targetDigest": "eb89aa6f3283cd73ba56d6cc01e0d4b9ec12367144988525b2c43761cbed4ada"
+    },
+    "skills/principle-redesign-from-first-principles/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-redesign-from-first-principles/SKILL.md",
+      "sourceDigest": "a1c7fd0a96b40e12a74bceb0e6bb20a9666dd844dcabfb624acb27da23b929fe",
+      "targetDigest": "b3ac6bc1c707aa8ad1a331851ad71aeb48f179136907ab2015f34881c674d056"
+    },
+    "skills/principle-separate-before-serializing-shared-state/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "sourceDigest": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb",
+      "targetDigest": "30cc80284a90bb5d94cde5a3533a8a27755832c2c4e638f8e3b97bbf8ba94924"
+    },
+    "skills/principle-sequence-verifiable-units/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-sequence-verifiable-units/SKILL.md",
+      "sourceDigest": "761390804ee36c32f5338d8db47ec54463d40ff96dbb296dfafabcd5f2593eec",
+      "targetDigest": "84bf426fd9c7f2bb8561baad84a06bb5b2c78534e7599bdd3fde47ce5596d707"
+    },
+    "skills/principle-subtract-before-you-add/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-subtract-before-you-add/SKILL.md",
+      "sourceDigest": "a983a50e732c1ed315eba7aaf47a61329e31c4794eb1ab9d25d9945265b31e03",
+      "targetDigest": "65fa4e1a2a630040eb0abbcfeaf0e82241fd968443021b535f94b4b6d4b7aa0f"
+    },
+    "skills/principle-test-behavior-not-implementation/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-test-behavior-not-implementation/SKILL.md",
+      "sourceDigest": "87e40efe4e486f7ea639d2ed1fc0abe6c93b8fd0e89a81218086909d2470a52e",
+      "targetDigest": "c6104107aa4902342d36eb5c6b7f99862eadff5ba27f367cde011ccdde4d8d17"
+    },
+    "skills/principle-type-system-discipline/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/principle-type-system-discipline/SKILL.md",
+      "sourceDigest": "c83da8031ffb4c86410030d3e261f659598fca2b7d8158fd9dc269d70a3a025e",
+      "targetDigest": "9397a9ce6e26e54d0e6e9f81e488f626f3daefd6903509536fbdfb0d021a274f"
+    },
+    "skills/recall/references/history-sources.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "33f5166b933378e7d03b689901f23fc48709f565338bf60292903ea762908598"
+    },
+    "skills/recall/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/recall/SKILL.md",
+      "sourceDigest": "d265b0e5b6dc5b89c0407f3387d24462c988e1990a37d5359735137908128c5a",
+      "targetDigest": "fbf2ae86fe5f3aeff6a6454b1a0f0899eebb5311a37ba44a3a0088fc2523ca77"
+    },
+    "skills/reflect/references/divergent-reviewer.md": {
+      "upstream": "pstack",
+      "source": "skills/reflect/references/divergent-reviewer.md",
+      "sourceDigest": "7da0334ce282e6d8d7349c0cff14ffbd10a91a756c0b5c3ccc97291f57b8bed6",
+      "targetDigest": "1e3f57c622107887b6507e1c7fa599367a629ad05273322814cca87614ef5f02"
+    },
+    "skills/reflect/references/judgment-reviewer.md": {
+      "upstream": "pstack",
+      "source": "skills/reflect/references/judgment-reviewer.md",
+      "sourceDigest": "917bb2ad21240a42b440aeb2a17766092e09f70d0982417b2f4caa6d74f27164",
+      "targetDigest": "7fec7389146c2d13fbe1e08382041420cfb43df9ac09ec54867eb6f4a7942044"
+    },
+    "skills/reflect/references/synthesizer.md": {
+      "upstream": "pstack",
+      "source": "skills/reflect/references/synthesizer.md",
+      "sourceDigest": "2f76c847eb45b182dc6fbcbf7d96c8ee7e2986ecfd9e0d640fec44e3cc5a617c",
+      "targetDigest": "473acafc84aa4d712721d3424c81e281c9e7efdb4b3a70095840d059fb3938f0"
+    },
+    "skills/reflect/references/tooling-reviewer.md": {
+      "upstream": "pstack",
+      "source": "skills/reflect/references/tooling-reviewer.md",
+      "sourceDigest": "8c74ebf7811801d634db7ab609b097d77ea00ab77bb4b258d69bd96e671cfa39",
+      "targetDigest": "9766d27b377ca63a2c3dc44ebd8b8ccbde47e5f7c063c19a400e3398ffa6b516"
+    },
+    "skills/reflect/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/reflect/SKILL.md",
+      "sourceDigest": "6a4d4ccaace9ce88c3e268fcbedf3cfd40e527162a5e5aad6de8edbaf5e2b83f",
+      "targetDigest": "baedc055aceb55ed320db637c37a7e37270f5cbd654b41bd6246b158e172a5d4"
+    },
+    "skills/setup-mstack/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/setup-pstack/SKILL.md",
+      "sourceDigest": "5acdc3db4f15f3e9b81fb56eab7f17cdccde1a11a40053ed7743f7467729c8a9",
+      "targetDigest": "5aeab4f18c5387b6c32ab72fd87c3b48fdfe419109e681045dfe42c155e33bcc"
+    },
+    "skills/show-me-your-work/references/decision-log-template.tsv": {
+      "upstream": "pstack",
+      "source": "skills/show-me-your-work/references/decision-log-template.tsv",
+      "sourceDigest": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76",
+      "targetDigest": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76"
+    },
+    "skills/show-me-your-work/scripts/log.mjs": {
+      "upstream": "pstack",
+      "source": "skills/show-me-your-work/scripts/log.sh",
+      "sourceDigest": "1601bc18f9aba0af3f5d6375e4f2d5dc6102334d1bca935026c0e3547cdadbbf",
+      "targetDigest": "1fa4184750bee4a37aedd1a9e7461f4d2bc121830b7724857fa5fbe2fb3c43f7",
+      "reason": "The Node implementation replaces the Bash logger for Windows portability."
+    },
+    "skills/show-me-your-work/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/show-me-your-work/SKILL.md",
+      "sourceDigest": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",
+      "targetDigest": "d189454d45306b8b2ace4456684fc9dbaf9d3c5305e2fe3c35afed8977f1552f"
+    },
+    "skills/swarm/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/swarm/SKILL.md",
+      "sourceDigest": "d578d877c3b8b9de7163f52579c4683337a940acc0fbe4496a498f5d3b27df30",
+      "targetDigest": "015c31b71a020a585b628ed8308245530c008b42facedd3040b385628b3ea599"
+    },
+    "skills/tdd/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/tdd/SKILL.md",
+      "sourceDigest": "011cab0ecc04a3632121efb493ae4d60aa282a9b72c66de74dd8ad7e4313e05a",
+      "targetDigest": "bb077c26ad22c0171f3c06e72d288556a46a8fce34164ea7da686d78c135544c"
+    },
+    "skills/teach/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/teach/SKILL.md",
+      "sourceDigest": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4",
+      "targetDigest": "5a85664f8cce57429af0d8c060a20d8740579867f0976f4981032e8855cab2b5"
+    },
+    "skills/technical-writing/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/technical-writing/SKILL.md",
+      "sourceDigest": "6d6d9e625ae412ee8f36df8deb6fd9203d7c6acca776d5ee3cabbb9126f8b84c",
+      "targetDigest": "40dafbe83d76600dfd9417bb3861b2a73ac75010838412a10b8fa2b82b00b9a0"
+    },
+    "skills/typescript-best-practices/references/patterns.md": {
+      "upstream": "pstack",
+      "source": "skills/typescript-best-practices/references/patterns.md",
+      "sourceDigest": "62e9cd32d2fa066a35d0d1349aac22dce31a48ad7d5eaf142570770cfe707384",
+      "targetDigest": "4f5ef6f9ab4d158910249aa375d14f939d46ec4441a9750060cef54e26691682"
+    },
+    "skills/typescript-best-practices/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/typescript-best-practices/SKILL.md",
+      "sourceDigest": "28f9e61710e205f6f3c5476f333483cff0e988f6a5b639e2faad536344b40c5e",
+      "targetDigest": "02b41b2cbb0ac43940b8f4df8b54c55f1aac0a68890a9379f9b006b2a8f1f4a0"
+    },
+    "skills/unslop/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/unslop/SKILL.md",
+      "sourceDigest": "c6d2572294d933a428211921069e9a248490e9b466ca59437cb4d9de248600ca",
+      "targetDigest": "6948335a00f9fed7a29204b9f08f74a9d9596d90989fd06f58f02d984ceab6f3"
+    },
+    "skills/why/references/epistemics.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/epistemics.md",
+      "sourceDigest": "fcc0f559c072832c869a5ada72434b4849320a637ae63c09e8ee14f7ad787059",
+      "targetDigest": "fcc0f559c072832c869a5ada72434b4849320a637ae63c09e8ee14f7ad787059"
+    },
+    "skills/why/references/investigator-prompt.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/investigator-prompt.md",
+      "sourceDigest": "6892956a7ab0b5ee6c4babaf4f793703abe89b350ea7cb9463b4a56eea1c8266",
+      "targetDigest": "6892956a7ab0b5ee6c4babaf4f793703abe89b350ea7cb9463b4a56eea1c8266"
+    },
+    "skills/why/references/source-playbook.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/source-playbook.md",
+      "sourceDigest": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a",
+      "targetDigest": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a"
+    },
+    "skills/why/references/sources/code-archaeology.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/code-archaeology.md",
+      "sourceDigest": "8c14aa382f0de40829b2668d43e3f54814480bb93a486c9282ada4003f6b9dbd",
+      "targetDigest": "8c14aa382f0de40829b2668d43e3f54814480bb93a486c9282ada4003f6b9dbd"
+    },
+    "skills/why/references/sources/databricks.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/databricks.md",
+      "sourceDigest": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6",
+      "targetDigest": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6"
+    },
+    "skills/why/references/sources/datadog.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/datadog.md",
+      "sourceDigest": "ebe9c07bac28e47757ee7f16fb93b0c01d427a08c501957d047f395a2f37b7e7",
+      "targetDigest": "ebe9c07bac28e47757ee7f16fb93b0c01d427a08c501957d047f395a2f37b7e7"
+    },
+    "skills/why/references/sources/incident-postmortem.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/incident-postmortem.md",
+      "sourceDigest": "a899470f05f86029630a13a2696491cc708ca7b56a6e822a69ff6e954d6ff8cf",
+      "targetDigest": "a899470f05f86029630a13a2696491cc708ca7b56a6e822a69ff6e954d6ff8cf"
+    },
+    "skills/why/references/sources/linear.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/linear.md",
+      "sourceDigest": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c",
+      "targetDigest": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c"
+    },
+    "skills/why/references/sources/notion.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/notion.md",
+      "sourceDigest": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997",
+      "targetDigest": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997"
+    },
+    "skills/why/references/sources/sentry.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/sentry.md",
+      "sourceDigest": "6f292bc4fb1548e956f95e1900b9481abf5134254419f1cd9edec95428c82d73",
+      "targetDigest": "6f292bc4fb1548e956f95e1900b9481abf5134254419f1cd9edec95428c82d73"
+    },
+    "skills/why/references/sources/slack.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/sources/slack.md",
+      "sourceDigest": "58fee61d024b3700b407e7acbed367944720ff05adfddb6954d36c88368f3ba7",
+      "targetDigest": "58fee61d024b3700b407e7acbed367944720ff05adfddb6954d36c88368f3ba7"
+    },
+    "skills/why/references/synthesizer-prompt.md": {
+      "upstream": "pstack",
+      "source": "skills/why/references/synthesizer-prompt.md",
+      "sourceDigest": "733a3e9cf897b1aca56aaddeae01a3832e4bfed024c2f602db2d1bf807d7a73b",
+      "targetDigest": "733a3e9cf897b1aca56aaddeae01a3832e4bfed024c2f602db2d1bf807d7a73b"
+    },
+    "skills/why/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/why/SKILL.md",
+      "sourceDigest": "222b93789754ba6ee901835137184acdca667f7e47c523bcc85aca86675fb249",
+      "targetDigest": "873aedc86d1321093e9a195ac8bff1783241b309a1d33808ab74f181c4b8f22d"
+    },
+    "skills/writing-for-agents/SKILL-MECHANICS.md": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/productivity/writing-for-agents/SKILL-MECHANICS.md",
+      "sourceDigest": "c768e6307c7c10728c401c213f2c4ba71c542127eeb7ad2956aabd15a0fa0059",
+      "targetDigest": "3998b4c619f6912b24afc28d5918caf7c5f2f00d0f3aecc676f79de78d07d5df"
+    },
+    "skills/writing-for-agents/SKILL.md": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/productivity/writing-for-agents/SKILL.md",
+      "sourceDigest": "551adca942227b44192edba88acd4e8db911f0121ce58ad16944ccf6a896a74a",
+      "targetDigest": "3b50712cac5d212e449bc9e9baeed4866412b152aa30feef53fdc4a0f3791840"
+    },
+    "tools/meta-mode/bootstrap.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/bootstrap.ts",
+      "sourceDigest": "ccd2ed08fd9da9d0d942e5f2491cfc74bb92d8a08fa51755e0da1ac8de287361",
+      "targetDigest": "d9d39f235da5512de6122f1ff28584b3a0120b170f5447a7a5868f7cf187d12a",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/bun.lock": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/bun.lock",
+      "sourceDigest": "667d9cf7222e9aae3fa42a4be383e657784216e9df115da02227fbc5ac7bbe46",
+      "targetDigest": "6413513594536785c3fd52b14934dd52d1ce179ad3ffe99d77535f5b637435a2",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/check-plan.mjs": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/check-plan.mjs",
+      "sourceDigest": "4f5118edf719b481983dc87dfadd5b4b5473d05aad04a7ba65191ff9c73faf1b",
+      "targetDigest": "ddcdb05af01b37d7513b2017d44e29c30bdaa79ca360c5913d701c16dde70907",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/orch/orch.test.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/orch/orch.test.ts",
+      "sourceDigest": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
+      "targetDigest": "913d5c03ba456de547ec609458a2b14c5a3894d33385b0597ee44315252f870b",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/orch/orch.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/orch/orch.ts",
+      "sourceDigest": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
+      "targetDigest": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/orch/store.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/orch/store.ts",
+      "sourceDigest": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
+      "targetDigest": "39394893aa8191f411a5eee33a554a6232e4568ecf11d7b43f6a21752d4c97cd",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/package.json": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/package.json",
+      "sourceDigest": "d1f815091209d49763775cc188e8e06ff32d5fec648bffd2272bc25a165e87c3",
+      "targetDigest": "c7ac7fd69bb925415cdc15cd636567304ee40f8d665986e45ed8c0ee658f6caf",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/cli.test.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/cli.test.ts",
+      "sourceDigest": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "targetDigest": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/cli.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/cli.ts",
+      "sourceDigest": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
+      "targetDigest": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/fakes.test-helper.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
+      "sourceDigest": "e53e31b7f03068063f53a99a3591b052aaed66e4e2b196b3a364980f60324ab1",
+      "targetDigest": "e53e31b7f03068063f53a99a3591b052aaed66e4e2b196b3a364980f60324ab1",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/github.test.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/github.test.ts",
+      "sourceDigest": "0cbce011050522938523e36bb42a260e92b812dcd2076930fa681672ad316b24",
+      "targetDigest": "42e2c624bb7290761c05cb24a4b7e616c6f3c3d8af46aba5cf30ead38023786e",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/github.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/github.ts",
+      "sourceDigest": "d1bbbafbe8e2c703c84da2029de7f2c4011412512f8cf65a42100f46bcb92c8a",
+      "targetDigest": "8f44dff3af48e9872cc2f3a20cf0a6128a1f4dd3054afeabee054e51776f7ec1",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/policy.test.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/policy.test.ts",
+      "sourceDigest": "a9fedb25feefd1f57ef6a662f80c99018690170a3a8070773a08eaf694d1d3d9",
+      "targetDigest": "a9fedb25feefd1f57ef6a662f80c99018690170a3a8070773a08eaf694d1d3d9",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/policy.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/policy.ts",
+      "sourceDigest": "68d240505852cf23c9b2dea463342e9e61243f486b3cc86c735d140f9ee7be49",
+      "targetDigest": "68d240505852cf23c9b2dea463342e9e61243f486b3cc86c735d140f9ee7be49",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/render.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/render.ts",
+      "sourceDigest": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
+      "targetDigest": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/tsconfig.json": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/tsconfig.json",
+      "sourceDigest": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "targetDigest": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/types.compile.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/types.compile.ts",
+      "sourceDigest": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "targetDigest": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/types.ts": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/types.ts",
+      "sourceDigest": "64ba6221e3bfe61bbb292337d199cdec6309455477280efb060203dba34e0e91",
+      "targetDigest": "979de5c965f10a853bac7847e043fff613e7884a93c16fc95a39766177588ef7",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/watch-pr/watch-pr": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/watch-pr/watch-pr",
+      "sourceDigest": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
+      "targetDigest": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/worktree-audit.sh": {
+      "upstream": "pstack",
+      "source": "skills/poteto-mode/scripts/worktree-audit.sh",
+      "sourceDigest": "95b8530f3c0ccada8cabc4b0727c052fbc85c141531375aaace65c427af8aecc",
+      "targetDigest": "68df230b34f10558e021bb6cc9696e4653acc92645a17b35c6b953aa40837fc2",
+      "reason": "Runtime tools are packaged separately from portable skill instructions."
+    }
+  },
+  "omitted": {
+    "mattpocock/skills:skills/engineering/codebase-design/agents/openai.yaml": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/codebase-design/agents/openai.yaml",
+      "sourceDigest": "edebc9e4fcfe102114012575eaa9600b9b5fd08c311664f389c36e7bc717740f",
+      "reason": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters."
+    },
+    "mattpocock/skills:skills/engineering/diagnosing-bugs/agents/openai.yaml": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/engineering/diagnosing-bugs/agents/openai.yaml",
+      "sourceDigest": "3e430dbe4334a87597488c060cb3dc3786bb00c9182877d6f5ec41f62490e90b",
+      "reason": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters."
+    },
+    "mattpocock/skills:skills/productivity/writing-for-agents/agents/openai.yaml": {
+      "upstream": "mattpocock/skills",
+      "source": "skills/productivity/writing-for-agents/agents/openai.yaml",
+      "sourceDigest": "eacb24b2a618cfb81dacb0416f4fdd75ddf3a8060f8ddb99aae1b1e301907e4b",
+      "reason": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters."
+    }
+  }
+}
