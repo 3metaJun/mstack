@@ -195,4 +195,10 @@ test("the recall CLI runs through a linked directory while imports stay silent",
   assert.equal(importing.status, 0, importing.stderr);
   assert.equal(importing.stdout, "");
   assert.equal(importing.stderr, "");
+  const stdinImport = spawnSync(process.execPath, ["--input-type=module", "-"], {
+    input: `await import(${JSON.stringify(pathToFileURL(script).href)})`, encoding: "utf8", cwd: root,
+  });
+  assert.equal(stdinImport.status, 0, stdinImport.stderr);
+  assert.equal(stdinImport.stdout, "");
+  assert.equal(stdinImport.stderr, "");
 });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createReadStream, realpathSync } from "node:fs";
+import { createReadStream, existsSync, realpathSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -268,7 +268,7 @@ function argumentsFor(argv) {
 }
 
 // Node can resolve module symlinks while argv retains the original launch path.
-if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(new URL(import.meta.url))) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(new URL(import.meta.url))) {
   try {
     if (process.argv.includes("--help")) {
       console.log("Usage: node history.mjs <list|read> --harness <codex|claude|opencode|pi> --workspace <path>\nOptions: --root <path> --since <ISO date> --exclude <id> (repeatable) --limit <count>\nRead: --session <id> [--query <text>] [--max-chars <count>] [--leaf <id>]\nOpenCode read: --local-text returns private, unsanitized message text.");
