@@ -7,7 +7,10 @@ description: "Use for \"automate me\", \"create/update/refresh my -mode skill\",
 
 A guided flow for turning the user's working conventions into a skill agents will follow. The output is one `-mode` skill tailored to them (e.g. `jay-mode`, `priya-mode`).
 
-This skill orchestrates three others: an inline mining pass (see step 1), the repository's skill-authoring workflow, and the **unslop** skill (prose discipline). It sequences them. It doesn't replace them.
+This skill sequences an inline mining pass (see step 1), the bundled
+[authoring playbook](../meta-mode/playbooks/authoring-a-skill.md), and the
+**unslop** skill. If a selected-skills installation omits either sibling, use
+step 4's standalone draft rules and check the prose directly.
 
 ## Flow
 
@@ -25,7 +28,12 @@ Update mode changes the rest of the flow:
 
 ### 1. Mine their history
 
-Locate the active workspace's transcripts before fanning out. The active Harness's history adapter names the workspace-scoped transcript directory. Use only that path. Do not glob across unrelated project stores.
+Locate the active workspace's transcripts before fanning out. Use
+[recall's history reader](../recall/references/history-sources.md) to list scoped
+session IDs and read bounded excerpts, excluding the current session. If recall
+is not installed, use the harness's documented workspace-scoped history view.
+If no history source is available, record that limitation and continue with the
+user's stated preferences. Do not glob across unrelated project stores.
 
 Survey recent agent conversations within that scope for recurring patterns. Run multiple parallel subagents across slices of history (e.g. last 2-4 weeks, split into 3 slices so each has enough material). Each slice mining subagent reads transcripts from the workspace-scoped path the parent provides, looks for the signals below, and returns a short structured list of patterns it saw with evidence pointers. Default signals worth hunting:
 
@@ -40,9 +48,14 @@ Cross-check across slices before elevating a signal. Patterns seen in 2+ slices 
 
 ### 2. Ask the user directly
 
-Mining misses intent that hasn't come up yet. Use the `ask the user` tool (structured multi-choice) rather than asking the user to type from scratch.
+Mining misses intent that hasn't come up yet. Use the host's structured question
+tool when available, within its supported option count. Otherwise ask one short
+question in chat with concrete examples.
 
-Shape: one or two questions with 4-6 options each, `allow_multiple: true` for category questions. Start broad ("Which areas matter most?"), then follow up on selected areas with specific options. After the structured rounds, one free-form chat question catches anything the options missed.
+Start broad ("Which areas matter most?"), then follow up on selected areas with
+specific options. Use multiple selection only when the host supports it. After
+the structured rounds, one free-form chat question catches anything the options
+missed.
 
 Don't dump 20 questions.
 
@@ -63,13 +76,20 @@ The **meta-mode** skill shows the shape. Read it for granularity. Don't copy its
 
 ### 4. Draft the skill
 
-Use the repository's skill-authoring workflow to author the skill. Follow its local authoring guidance for placement:
+Follow the [authoring playbook](../meta-mode/playbooks/authoring-a-skill.md),
+including its description review. These draft rules also work when only
+`automate-me` is installed:
 
 - Path: preserve an existing mode skill's category. For a new mode, use the active Harness's project skill root and its user-level skill root when the user prefers a personal skill.
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: follow the authoring workflow's YAML rules. Keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
 - Keep the mode explicit by default. Apply it on every turn only when the user asks for that behavior.
+
+Check that every linked file exists and every tool reference is available. Try
+two requests that should select this mode and two nearby requests that should
+not. Tighten the description when it selects the wrong cases. Use a local
+validator if one exists; otherwise inspect the frontmatter and links directly.
 
 ### 5. Iterate on prose
 
@@ -79,7 +99,9 @@ Show the draft to the user and take feedback. Expect multiple iterations. Cut ru
 
 ### 6. Land it
 
-Work in a worktree off main. Commit and open a PR. Don't push to main directly.
+For a repository-owned skill, work in an isolated worktree, commit, and open a PR
+within the user's authorized workflow. For a personal skill outside a repository,
+report the validated local path. Keep private transcript evidence out of commits.
 
 ## Guardrails
 
