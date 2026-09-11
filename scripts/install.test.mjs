@@ -158,10 +158,13 @@ test("installs harness-specific frontmatter and preserves conflicts", () => {
     const pi = readFileSync(piPath, "utf8");
     assert.match(codex, /^metadata:/m);
     assert.doesNotMatch(codex, /^compatibility:/m);
-    for (const adapted of [claude, opencode, pi]) {
-      assert.match(adapted, /^compatibility:/m);
-      assert.doesNotMatch(adapted, /^metadata:/m);
-      assert.doesNotMatch(adapted, /The included logger requires/i);
+    assert.match(claude, /^compatibility:/m);
+    assert.doesNotMatch(claude, /^metadata:/m);
+    assert.doesNotMatch(claude, /The included logger requires/i);
+    for (const adapted of [opencode, pi]) {
+      assert.match(adapted, /^metadata:/m);
+      assert.match(adapted, /^  requirements:/m);
+      assert.doesNotMatch(adapted, /^compatibility:/m);
     }
 
     const marker = join(env.HARNESS_SKILLS_CODEX_DIR, "blast-radius", "marker.txt");

@@ -207,6 +207,8 @@ the remote fixture and temporary credentials were removed afterward.
 - `skills/` contains the canonical, harness-neutral skill files.
 - `adapters/` contains per-harness frontmatter changes.
 - `profiles/harnesses.json` defines supported harnesses and default paths.
+- `docs/harness-adapters.md` records the official skill and session rules used
+  by each Harness adapter.
 - `profiles/artifacts.json` defines optional artifacts and documents unsupported
   harness-owned surfaces.
 - `profiles/skills.json` defines the canonical skill inventory.
