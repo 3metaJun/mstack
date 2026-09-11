@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +7,13 @@ import test from "node:test";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
+const upstreamManifest = JSON.parse(readFileSync(join(repoRoot, "profiles", "upstream-manifest.json"), "utf8"));
+
+function normalizedDigest(value) {
+  return createHash("sha256")
+    .update(value.replace(/\r\n/g, "\n"), "utf8")
+    .digest("hex");
+}
 
 function readSkill(name) {
   return readFileSync(join(skillsRoot, name, "SKILL.md"), "utf8");
@@ -46,6 +54,8 @@ test("portable skill files contain no broken replacement artifacts", () => {
     /prethe current harness/i,
     /(?:poteto-mode|setup-pstack|poteto-agent)/i,
     /worker type:\s*generalPurpose/i,
+    /Comment Sicko/i,
+    /Task subagent/i,
     /cursor/i,
     /application support\/the current harness/i,
   ];
@@ -66,5 +76,19 @@ test("portable skill files contain no broken replacement artifacts", () => {
     for (const pattern of forbidden) {
       assert.doesNotMatch(normalized, pattern, `${path} contains ${pattern}`);
     }
+  }
+});
+
+test("canonical skill manifest detects body drift", () => {
+  const entries = upstreamManifest.canonicalSkills;
+  assert.ok(entries && typeof entries === "object" && !Array.isArray(entries));
+  const skillNames = Object.keys(entries).sort();
+  assert.ok(skillNames.length > 0);
+  for (const name of skillNames) {
+    assert.ok(existsSync(join(skillsRoot, name, "SKILL.md")), `${name} manifest entry has no target skill`);
+    const content = readSkill(name);
+    assert.equal(entries[name].target, normalizedDigest(content), `${name} body differs from its reviewed baseline`);
+    const truncated = content.slice(0, Math.max(1, Math.floor(content.length / 2)));
+    assert.notEqual(entries[name].target, normalizedDigest(truncated), `${name} digest must detect truncation`);
   }
 });

@@ -28,7 +28,7 @@ Each explorer gets the prompt in `references/explorer-prompt.md` with its angle 
 
 ## Step 2b. Direct Explain (simple questions)
 
-Spawn one Task subagent that explores and explains in one pass:
+Delegate one read-only synthesizer worker through the active Harness delegation interface. It explores and explains in one pass:
 
 - `worker role`: `synthesizer`
 - `model`: the active mstack `synthesizer` role, defaulting to `inherit-parent`
@@ -38,7 +38,7 @@ Build its prompt from `references/explainer-prompt.md` without the explorer-find
 
 ## Step 3. Synthesize (complex questions only)
 
-Once all explorers have returned, spawn one Task subagent to synthesize their findings into one explanation:
+Once all explorers have returned, delegate one read-only synthesizer worker through the active Harness delegation interface to synthesize their findings into one explanation:
 
 - `worker role`: `synthesizer`
 - `model`: the active mstack `synthesizer` role, defaulting to `inherit-parent`

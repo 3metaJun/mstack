@@ -269,6 +269,7 @@ function fixture({ initializeGit = true } = {}) {
   write(join(source, "agents", "poteto-agent.md"), "---\nname: poteto-agent\n---\n");
   write(join(source, "automations", "benny", "README.md"), "pstack uses poteto-mode.\n");
   write(join(source, "docs", "guide", "02-poteto-mode.md"), "Use /poteto-mode with pstack.\nCursor confirms.\n");
+  write(join(source, "skills", "poteto-mode", "SKILL.md"), "---\nname: poteto-mode\ndescription: fixture\n---\n");
   write(join(source, "skills", "poteto-mode", "scripts", "tool.mjs"), "const mode = 'poteto-mode';\n");
   write(join(source, "skills", "sample", "SKILL.md"), "---\nname: sample\ndescription: fixture\n---\n");
   let commit = "0".repeat(40);
@@ -300,8 +301,65 @@ function fixture({ initializeGit = true } = {}) {
       },
     },
   }, null, 2));
+  write(join(target, "profiles", "upstream-manifest.json"), JSON.stringify({
+    source: "https://example.test/pstack",
+    commit,
+    canonicalSkills: {
+      "meta-mode": {
+        source: sha256("---\nname: meta-mode\ndescription: fixture\n---\n"),
+        target: sha256("---\nname: meta-mode\ndescription: fixture\n---\n"),
+      },
+      sample: {
+        source: sha256("---\nname: sample\ndescription: fixture\n---\n"),
+        target: sha256("---\nname: sample\ndescription: fixture\n---\n"),
+      },
+    },
+    artifacts: {},
+  }, null, 2));
   return { root, source, target };
 }
+
+test("strict canonical checks reject body mutation and diagnose a missing source body", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    write(join(target, "skills", "sample", "SKILL.md"), "---\nname: sample\ndescription: truncated\n---\n");
+    const mutated = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.notEqual(mutated.status, 0);
+    assert.match(mutated.stderr, /sample: target body changed/);
+
+    write(join(target, "skills", "sample", "SKILL.md"), "---\nname: sample\ndescription: fixture\n---\n");
+    unlinkSync(join(source, "skills", "sample", "SKILL.md"));
+    const commit = commitSourceChange(source, "remove sample skill body");
+    updateProfile(target, (pstack) => { pstack.commit = commit; });
+    const missing = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /sample: upstream source SKILL\.md is missing/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("strict canonical checks reject a missing or malformed manifest block", () => {
+  const { root, source, target } = fixture();
+  try {
+    applyBaseline(source, target);
+    const manifestPath = join(target, "profiles", "upstream-manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    delete manifest.canonicalSkills;
+    write(manifestPath, JSON.stringify(manifest));
+    const missing = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /no valid canonicalSkills body baselines/);
+    manifest.canonicalSkills = [];
+    write(manifestPath, JSON.stringify(manifest));
+    const malformed = run(checker, ["--source", source, "--target", target, "--strict"]);
+    assert.notEqual(malformed.status, 0);
+    assert.match(malformed.stderr, /no valid canonicalSkills body baselines/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("upstream sync previews, transforms, and protects changed files", () => {
   const { root, source, target } = fixture();

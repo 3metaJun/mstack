@@ -27,6 +27,9 @@ Use these roles:
 - `reviewer` for review and verification workers.
 - `judge` for comparisons and final decisions.
 - `explorer` for read-only repository exploration.
+- `synthesizer` for combining findings into one answer or artifact.
+- `candidate` for independent alternatives evaluated by an arena.
+- `operator` for environment or lifecycle operations.
 
 Write the complete file on every run. A later run must produce the same file
 when the choices have not changed.
@@ -39,7 +42,10 @@ Example:
     "implementer": "inherit-parent",
     "reviewer": "inherit-parent",
     "judge": "inherit-parent",
-    "explorer": "inherit-parent"
+    "explorer": "inherit-parent",
+    "synthesizer": "inherit-parent",
+    "candidate": "inherit-parent",
+    "operator": "inherit-parent"
   },
   "overrides": {
     "codex": {},

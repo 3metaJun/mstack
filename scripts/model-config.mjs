@@ -15,10 +15,11 @@ function valueAfter(flag) {
 
 function expandHome(path) {
   if (path === "~") return homedir();
-  return path?.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
+  return path?.startsWith("~/") || path?.startsWith("~\\") ? join(homedir(), path.slice(2)) : path;
 }
 
-const requestedPath = expandHome(valueAfter("--file") ?? join("~", ".config", "mstack", "models.json"));
+const defaultPath = join(homedir(), ".config", "mstack", "models.json");
+const requestedPath = expandHome(valueAfter("--file") ?? defaultPath);
 if (!requestedPath) throw new Error("--file requires a path");
 const configPath = resolve(requestedPath);
 if (!existsSync(configPath)) {

@@ -456,6 +456,7 @@ const removed = removals;
 const manifest = {
   source: pstack.repository,
   commit: pstack.commit,
+  ...(previousManifest?.canonicalSkills ? { canonicalSkills: previousManifest.canonicalSkills } : {}),
   artifacts: Object.fromEntries(
     [...grouped.keys()].map((name) => [
       name,
