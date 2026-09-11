@@ -442,7 +442,7 @@ test("replaces a custom artifact with a backup on the artifact target volume", (
   }
 });
 
-test("deduplicates a shared artifact target across harnesses", () => {
+test("deduplicates a shared artifact target with the same output format", () => {
   const { root, env } = fixture();
   const environmentFile = join(root, "environments.json");
   const sharedAgents = join(root, "fleet", "shared", "agents");
@@ -451,10 +451,10 @@ test("deduplicates a shared artifact target across harnesses", () => {
     JSON.stringify({
       fleet: {
         targets: {
-          codex: join(root, "fleet", "codex", "skills"),
+          opencode: join(root, "fleet", "opencode", "skills"),
           claude: join(root, "fleet", "claude", "skills"),
         },
-        artifacts: { agents: { codex: sharedAgents, claude: sharedAgents } },
+        artifacts: { agents: { opencode: sharedAgents, claude: sharedAgents } },
       },
     }),
     "utf8",
@@ -462,15 +462,141 @@ test("deduplicates a shared artifact target across harnesses", () => {
   env.MSTACK_ENVIRONMENTS_FILE = environmentFile;
   try {
     const result = run(
-      ["--harness", "codex,claude", "--environment", "fleet", "--no-skills", "--artifact", "agents"],
+      ["--harness", "opencode,claude", "--environment", "fleet", "--no-skills", "--artifact", "agents"],
       env,
     );
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(existsSync(join(sharedAgents, "meta-agent.toml")), true);
-    assert.equal(existsSync(join(sharedAgents, "meta-agent.md")), false);
+    assert.equal(existsSync(join(sharedAgents, "meta-agent.md")), true);
+    assert.equal(existsSync(join(sharedAgents, "meta-agent.toml")), false);
     assert.match(result.stdout, /Installed 0 skill copies and 1 artifact copies/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects shared artifact targets with conflicting output formats in either order", () => {
+  const { root, env } = fixture();
+  const target = join(root, "shared-agents");
+  mkdirSync(target);
+  writeFileSync(join(target, "marker.txt"), "preserve");
+  env.MSTACK_ARTIFACT_AGENTS_CODEX_DIR = target;
+  env.MSTACK_ARTIFACT_AGENTS_CLAUDE_DIR = target;
+  try {
+    for (const harnesses of ["codex,claude", "claude,codex"]) {
+      const result = run(["--harness", harnesses, "--no-skills", "--artifact", "agents", "--replace"], env);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /conflicting artifact formats/);
+      assert.deepEqual(readdirSync(target), ["marker.txt"]);
+      assert.equal(readFileSync(join(target, "marker.txt"), "utf8"), "preserve");
+      assert.deepEqual(readdirSync(root), ["shared-agents"]);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Codex agents default to the user home when CODEX_HOME is unset or empty", () => {
+  for (const configuredHome of [undefined, ""]) {
+    const { root, env } = fixture();
+    env.HOME = root;
+    env.USERPROFILE = root;
+    if (configuredHome === undefined) delete env.CODEX_HOME;
+    else env.CODEX_HOME = configuredHome;
+    try {
+      const result = run(["--harness", "codex", "--no-skills", "--artifact", "agents"], env);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(existsSync(join(root, ".codex", "agents", "meta-agent.toml")), true);
+      assert.equal(existsSync(env.HARNESS_SKILLS_CODEX_DIR), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("artifact override typos fail validation and local and remote installs before writes", () => {
+  const fixture_ = copiedInstallerFixture();
+  cpSync(resolve("skills"), join(fixture_.repository, "skills"), { recursive: true });
+  const profilePath = join(fixture_.repository, "profiles", "artifacts.json");
+  const baseline = JSON.parse(readFileSync(profilePath, "utf8"));
+  const environmentFile = join(fixture_.root, "environments.json");
+  writeFileSync(environmentFile, JSON.stringify({ fleet: {
+    transport: "ssh", host: "dev@example.test", targets: { codex: "/home/dev/.agents/skills" },
+  } }));
+  try {
+    for (const [overrides, diagnostic] of [
+      [{ codex: { format: "codex_TOML" } }, /unsupported format/],
+      [{ cdoex: { format: "codex-toml" } }, /unknown harness/],
+      [{ codex: { base: "codex_home" } }, /unsupported base/],
+      [{ claude: { base: "codex-home" } }, /only valid for codex/],
+      [{ codex: { path: [".."] } }, /safe non-empty path/],
+    ]) {
+      const profile = structuredClone(baseline);
+      profile.artifacts.agents.harnesses = overrides;
+      writeFileSync(profilePath, JSON.stringify(profile));
+      for (const [script, args] of [
+        [fixture_.installer, ["--harness", "codex", "--artifact", "agents", "--no-skills", "--dry-run"]],
+        [fixture_.remoteInstaller, ["--harness", "codex", "--artifact", "agents", "--no-skills", "--environment", "fleet", "--dry-run"]],
+        [join(fixture_.repository, "scripts", "validate.mjs"), []],
+      ]) {
+        const result = runCopied(script, args, { ...fixture_.env, MSTACK_ENVIRONMENTS_FILE: environmentFile }, fixture_.repository);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, diagnostic);
+      }
+      assert.equal(existsSync(join(fixture_.root, "install")), false);
+    }
+  } finally {
+    rmSync(fixture_.root, { recursive: true, force: true });
+  }
+});
+
+test("Codex conversion failures preserve an existing install", () => {
+  for (const scenario of ["nested", "collision", "metadata"]) {
+    const fixture_ = copiedInstallerFixture();
+    const source = join(fixture_.repository, "agents");
+    const codexHome = join(fixture_.root, "codex-home");
+    const target = join(codexHome, "agents");
+    mkdirSync(target, { recursive: true });
+    writeFileSync(join(target, "previous.toml"), "keep previous install");
+    if (scenario === "nested") {
+      mkdirSync(join(source, "nested"));
+      cpSync(join(source, "meta-agent.md"), join(source, "nested", "meta-agent.md"));
+    } else if (scenario === "collision") {
+      writeFileSync(join(source, "meta-agent.toml"), "do not overwrite");
+    } else {
+      writeFileSync(join(source, "meta-agent.md"), "---\nname:\ndescription: valid\n---\nReview\n");
+    }
+    try {
+      const result = runCopied(fixture_.installer,
+        ["--harness", "codex", "--artifact", "agents", "--no-skills", "--replace"],
+        { ...fixture_.env, CODEX_HOME: codexHome }, fixture_.repository);
+      assert.notEqual(result.status, 0);
+      const diagnostic = { nested: /must be top-level/, collision: /already exists/, metadata: /name must be a non-empty string/ };
+      assert.match(result.stderr, diagnostic[scenario]);
+      assert.deepEqual(readdirSync(target), ["previous.toml"]);
+      assert.equal(readFileSync(join(target, "previous.toml"), "utf8"), "keep previous install");
+      assert.deepEqual(readdirSync(codexHome), ["agents"]);
+      if (scenario === "collision") assert.equal(readFileSync(join(source, "meta-agent.toml"), "utf8"), "do not overwrite");
+    } finally {
+      rmSync(fixture_.root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("a harness artifact path override controls the staged output destination", () => {
+  const fixture_ = copiedInstallerFixture();
+  const profilePath = join(fixture_.repository, "profiles", "artifacts.json");
+  const profile = JSON.parse(readFileSync(profilePath, "utf8"));
+  profile.artifacts.agents.harnesses.codex.path = ["review", "roles"];
+  writeFileSync(profilePath, JSON.stringify(profile));
+  const codexHome = join(fixture_.root, "codex-home");
+  try {
+    const result = runCopied(fixture_.installer, ["--harness", "codex", "--no-skills", "--artifact", "agents"],
+      { ...fixture_.env, CODEX_HOME: codexHome }, fixture_.repository);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(join(codexHome, "review", "roles", "meta-agent.toml")), true);
+    assert.equal(existsSync(join(codexHome, "agents")), false);
+  } finally {
+    rmSync(fixture_.root, { recursive: true, force: true });
   }
 });
 

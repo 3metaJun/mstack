@@ -9,7 +9,7 @@
     },
     "artifacts": {
       "agents": {
-        "codex": "C:\\path\\to\\Fleet\\shared\\agents",
+        "codex": "C:\\path\\to\\Fleet\\codex\\agents",
         "claude": "C:\\path\\to\\Fleet\\shared\\agents",
         "opencode": "C:\\path\\to\\Fleet\\shared\\agents",
         "pi": "C:\\path\\to\\Fleet\\shared\\agents"

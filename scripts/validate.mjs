@@ -1,11 +1,13 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateArtifactOverrides } from "./install-paths.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
 const EXPECTED_SKILLS = JSON.parse(readFileSync(join(repoRoot, "profiles", "skills.json"), "utf8")).skills;
 const artifactsProfilePath = join(repoRoot, "profiles", "artifacts.json");
+const harnesses = Object.keys(JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8")));
 
 const errors = [];
 
@@ -28,27 +30,10 @@ try {
         }
       }
       if (artifact.installable !== false) {
-        if (!Array.isArray(artifact.path) || artifact.path.length === 0 || artifact.path.some((part) => typeof part !== "string" || !part || part === "." || part === ".." || part.includes("/") || part.includes("\\"))) {
-          errors.push(`artifact ${name} must define a safe non-empty path array`);
-        }
-        if (artifact.harnesses !== undefined && (!artifact.harnesses || typeof artifact.harnesses !== "object" || Array.isArray(artifact.harnesses))) {
-          errors.push(`artifact ${name} harnesses must be an object`);
-        } else {
-          for (const [harness, override] of Object.entries(artifact.harnesses ?? {})) {
-            if (!override || typeof override !== "object" || Array.isArray(override)) {
-              errors.push(`artifact ${name} harness ${harness} must be an object`);
-              continue;
-            }
-            if (override.path !== undefined && (!Array.isArray(override.path) || override.path.length === 0 || override.path.some((part) => typeof part !== "string" || !part || part === "." || part === ".." || part.includes("/") || part.includes("\\")))) {
-              errors.push(`artifact ${name} harness ${harness} must define a safe non-empty path array`);
-            }
-            if (override.base !== undefined && !["harness", "codex-home"].includes(override.base)) {
-              errors.push(`artifact ${name} harness ${harness} has an unsupported base`);
-            }
-            if (override.format !== undefined && typeof override.format !== "string") {
-              errors.push(`artifact ${name} harness ${harness} format must be a string`);
-            }
-          }
+        try {
+          validateArtifactOverrides(name, artifact, harnesses);
+        } catch (error) {
+          errors.push(error.message);
         }
       } else if (typeof artifact.reason !== "string" || !artifact.reason) {
         errors.push(`unsupported artifact ${name} must explain its reason`);
@@ -82,7 +67,6 @@ const forbidden = [
   /\bAskQuestion\b/i,
 ];
 
-const harnesses = Object.keys(JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8")));
 const adapterAllowedFields = new Set(["compatibility", "metadata"]);
 const adapterRemovableFields = new Set(["metadata"]);
 

@@ -11,7 +11,7 @@ import { dirname, join, posix, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parseRemoteStage, quotePosix, readEnvironment } from "./environment-lib.mjs";
-import { artifactPathParts } from "./install-paths.mjs";
+import { artifactPathParts, validateArtifactOverrides } from "./install-paths.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const profilesRoot = join(repoRoot, "profiles");
@@ -80,6 +80,9 @@ const unknownArtifacts = artifacts.filter((name) => !Object.hasOwn(artifactRegis
 if (unknownArtifacts.length) throw new Error(`Unknown artifact: ${unknownArtifacts.join(", ")}`);
 const unsupported = artifacts.filter((name) => artifactRegistry[name].installable === false);
 if (unsupported.length) throw new Error(`Unsupported artifact selection: ${unsupported.join(", ")}`);
+for (const name of artifacts) {
+  validateArtifactOverrides(name, artifactRegistry[name], Object.keys(harnessRegistry));
+}
 const artifactPaths = Object.fromEntries(
   artifacts.map((name) => [name, Object.fromEntries(
     harnesses.map((harness) => [harness, artifactPathParts(name, artifactRegistry[name], harness)]),
@@ -97,10 +100,18 @@ function artifactEnvironmentPath(name, harness) {
 function remoteArtifactTarget(name, harness) {
   const custom = artifactEnvironmentPath(name, harness);
   if (custom) return custom;
-  const skillParent = posix.dirname(environment.targets[harness]);
+  const skillTarget = posix.normalize(environment.targets[harness]);
+  const skillParent = posix.dirname(skillTarget);
   const codexHome = artifactRegistry[name].harnesses?.[harness]?.base === "codex-home";
-  const base = codexHome && posix.basename(skillParent) === ".agents" ? posix.dirname(skillParent) : skillParent;
-  return posix.join(base, ...(codexHome ? [".codex"] : []), ...artifactPaths[name][harness]);
+  if (codexHome) {
+    if (posix.basename(skillTarget) !== "skills" || ![".agents", ".codex"].includes(posix.basename(skillParent))) {
+      throw new Error(
+        `Cannot infer remote Codex home from ${skillTarget}; configure environment artifacts.${name}.${harness} explicitly`,
+      );
+    }
+    return posix.join(posix.dirname(skillParent), ".codex", ...artifactPaths[name][harness]);
+  }
+  return posix.join(skillParent, ...artifactPaths[name][harness]);
 }
 
 const requestedItems = harnesses.flatMap((harness) => [
@@ -116,6 +127,7 @@ const requestedItems = harnesses.flatMap((harness) => [
     name,
     kind: "artifact",
     source: artifactRegistry[name].source,
+    format: artifactRegistry[name].harnesses?.[harness]?.format ?? "copy",
     target: posix.normalize(remoteArtifactTarget(name, harness)),
   })),
 ]);
@@ -144,7 +156,8 @@ for (const item of requestedItems) {
     item.kind === "artifact" &&
     existing.kind === "artifact" &&
     item.name === existing.name &&
-    item.source === existing.source;
+    item.source === existing.source &&
+    item.format === existing.format;
   if (!sharedArtifact) {
     throw new Error(
       `Remote target collision: ${item.target} is selected by ` +

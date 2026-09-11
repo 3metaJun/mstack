@@ -165,27 +165,82 @@ test("installer delegates an SSH environment to a no-connect dry run", () => {
   }
 });
 
-test("remote Codex agents use the official user agent directory", () => {
+test("remote Codex agents use the official directory from either standard skill path", () => {
   const root = mkdtempSync(join(tmpdir(), "mstack-remote-codex-agents-test-"));
   const configPath = join(root, "environments.json");
-  writeFileSync(configPath, JSON.stringify({
-    fleet: {
-      transport: "ssh",
-      host: "dev@tailnet-host",
-      shell: "posix",
-      targets: { codex: "/home/dev/.agents/skills" },
-    },
-  }), "utf8");
   try {
-    const result = spawnSync(process.execPath, [remoteInstaller,
-      "--harness", "codex",
-      "--environment", "fleet",
-      "--no-skills",
-      "--artifact", "agents",
-      "--dry-run",
-    ], { cwd: resolve("."), env: { ...process.env, MSTACK_ENVIRONMENTS_FILE: configPath }, encoding: "utf8" });
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /agents -> \/home\/dev\/\.codex\/agents/);
+    for (const target of ["/home/dev/.agents/skills", "/home/dev/.codex/skills"]) {
+      writeFileSync(configPath, JSON.stringify({
+        fleet: {
+          transport: "ssh",
+          host: "dev@tailnet-host",
+          shell: "posix",
+          targets: { codex: target },
+        },
+      }), "utf8");
+      const result = spawnSync(process.execPath, [remoteInstaller,
+        "--harness", "codex",
+        "--environment", "fleet",
+        "--no-skills",
+        "--artifact", "agents",
+        "--dry-run",
+      ], { cwd: resolve("."), env: { ...process.env, MSTACK_ENVIRONMENTS_FILE: configPath }, encoding: "utf8" });
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /agents -> \/home\/dev\/\.codex\/agents\r?\n/, target);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("custom remote Codex skill paths require an explicit agent target before connecting", () => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-remote-custom-codex-test-"));
+  const configPath = join(root, "environments.json");
+  const helperPath = join(root, "fake-transport.mjs");
+  const logPath = join(root, "transport.log");
+  writeFileSync(helperPath, [
+    'import { appendFileSync } from "node:fs";',
+    'appendFileSync(process.env.MSTACK_FAKE_TRANSPORT_LOG, "connected\\n");',
+    'process.exit(91);',
+  ].join("\n"), "utf8");
+  try {
+    for (const target of ["/srv/mstack/skills", "/home/dev/.agents/custom-skills"]) {
+      const environment = {
+        transport: "ssh",
+        host: "dev@tailnet-host",
+        targets: { codex: target },
+        sshCommand: process.execPath,
+        sshArgs: [helperPath],
+      };
+      const env = {
+        ...process.env,
+        MSTACK_ENVIRONMENTS_FILE: configPath,
+        MSTACK_FAKE_TRANSPORT_LOG: logPath,
+      };
+      const args = [remoteInstaller,
+        "--harness", "codex",
+        "--environment", "fleet",
+        "--no-skills",
+        "--artifact", "agents",
+      ];
+      writeFileSync(configPath, JSON.stringify({ fleet: environment }), "utf8");
+      const missing = spawnSync(process.execPath, args, { cwd: resolve("."), env, encoding: "utf8" });
+      assert.notEqual(missing.status, 0);
+      assert.match(missing.stderr, /artifacts\.agents\.codex/, target);
+      assert.equal(existsSync(logPath), false, "invalid paths must fail before connecting");
+
+      for (const artifacts of [
+        { agents: { codex: "/srv/custom-codex/agents" } },
+        { codex: { agents: "/srv/custom-codex/agents" } },
+      ]) {
+        writeFileSync(configPath, JSON.stringify({ fleet: { ...environment, artifacts } }), "utf8");
+        const explicit = spawnSync(process.execPath, [...args, "--dry-run"], {
+          cwd: resolve("."), env, encoding: "utf8",
+        });
+        assert.equal(explicit.status, 0, explicit.stderr);
+        assert.match(explicit.stdout, /agents -> \/srv\/custom-codex\/agents\r?\n/);
+      }
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -284,6 +339,7 @@ test("remote staging ignores inherited local artifact target overrides", () => {
       host: "dev@tailnet-host",
       shell: "posix",
       targets: { codex: "/srv/remote/skills" },
+      artifacts: { agents: { codex: "/srv/remote/.codex/agents" } },
       sshCommand: process.execPath,
       sshArgs: [helperPath, "ssh"],
       rsyncCommand: process.execPath,
@@ -314,7 +370,7 @@ test("remote staging ignores inherited local artifact target overrides", () => {
   }
 });
 
-test("remote installer deduplicates shared artifacts and locks every parent in sorted order", () => {
+test("remote installer deduplicates artifacts with matching formats and locks every parent in sorted order", () => {
   const root = mkdtempSync(join(tmpdir(), "mstack-remote-shared-artifact-test-"));
   const configPath = join(root, "environments.json");
   const helperPath = join(root, "fake-transport.mjs");
@@ -336,16 +392,16 @@ test("remote installer deduplicates shared artifacts and locks every parent in s
       host: "dev@tailnet-host",
       shell: "posix",
       targets: {
-        codex: "/srv/z/codex/skills",
+        opencode: "/srv/z/opencode/skills",
         claude: "/srv/y/claude/skills",
       },
       artifacts: {
         agents: {
-          codex: "/srv/z/shared-agents",
+          opencode: "/srv/z/shared-agents",
           claude: "/srv/z/shared-agents",
         },
         guide: {
-          codex: "/srv/m/docs/guide",
+          opencode: "/srv/m/docs/guide",
           claude: "/srv/a/docs/guide",
         },
       },
@@ -357,7 +413,7 @@ test("remote installer deduplicates shared artifacts and locks every parent in s
   }), "utf8");
   try {
     const result = spawnSync(process.execPath, [remoteInstaller,
-      "--harness", "codex,claude",
+      "--harness", "opencode,claude",
       "--environment", "fleet",
       "--no-skills",
       "--artifact", "agents,guide",
@@ -386,6 +442,47 @@ test("remote installer deduplicates shared artifacts and locks every parent in s
       "/srv/m/docs/.mstack.install.lock",
       "/srv/z/.mstack.install.lock",
     ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("remote installer rejects conflicting artifact formats in either order before connecting", () => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-remote-format-collision-test-"));
+  const configPath = join(root, "environments.json");
+  const helperPath = join(root, "fake-transport.mjs");
+  const logPath = join(root, "transport.log");
+  writeFileSync(helperPath, [
+    'import { appendFileSync } from "node:fs";',
+    'appendFileSync(process.env.MSTACK_FAKE_TRANSPORT_LOG, "connected\\n");',
+    'process.exit(91);',
+  ].join("\n"), "utf8");
+  writeFileSync(configPath, JSON.stringify({
+    fleet: {
+      transport: "ssh",
+      host: "dev@tailnet-host",
+      targets: { codex: "/home/dev/.agents/skills", claude: "/home/dev/.claude/skills" },
+      artifacts: { agents: { codex: "/srv/shared-agents", claude: "/srv/shared-agents" } },
+      sshCommand: process.execPath,
+      sshArgs: [helperPath],
+    },
+  }), "utf8");
+  try {
+    for (const harnesses of ["codex,claude", "claude,codex"]) {
+      const result = spawnSync(process.execPath, [remoteInstaller,
+        "--harness", harnesses,
+        "--environment", "fleet",
+        "--no-skills",
+        "--artifact", "agents",
+      ], {
+        cwd: resolve("."),
+        env: { ...process.env, MSTACK_ENVIRONMENTS_FILE: configPath, MSTACK_FAKE_TRANSPORT_LOG: logPath },
+        encoding: "utf8",
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Remote target collision/, harnesses);
+      assert.equal(existsSync(logPath), false, "format conflicts must fail before connecting");
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

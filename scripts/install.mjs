@@ -20,12 +20,14 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
+import { convertAgentMarkdown } from "./agent-format.mjs";
 import {
   artifactPathParts,
   localPathKey,
   pathIsWithin,
   stagingPath,
   targetPathsOverlap,
+  validateArtifactOverrides,
 } from "./install-paths.mjs";
 
 if (Number.parseInt(process.versions.node, 10) < 18) {
@@ -41,6 +43,9 @@ const artifactProfile = JSON.parse(readFileSync(join(repoRoot, "profiles", "arti
 const artifactRegistry = artifactProfile.artifacts ?? {};
 const validHarnesses = Object.keys(harnessRegistry);
 const validArtifacts = Object.keys(artifactRegistry);
+for (const [name, definition] of Object.entries(artifactRegistry)) {
+  if (definition.installable !== false) validateArtifactOverrides(name, definition, validHarnesses);
+}
 
 function valueAfter(flag) {
   const index = args.indexOf(flag);
@@ -96,7 +101,7 @@ function pathFromParts(parts) {
 function artifactBase(name, harness) {
   const base = artifactRegistry[name]?.harnesses?.[harness]?.base;
   if (base === "codex-home") {
-    return configuredPath(process.env.CODEX_HOME, join(userHome, ".codex"), "CODEX_HOME");
+    return configuredPath(process.env.CODEX_HOME || undefined, join(userHome, ".codex"), "CODEX_HOME");
   }
   return dirname(targets[harness]);
 }
@@ -167,7 +172,7 @@ function artifactTarget(name, harness) {
   const root = artifactBase(name, harness);
   const target = resolve(root, ...artifactPathParts(name, definition, harness));
   if (!pathIsWithin(root, target)) {
-    throw new Error(`Artifact ${name} target must stay within the harness configuration directory`);
+    throw new Error(`Artifact ${name} target must stay within its configured base directory`);
   }
   return target;
 }
@@ -249,35 +254,15 @@ function copyDirectoryContents(source, target) {
   }
 }
 
-function readAgentFrontmatter(content, path) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
-  if (!match) throw new Error(`${path} has no frontmatter`);
-  const field = (name) => {
-    const line = match[1].match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
-    if (!line?.[1]) throw new Error(`${path} has no ${name}`);
-    const value = line[1].trim();
-    try { return JSON.parse(value); } catch { return value; }
-  };
-  return { name: field("name"), description: field("description"), body: content.slice(match[0].length) };
-}
-
 function applyArtifactAdapter(staged, item) {
-  const format = artifactRegistry[item.name]?.harnesses?.[item.harness]?.format;
-  if (format !== "codex-toml") return;
+  if (item.format !== "codex-toml") return;
   for (const entry of readdirSync(staged, { withFileTypes: true })) {
+    if (entry.isDirectory()) throw new Error(`Codex agent files must be top-level: ${entry.name}`);
     if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
     const sourcePath = join(staged, entry.name);
-    const agent = readAgentFrontmatter(readFileSync(sourcePath, "utf8"), sourcePath);
-    if (typeof agent.name !== "string" || typeof agent.description !== "string" || typeof agent.body !== "string" || !agent.body.trim()) {
-      throw new Error(`${sourcePath} is not a valid Codex agent definition`);
-    }
     const targetPath = join(staged, `${basename(entry.name, ".md")}.toml`);
-    writeFileSync(targetPath, [
-      `name = ${JSON.stringify(agent.name)}`,
-      `description = ${JSON.stringify(agent.description)}`,
-      `developer_instructions = ${JSON.stringify(agent.body)}`,
-      "",
-    ].join("\n"), "utf8");
+    if (existsSync(targetPath)) throw new Error(`Converted Codex agent target already exists: ${targetPath}`);
+    writeFileSync(targetPath, convertAgentMarkdown(readFileSync(sourcePath, "utf8"), sourcePath), { encoding: "utf8", flag: "wx" });
     unlinkSync(sourcePath);
   }
 }
@@ -384,6 +369,7 @@ const rawArtifactPlan = harnesses.flatMap((harness) =>
     harness,
     name,
     source: artifactSources[name],
+    format: artifactRegistry[name].harnesses?.[harness]?.format ?? "copy",
     target: artifactTargets[`${harness}:${name}`],
   })),
 );
@@ -393,7 +379,12 @@ for (const item of rawArtifactPlan) {
   const key = localPathKey(item.target);
   const existing = artifactTargetsByPath.get(key);
   if (existing) {
-    if (existing.name === item.name && existing.source === item.source) continue;
+    if (existing.name === item.name && existing.source === item.source) {
+      if (existing.format !== item.format) {
+        throw new Error(`Target ${item.target} has conflicting artifact formats for ${existing.harness} and ${item.harness}; configure separate artifact directories`);
+      }
+      continue;
+    }
     throw new Error("Selected skills and artifacts resolve to the same target directory");
   }
   artifactTargetsByPath.set(key, item);
