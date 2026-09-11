@@ -165,6 +165,32 @@ test("installer delegates an SSH environment to a no-connect dry run", () => {
   }
 });
 
+test("remote Codex agents use the official user agent directory", () => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-remote-codex-agents-test-"));
+  const configPath = join(root, "environments.json");
+  writeFileSync(configPath, JSON.stringify({
+    fleet: {
+      transport: "ssh",
+      host: "dev@tailnet-host",
+      shell: "posix",
+      targets: { codex: "/home/dev/.agents/skills" },
+    },
+  }), "utf8");
+  try {
+    const result = spawnSync(process.execPath, [remoteInstaller,
+      "--harness", "codex",
+      "--environment", "fleet",
+      "--no-skills",
+      "--artifact", "agents",
+      "--dry-run",
+    ], { cwd: resolve("."), env: { ...process.env, MSTACK_ENVIRONMENTS_FILE: configPath }, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /agents -> \/home\/dev\/\.codex\/agents/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("SSH environment transport overrides are validated before spawning", () => {
   const root = mkdtempSync(join(tmpdir(), "mstack-remote-config-test-"));
   const configPath = join(root, "environments.json");
@@ -250,7 +276,7 @@ test("remote staging ignores inherited local artifact target overrides", () => {
   writeFileSync(join(localArtifact, "marker.txt"), "keep local", "utf8");
   writeFileSync(helperPath, [
     'const [mode, ...args] = process.argv.slice(2);',
-    'if (mode === "ssh" && args.at(-1)?.includes("mktemp -d")) console.log("/srv/remote/.mstack-stage.fake");',
+    'if (mode === "ssh" && args.at(-1)?.includes("mktemp -d")) console.log("/srv/remote/.codex/.mstack-stage.fake");',
   ].join("\n"), "utf8");
   writeFileSync(configPath, JSON.stringify({
     fleet: {

@@ -93,6 +93,14 @@ function pathFromParts(parts) {
   return parts.reduce((current, part) => join(current, part), userHome);
 }
 
+function artifactBase(name, harness) {
+  const base = artifactRegistry[name]?.harnesses?.[harness]?.base;
+  if (base === "codex-home") {
+    return configuredPath(process.env.CODEX_HOME, join(userHome, ".codex"), "CODEX_HOME");
+  }
+  return dirname(targets[harness]);
+}
+
 const environment = readEnvironment(environmentName, harnesses);
 if (environment.transport === "ssh") {
   const remote = spawnSync(process.execPath, [join(repoRoot, "scripts", "remote-install.mjs"), ...args], {
@@ -156,8 +164,8 @@ function artifactTarget(name, harness) {
   const variable = artifactVariable(name, harness);
   const override = environmentPath ?? process.env[variable];
   if (override) return configuredPath(override, "", environmentPath ? `${environmentName}.artifacts.${name}.${harness}` : variable);
-  const root = dirname(targets[harness]);
-  const target = resolve(root, ...artifactPathParts(name, definition));
+  const root = artifactBase(name, harness);
+  const target = resolve(root, ...artifactPathParts(name, definition, harness));
   if (!pathIsWithin(root, target)) {
     throw new Error(`Artifact ${name} target must stay within the harness configuration directory`);
   }
@@ -238,6 +246,39 @@ function copyDirectoryContents(source, target) {
       force: false,
       filter: (path) => basename(path) !== "node_modules",
     });
+  }
+}
+
+function readAgentFrontmatter(content, path) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
+  if (!match) throw new Error(`${path} has no frontmatter`);
+  const field = (name) => {
+    const line = match[1].match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
+    if (!line?.[1]) throw new Error(`${path} has no ${name}`);
+    const value = line[1].trim();
+    try { return JSON.parse(value); } catch { return value; }
+  };
+  return { name: field("name"), description: field("description"), body: content.slice(match[0].length) };
+}
+
+function applyArtifactAdapter(staged, item) {
+  const format = artifactRegistry[item.name]?.harnesses?.[item.harness]?.format;
+  if (format !== "codex-toml") return;
+  for (const entry of readdirSync(staged, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+    const sourcePath = join(staged, entry.name);
+    const agent = readAgentFrontmatter(readFileSync(sourcePath, "utf8"), sourcePath);
+    if (typeof agent.name !== "string" || typeof agent.description !== "string" || typeof agent.body !== "string" || !agent.body.trim()) {
+      throw new Error(`${sourcePath} is not a valid Codex agent definition`);
+    }
+    const targetPath = join(staged, `${basename(entry.name, ".md")}.toml`);
+    writeFileSync(targetPath, [
+      `name = ${JSON.stringify(agent.name)}`,
+      `description = ${JSON.stringify(agent.description)}`,
+      `developer_instructions = ${JSON.stringify(agent.body)}`,
+      "",
+    ].join("\n"), "utf8");
+    unlinkSync(sourcePath);
   }
 }
 
@@ -325,7 +366,9 @@ if (unsupportedArtifacts.length) {
     .join("\n");
   throw new Error(`Unsupported artifact selection:\n${details}`);
 }
-for (const name of requestedArtifacts) artifactPathParts(name, artifactRegistry[name]);
+for (const name of requestedArtifacts) {
+  for (const harness of harnesses) artifactPathParts(name, artifactRegistry[name], harness);
+}
 const artifactSources = Object.fromEntries(
   requestedArtifacts.map((name) => [name, resolveArtifactSource(name)]),
 );
@@ -559,6 +602,7 @@ try {
     const staged = stagingPath(item.target, transactionId, index);
     stagedPaths.push(staged);
     copyDirectoryContents(item.source, staged);
+    if (item.kind === "artifact") applyArtifactAdapter(staged, item);
     if (item.kind === "skill") {
       applyAdapter(staged, item.harness, item.skill);
       validateAdaptedSkill(staged, item.skill);

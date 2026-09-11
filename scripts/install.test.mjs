@@ -25,6 +25,7 @@ function fixture() {
     env: {
       ...process.env,
       HARNESS_SKILLS_CODEX_DIR: join(root, "codex skills"),
+      CODEX_HOME: join(root, "codex home"),
       HARNESS_SKILLS_CLAUDE_DIR: join(root, "claude skills"),
       HARNESS_SKILLS_OPENCODE_DIR: join(root, "opencode skills"),
       HARNESS_SKILLS_PI_DIR: join(root, "pi skills"),
@@ -354,9 +355,12 @@ test("installs selected optional artifacts without skills", () => {
       env,
     );
     assert.equal(result.status, 0, result.stderr);
+    const codexAgents = join(root, "codex home", "agents");
     const configRoot = join(root, "codex skills", "..");
-    assert.equal(existsSync(join(configRoot, "agents", "meta-agent.md")), true);
-    assert.equal(existsSync(join(configRoot, "agents", "comment-reviewer.md")), true);
+    assert.equal(existsSync(join(codexAgents, "meta-agent.toml")), true);
+    assert.equal(existsSync(join(codexAgents, "comment-reviewer.toml")), true);
+    assert.equal(existsSync(join(codexAgents, "meta-agent.md")), false);
+    assert.match(readFileSync(join(codexAgents, "meta-agent.toml"), "utf8"), /developer_instructions = /);
     assert.equal(existsSync(join(configRoot, "tools", "meta-mode", "package.json")), true);
     assert.equal(existsSync(join(configRoot, "tools", "meta-mode", "node_modules")), false);
     assert.equal(existsSync(env.HARNESS_SKILLS_CODEX_DIR), false);
@@ -462,7 +466,8 @@ test("deduplicates a shared artifact target across harnesses", () => {
       env,
     );
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(existsSync(join(sharedAgents, "meta-agent.md")), true);
+    assert.equal(existsSync(join(sharedAgents, "meta-agent.toml")), true);
+    assert.equal(existsSync(join(sharedAgents, "meta-agent.md")), false);
     assert.match(result.stdout, /Installed 0 skill copies and 1 artifact copies/);
   } finally {
     rmSync(root, { recursive: true, force: true });

@@ -31,6 +31,25 @@ try {
         if (!Array.isArray(artifact.path) || artifact.path.length === 0 || artifact.path.some((part) => typeof part !== "string" || !part || part === "." || part === ".." || part.includes("/") || part.includes("\\"))) {
           errors.push(`artifact ${name} must define a safe non-empty path array`);
         }
+        if (artifact.harnesses !== undefined && (!artifact.harnesses || typeof artifact.harnesses !== "object" || Array.isArray(artifact.harnesses))) {
+          errors.push(`artifact ${name} harnesses must be an object`);
+        } else {
+          for (const [harness, override] of Object.entries(artifact.harnesses ?? {})) {
+            if (!override || typeof override !== "object" || Array.isArray(override)) {
+              errors.push(`artifact ${name} harness ${harness} must be an object`);
+              continue;
+            }
+            if (override.path !== undefined && (!Array.isArray(override.path) || override.path.length === 0 || override.path.some((part) => typeof part !== "string" || !part || part === "." || part === ".." || part.includes("/") || part.includes("\\")))) {
+              errors.push(`artifact ${name} harness ${harness} must define a safe non-empty path array`);
+            }
+            if (override.base !== undefined && !["harness", "codex-home"].includes(override.base)) {
+              errors.push(`artifact ${name} harness ${harness} has an unsupported base`);
+            }
+            if (override.format !== undefined && typeof override.format !== "string") {
+              errors.push(`artifact ${name} harness ${harness} format must be a string`);
+            }
+          }
+        }
       } else if (typeof artifact.reason !== "string" || !artifact.reason) {
         errors.push(`unsupported artifact ${name} must explain its reason`);
       }

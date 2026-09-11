@@ -61,7 +61,7 @@ The available installable artifacts are:
 
 | Artifact | Default destination (beside the harness `skills/` directory) |
 | --- | --- |
-| `agents` | `agents/` |
+| `agents` | `agents/` (Codex: `$CODEX_HOME/agents/` as `.toml`) |
 | `meta-mode-tools` | `tools/meta-mode/` |
 | `guide` | `docs/guide/` |
 

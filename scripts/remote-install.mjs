@@ -81,7 +81,9 @@ if (unknownArtifacts.length) throw new Error(`Unknown artifact: ${unknownArtifac
 const unsupported = artifacts.filter((name) => artifactRegistry[name].installable === false);
 if (unsupported.length) throw new Error(`Unsupported artifact selection: ${unsupported.join(", ")}`);
 const artifactPaths = Object.fromEntries(
-  artifacts.map((name) => [name, artifactPathParts(name, artifactRegistry[name])]),
+  artifacts.map((name) => [name, Object.fromEntries(
+    harnesses.map((harness) => [harness, artifactPathParts(name, artifactRegistry[name], harness)]),
+  )]),
 );
 
 function artifactEnvironmentPath(name, harness) {
@@ -95,7 +97,10 @@ function artifactEnvironmentPath(name, harness) {
 function remoteArtifactTarget(name, harness) {
   const custom = artifactEnvironmentPath(name, harness);
   if (custom) return custom;
-  return posix.join(posix.dirname(environment.targets[harness]), ...artifactPaths[name]);
+  const skillParent = posix.dirname(environment.targets[harness]);
+  const codexHome = artifactRegistry[name].harnesses?.[harness]?.base === "codex-home";
+  const base = codexHome && posix.basename(skillParent) === ".agents" ? posix.dirname(skillParent) : skillParent;
+  return posix.join(base, ...(codexHome ? [".codex"] : []), ...artifactPaths[name][harness]);
 }
 
 const requestedItems = harnesses.flatMap((harness) => [
@@ -178,6 +183,12 @@ for (const name of Object.keys(childEnv)) {
   if (/^MSTACK_ARTIFACT_.*_DIR$/i.test(name)) delete childEnv[name];
 }
 for (const harness of harnesses) childEnv[harnessRegistry[harness].directoryVariable] = join(localRoot, harness, "skills");
+for (const harness of harnesses) {
+  for (const name of artifacts) {
+    const variable = `MSTACK_ARTIFACT_${name.replaceAll(/[^A-Za-z0-9]+/g, "_").toUpperCase()}_${harness.toUpperCase()}_DIR`;
+    childEnv[variable] = join(localRoot, harness, ...artifactPaths[name][harness]);
+  }
+}
 const localInstallerArgs = [
   join(repoRoot, "scripts", "install.mjs"),
   "--harness", harnesses.join(","),
@@ -213,7 +224,7 @@ try {
   for (const item of items) {
     const localSource = item.kind === "skill"
       ? join(localRoot, item.harness, "skills", item.name)
-      : join(localRoot, item.harness, ...artifactPaths[item.name]);
+      : join(localRoot, item.harness, ...artifactPaths[item.name][item.harness]);
     if (!existsSync(localSource)) throw new Error(`Staged source is missing: ${localSource}`);
     const parent = posix.dirname(item.target);
     const stageOutput = remoteScript(`set -eu; mkdir -p ${quotePosix(parent)}; mktemp -d ${quotePosix(posix.join(parent, ".mstack-stage.XXXXXX"))}`);

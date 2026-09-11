@@ -35,7 +35,7 @@
     },
     "artifacts": {
       "agents": {
-        "codex": "/home/dev/.agents/agents",
+        "codex": "/home/dev/.codex/agents",
         "claude": "/home/dev/.claude/agents",
         "opencode": "/home/dev/.config/opencode/agents",
         "pi": "/home/dev/.pi/agent/agents"

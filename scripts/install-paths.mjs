@@ -10,20 +10,19 @@ export function pathIsWithin(root, candidate, platform = process.platform) {
   return difference === "" || (!isAbsolute(difference) && difference !== ".." && !difference.startsWith(`..${sep}`));
 }
 
-export function artifactPathParts(name, definition) {
-  const parts = definition?.path;
-  if (
-    !Array.isArray(parts) ||
-    parts.length === 0 ||
-    parts.some((part) =>
+export function artifactPathParts(name, definition, harness) {
+  const baseParts = definition?.path;
+  const parts = definition?.harnesses?.[harness]?.path ?? baseParts;
+  for (const candidate of [baseParts, parts]) {
+    if (!Array.isArray(candidate) || candidate.length === 0 || candidate.some((part) =>
       typeof part !== "string" ||
       part.trim().length === 0 ||
       part === "." ||
       part === ".." ||
       part.includes("/") ||
-      part.includes("\\"))
-  ) {
-    throw new Error(`Artifact ${name} must define a safe non-empty path array`);
+      part.includes("\\"))) {
+      throw new Error(`Artifact ${name} must define a safe non-empty path array`);
+    }
   }
   return parts;
 }
