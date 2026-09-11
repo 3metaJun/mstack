@@ -251,6 +251,28 @@ configuration, and `claude-haiku-4-5-20251001`. The check required Claude
 Code's native `Skill` tool to invoke `meta-mode` and return an exact marker;
 the remote fixture and temporary credentials were removed afterward.
 
+## Recover recent context
+
+`recall` includes a history reader in `recall/scripts/history.mjs`; it also works
+when only the skill directory is installed. List session metadata for the active
+workspace before selecting a session to read:
+
+```bash
+node <recall-directory>/scripts/history.mjs list --harness codex --workspace <workspace> --exclude <current-session-id>
+node <recall-directory>/scripts/history.mjs read --harness codex --workspace <workspace> --session <session-id> --query parser
+```
+
+The reader supports Codex, Claude Code, OpenCode, and pi, with configured storage
+roots, session exclusions, branch selection where available, and bounded text
+output. OpenCode exports are sanitized by default; explicitly use `--local-text`
+for private local recovery because sanitization can remove all message text.
+See [history sources](./skills/recall/references/history-sources.md) for supported
+formats and limits. Tests use disposable sessions; no user transcript is bundled.
+
+The [authoring playbook](./skills/meta-mode/playbooks/authoring-a-skill.md) gives
+`automate-me` and `reflect` a concrete draft, description review, and validation
+workflow even when no native skill creator or repository validator is installed.
+
 ## Repository layout
 
 - `skills/` contains the canonical, harness-neutral skill files.

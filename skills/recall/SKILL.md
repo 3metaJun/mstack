@@ -16,11 +16,15 @@ history. Prefer live repository state over stale conversation claims.
 2. **Lock scope.** Pin the topic, workspace, and time window. Default "recent"
    to seven days. Never expand one project's request into other workspaces.
 3. **Discover history safely.** Use the active harness entry in
-   [history-sources.md](./references/history-sources.md). Prefer documented CLI
-   export commands over direct database reads. Exclude the current session and
-   obvious subagent, evaluation, and test noise.
+   [history-sources.md](./references/history-sources.md). The bundled
+   [history helper](./scripts/history.mjs) lists workspace-scoped metadata before
+   reading a selected session. It is available in a skills-only installation.
+   Prefer documented CLI export commands over direct database reads. Exclude
+   the current session and obvious subagent, evaluation, and test noise.
 4. **Search narrowly.** Order candidates by actual modification time, search for
-   the topic first, then read only matching sessions and relevant regions. For a
+   the topic first, then read only matching sessions and relevant regions. Pass
+   `--query` and output limits to the helper, and preserve its warnings and
+   truncation status in your assessment. For a
    large authorized corpus, delegate non-overlapping time slices if the host
    supports parallel agents. Keep raw transcripts out of the final context.
 5. **Sweep shared records.** For a named feature, file, subsystem, or incident,

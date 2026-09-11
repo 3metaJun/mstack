@@ -15,15 +15,16 @@ Invoke when the user says "reflect" or "/reflect". Skip when the conversation is
 
 ### 1. Locate the active transcript
 
-The parent finds its own transcript file before fanning out. Use the active Harness's history adapter to locate the workspace-scoped transcript directory. Do not glob across unrelated project stores.
+The parent identifies the active session before fanning out. Prefer the
+conversation already in context or a transcript path supplied by the host. When
+lookup is necessary, use [recall's history sources](../recall/references/history-sources.md)
+with the active workspace and known session ID. Match the opening user prompt
+within the selected conversation, not at a fixed JSONL line or field shared
+across harnesses. Keep warnings and truncation limits with the excerpts.
 
-```bash
-ls -t <agent-transcripts>/*.jsonl <agent-transcripts>/*/*.jsonl <agent-transcripts>/*/subagents/*.jsonl 2>/dev/null | head -10
-```
-
-Three transcript layouts: legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), and subagent (`<parent>/subagents/<child>.jsonl`).
-
-For each candidate, read the first JSONL line and check that `message.content[0].text` contains the conversation's opening user prompt. Take the matching path. If no path resolves, write a tight digest of the session and pass that instead.
+If recall is not installed or the active session has no readable persisted
+record, write a tight digest of the current conversation and pass that instead.
+Do not search other project stores to compensate for a missing active session.
 
 ### 2. Spawn three reviewers in parallel
 
@@ -57,9 +58,15 @@ Backlog items file to whatever devex / backlog tracker your team uses automatica
 For each approved Accepted item, follow the Routing field exactly:
 
 - Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): parent does directly.
-- Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): hand to [the repository authoring playbook](../meta-mode/playbooks/authoring-a-skill.md) and run its draft, validation, and review steps.
-- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): use the repository authoring playbook's description review steps.
-- `new skill via authoring workflow: <kebab-name>`: hand creation to the skill-authoring workflow. Do not invent the shape ad hoc.
+- Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): follow [the bundled authoring playbook](../meta-mode/playbooks/authoring-a-skill.md) and run its draft, validation, and review steps.
+- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): use the authoring playbook's description review in step 3.
+- `new skill via authoring workflow: <kebab-name>`: follow that playbook's placement and draft steps.
+
+If the playbook is absent from a selected-skills installation, preserve the
+existing skill format or create `<name>/SKILL.md` with matching `name` and a
+quoted `description`. Check links and available tools, and verify two triggering
+and two non-triggering requests against the description. Exercise changed
+structural behavior with a disposable example. Report the checks you could run.
 
 If your environment ships a SKILL.md validator, run it on every touched skill before declaring done. Skip this step if it doesn't.
 
