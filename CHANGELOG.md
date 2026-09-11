@@ -32,6 +32,8 @@ merged since npm version 0.2.0.
   for `recall`, `reflect`, and `automate-me`.
 - Correct Harness metadata and agent formats, preserve agent bodies during
   conversion, and reject conflicting or invalid artifact targets before writes.
+- Include every reviewed skill file in the npm package and reject packaging
+  omissions during CI, including npm's default exclusion of nested ignore files.
 
 ### Verification
 
