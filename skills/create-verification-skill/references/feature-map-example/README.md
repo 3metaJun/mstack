@@ -1,15 +1,16 @@
-# Feature verification map
+# Notes verification map
 
-Treat this directory as the maintained source for user-facing verification.
-Start with baseline preconditions and driving conventions, then index each
-feature file.
+This worked example describes a fictional Notes app and its `control-notes`
+driver. The commands show the precision a real feature map needs; they are
+not tools shipped by mstack. Replace the app, driver, paths, and seeded data
+when writing your project's map.
 
 ## Baseline preconditions
 
-- Name the exact application URL, executable, or endpoint.
-- Use disposable ports, profiles, and data directories when possible.
-- Seed the smallest state required by the recipes.
-- Run the doctor check before driving.
+- Launch Notes at `http://127.0.0.1:4173` with a disposable data directory.
+- Seed notes titled `Quarterly plan` with body `Draft budget`, and `Grocery list`.
+- Put `control-notes` and the `notes` CLI on `PATH`.
+- Run `control-notes doctor` and check the URL, data directory, and build revision.
 - Never drive an instance not owned by this verification run.
 
 ## Proof and skip reporting
@@ -32,3 +33,10 @@ exactly these four H2 sections:
 
 Keep implementation details out. Record user paths, stable handles, required
 state, literal commands, and observable proof.
+
+## Features
+
+- [Create a note](create-note.md) covers browser and CLI creation, cancellation,
+  persistence, and cleanup.
+- [Search notes](search.md) covers toolbar, keyboard, and CLI search with matching,
+  empty, and clear states.
