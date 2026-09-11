@@ -39,7 +39,7 @@
       "upstream": "pstack",
       "source": "skills/automate-me/SKILL.md",
       "sourceDigest": "1510979b0b71b54284427a19c09918f8b1fdfc168f9b7f9e30098793a5ec88ef",
-      "targetDigest": "b87d5af4db107ca6e3c2019f41875e36aeeda32b8748d8d92fbe133091529bb5"
+      "targetDigest": "6ab6c4c4a4b50a7cb182149408bd1758229d4386fbb8b1a66cf6927847b02c27"
     },
     "skills/blast-radius/SKILL.md": {
       "upstream": "pstack",
@@ -176,7 +176,7 @@
       "upstream": "pstack",
       "source": "skills/interrogate/SKILL.md",
       "sourceDigest": "2867910309e81411123ae4edca68ffca5795e66521d3f3bc0876f6213b542fb9",
-      "targetDigest": "8772ecf8ed7e64118459160d4cd61096877b52cc557104a3ae305b036be16ac9"
+      "targetDigest": "ab2508809da00eac47444b102cd7d11730f15b2476cd6cd947e330cc08814e78"
     },
     "skills/maintain-verification-skill/SKILL.md": {
       "upstream": "pstack",
@@ -194,7 +194,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/authoring-a-skill.md",
       "sourceDigest": "f6a13a445c360b48d6cd72780ac01955f45b82826476efe0e67c7559329407aa",
-      "targetDigest": "bf3af363613b131a1bcbd37173853f223e1aed8cdf22db1bdfd310e3de9e9eaf"
+      "targetDigest": "51c83fbbc28b4081ca54757cd2a8ee2225644a3ed7618ab4f0673adbc0bc3b0d"
     },
     "skills/meta-mode/playbooks/autonomous-run.md": {
       "upstream": "pstack",
@@ -343,7 +343,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "6bbf35cb2111c358461c7ba90f210dad4573f3a3ada92f6459eac0c69d83b01a",
-      "targetDigest": "65337fe034b2b34f782f2184e7df15bee535b58918a18efbe969206016c96b1e"
+      "targetDigest": "53cb6ae809072973802f78fac92fc75efbe111330271513fa756cd2f0d053ad4"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",
@@ -492,13 +492,18 @@
     "skills/recall/references/history-sources.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "33f5166b933378e7d03b689901f23fc48709f565338bf60292903ea762908598"
+      "targetDigest": "22f657e947e100c6c1e65877029579eaf21638321e6d580246a5ea6c4492087b"
+    },
+    "skills/recall/scripts/history.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "fe3284380308ecd0cf232072c7bc8e59c0f56ffecc42851d1fddb2c382ab2683"
     },
     "skills/recall/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/recall/SKILL.md",
       "sourceDigest": "d265b0e5b6dc5b89c0407f3387d24462c988e1990a37d5359735137908128c5a",
-      "targetDigest": "fbf2ae86fe5f3aeff6a6454b1a0f0899eebb5311a37ba44a3a0088fc2523ca77"
+      "targetDigest": "be67c9e064a2b6d2ec52e915c19f6507f9f389a112e9961eb93b3c793b565e70"
     },
     "skills/reflect/references/divergent-reviewer.md": {
       "upstream": "pstack",
@@ -528,13 +533,13 @@
       "upstream": "pstack",
       "source": "skills/reflect/SKILL.md",
       "sourceDigest": "6a4d4ccaace9ce88c3e268fcbedf3cfd40e527162a5e5aad6de8edbaf5e2b83f",
-      "targetDigest": "baedc055aceb55ed320db637c37a7e37270f5cbd654b41bd6246b158e172a5d4"
+      "targetDigest": "5478382b85614482fdf8799c9b0113d0c12c6595ee1003aa62c91f6288b91089"
     },
     "skills/setup-mstack/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/setup-pstack/SKILL.md",
       "sourceDigest": "5acdc3db4f15f3e9b81fb56eab7f17cdccde1a11a40053ed7743f7467729c8a9",
-      "targetDigest": "5aeab4f18c5387b6c32ab72fd87c3b48fdfe419109e681045dfe42c155e33bcc"
+      "targetDigest": "555c577bf494baafafa980ee3f647149c180a615a706ef409845cd03cd16e142"
     },
     "skills/show-me-your-work/references/decision-log-template.tsv": {
       "upstream": "pstack",
