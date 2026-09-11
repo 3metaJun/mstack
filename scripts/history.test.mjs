@@ -153,12 +153,14 @@ test("missing stores and malformed records produce controlled diagnostics withou
   const options = { harness: "codex", workspace, root: join(root, "missing"), command: "list", env: {} };
   assert.deepEqual((await history(options)).sessions, []);
   jsonl(join(options.root, "sessions", "broken.jsonl"), ["PRIVATE INVALID HEADER"]);
+  jsonl(join(options.root, "sessions", "also-broken.jsonl"), ["ANOTHER PRIVATE INVALID HEADER"]);
   const broken = await history(options);
   assert.equal(broken.warnings.length, 1);
   assert.doesNotMatch(JSON.stringify(broken), /PRIVATE/);
   jsonl(join(options.root, "sessions", "good.jsonl"), [{ type: "session_meta", payload: { id: "good", cwd: workspace } }, "PRIVATE INVALID BODY"]);
   const reading = await history({ ...options, command: "read", session: "good" });
   assert.deepEqual(reading.messages, []);
+  assert.equal(reading.warnings.length, 2, "keep distinct diagnostics but emit each only once");
   assert.ok(reading.warnings.some((warning) => /malformed record/.test(warning)));
   assert.doesNotMatch(JSON.stringify(reading), /PRIVATE/);
 });
@@ -220,4 +222,26 @@ test("the recall CLI runs through a linked directory while imports stay silent",
   assert.equal(stdinImport.status, 0, stdinImport.stderr);
   assert.equal(stdinImport.stdout, "");
   assert.equal(stdinImport.stderr, "");
+});
+
+test("the recall CLI rejects duplicate single-value options and switches but permits repeated exclusions", (t) => {
+  const { root, workspace } = fixture(t);
+  const store = join(root, "codex");
+  for (const id of ["first", "second"]) {
+    jsonl(join(store, "sessions", `${id}.jsonl`), [{ type: "session_meta", payload: { id, cwd: workspace } }]);
+  }
+  const args = [resolve("skills/recall/scripts/history.mjs"), "list", "--harness", "codex", "--workspace", workspace, "--root", store];
+  for (const [flag, suffix] of [
+    ["--workspace", ["--workspace", join(root, "other-workspace")]],
+    ["--limit", ["--limit", "1", "--limit", "2"]],
+    ["--local-text", ["--local-text", "--local-text"]],
+  ]) {
+    const result = spawnSync(process.execPath, [...args, ...suffix], { encoding: "utf8", cwd: root });
+    assert.notEqual(result.status, 0);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, new RegExp(`Duplicate option: ${flag}`));
+  }
+  const excluded = spawnSync(process.execPath, [...args, "--exclude", "first", "--exclude", "second"], { encoding: "utf8", cwd: root });
+  assert.equal(excluded.status, 0, excluded.stderr);
+  assert.deepEqual(JSON.parse(excluded.stdout).sessions, []);
 });

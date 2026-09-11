@@ -235,7 +235,7 @@ export async function history(input) {
   for (const session of candidates) if (!byId.has(session.id)) byId.set(session.id, session);
   const sessions = [...byId.values()];
   const publicSession = ({ id, workspace, updated }) => ({ id, workspace, updated: new Date(updated).toISOString() });
-  if (options.command === "list") return { sessions: sessions.slice(0, options.limit).map(publicSession), truncated: sessions.length > options.limit, warnings };
+  if (options.command === "list") return { sessions: sessions.slice(0, options.limit).map(publicSession), truncated: sessions.length > options.limit, warnings: [...new Set(warnings)] };
   const session = sessions.find((candidate) => candidate.id === options.session);
   if (!session) throw new Error("Session not found in the requested workspace, time window, or exclusions.");
   const messages = (await readMessages(session, options, warnings))
@@ -251,13 +251,16 @@ export async function history(input) {
     budget -= text.length;
     selected.push({ role: message.role, text });
   }
-  return { session: publicSession(session), messages: selected.reverse(), sanitized: options.harness === "opencode" && !options.localText, truncated, warnings };
+  return { session: publicSession(session), messages: selected.reverse(), sanitized: options.harness === "opencode" && !options.localText, truncated, warnings: [...new Set(warnings)] };
 }
 
 function argumentsFor(argv) {
   const options = { command: argv[0], exclude: [] };
   const flags = { "--harness": "harness", "--workspace": "workspace", "--root": "root", "--since": "since", "--session": "session", "--leaf": "leaf", "--query": "query", "--limit": "limit", "--max-chars": "maxChars", "--exclude": "exclude" };
+  const seen = new Set();
   for (let index = 1; index < argv.length; index++) {
+    if (argv[index] !== "--exclude" && seen.has(argv[index])) throw new Error(`Duplicate option: ${argv[index]}`);
+    seen.add(argv[index]);
     if (argv[index] === "--local-text") { options.localText = true; continue; }
     const key = flags[argv[index]];
     if (!key) throw new Error(`Unknown option: ${argv[index]}`);
