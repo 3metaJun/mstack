@@ -1,9 +1,14 @@
 # mstack
 
+[![CI](https://github.com/3metaJun/mstack/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/3metaJun/mstack/actions/workflows/validate.yml)
+[![npm version](https://img.shields.io/npm/v/%403metajun%2Fmstack?logo=npm&logoColor=white)](https://www.npmjs.com/package/@3metajun/mstack)
+
 mstack packages portable engineering skills for Codex, Claude Code, OpenCode,
 and pi. One canonical `skills/` tree feeds every supported harness. The
 installer adapts harness metadata at install time, so skill instructions do not
 contain harness-specific paths or commands.
+
+![mstack portable engineering skills across Codex, Claude Code, OpenCode, and pi](https://raw.githubusercontent.com/3metaJun/mstack/main/.github/assets/social-preview.png)
 
 The collection started with selected workflows from
 [`pstack`](https://github.com/cursor/plugins/tree/main/pstack/skills) and
