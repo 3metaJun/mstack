@@ -9,8 +9,8 @@ merged since npm version 0.2.0.
 
 - `run-role` no longer treats `inherit-parent` as the new CLI's default model.
   Add `--parent-model <known-parent-model>` to inherit explicitly, or choose
-  `--model auto` to use the CLI default. Calls without a model configuration
-  also need one of these choices.
+  `--model auto` to use the CLI default. An explicit `--model <name>` also works.
+  Calls without a model configuration need an explicit model selection too.
 - Codex's optional agent artifacts are now TOML files in `CODEX_HOME/agents`,
   defaulting to `~/.codex/agents`. Reinstall with the `agents` artifact selected.
   A custom remote skill directory needs an explicit agent artifact target.
