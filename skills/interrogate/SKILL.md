@@ -32,7 +32,7 @@ Write one clear paragraph. If you're unsure about the intent, ask the user befor
 
 ## Step 3, Spawn Reviewers
 
-Launch all reviewers in a single message using the delegation tool. Use the configured `reviewer` role from mstack; when the configuration contains a reviewer list, launch one per entry. Otherwise launch the Harness's normal reviewer once and record that no model race was configured.
+Read `~/.config/mstack/models.json` when it exists. Select `overrides.<active Harness>.reviewer` before `roles.reviewer`, defaulting to `inherit-parent`. A string selects one reviewer; a non-empty list selects one per entry. Launch them together using the delegation tool, within its concurrency limit. With one reviewer, record that no model race was configured.
 
 | Subagent | Default model |
 |----------|---------------|
@@ -40,10 +40,23 @@ Launch all reviewers in a single message using the delegation tool. Use the conf
 
 For each reviewer:
 - `worker role`: `reviewer`
-- `model`: the configured mstack `reviewer` role, or `inherit-parent` when no override exists
+- `model`: this reviewer's single model string from the resolved role
 - `readonly`: `true`
 
-If a selected model is rejected as unresolvable, omit the model so the active Harness inherits the parent, record the fallback, and continue the review. Do not write a guessed model name into the shared configuration.
+Resolve `inherit-parent` through the Harness's documented native inheritance.
+For `auto`, use its documented default model selection. If a selected model is
+unavailable, record the failed selection and any fallback's actual model. Do not
+count repeated fallback models as independent model agreement or save a guessed
+model name in the configuration.
+
+If native delegation cannot select the configured models and an mstack checkout
+or package directory is available, use `node scripts/run-role.mjs --harness <name>
+--role reviewer --file <models.json> --prompt <filled-template> --all-models
+--read-only --cwd <review-workspace> --execute` from that directory. Each result includes its model,
+stdout, stderr, and exit status. `inherit-parent` also needs
+`--parent-model <known-parent-model>`. To request one reviewer on the new CLI's
+default model, replace `--all-models` with `--model auto`. When only the skills are installed,
+use the Harness's available delegation and report any model-selection limit.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

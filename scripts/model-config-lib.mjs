@@ -15,6 +15,20 @@ export function readModelConfig(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+export function isValidModel(model) {
+  return typeof model === "string" && model.trim() === model && model.length > 0 && !model.includes("\0");
+}
+
+function validateRoleValue(role, model, path, errors) {
+  if (role === "reviewer" && Array.isArray(model)) {
+    if (!model.length || model.some((entry) => !isValidModel(entry)) || new Set(model).size !== model.length) {
+      errors.push(`${path} must be a non-empty list of unique model strings without surrounding whitespace or NUL characters`);
+    }
+  } else if (!isValidModel(model)) {
+    errors.push(`${path} must be a non-empty string without surrounding whitespace or NUL characters`);
+  }
+}
+
 export function validateModelConfig(config, harnesses) {
   const errors = [];
   if (!config || typeof config !== "object" || Array.isArray(config)) {
@@ -25,9 +39,8 @@ export function validateModelConfig(config, harnesses) {
     errors.push("roles must be an object");
   } else {
     for (const [role, model] of Object.entries(config.roles)) {
-      if (!role || typeof model !== "string" || model.length === 0) {
-        errors.push(`roles.${role || "<empty>"} must be a non-empty string`);
-      }
+      if (!role.trim()) errors.push("role names must not be empty");
+      validateRoleValue(role, model, `roles.${role || "<empty>"}`, errors);
     }
   }
   if (config.overrides !== undefined && (!config.overrides || typeof config.overrides !== "object" || Array.isArray(config.overrides))) {
@@ -41,7 +54,7 @@ export function validateModelConfig(config, harnesses) {
     }
     for (const [role, model] of Object.entries(overrides)) {
       if (!Object.hasOwn(config.roles ?? {}, role)) errors.push(`overrides.${harness}.${role} has no role default`);
-      if (typeof model !== "string" || model.length === 0) errors.push(`overrides.${harness}.${role} must be a non-empty string`);
+      validateRoleValue(role, model, `overrides.${harness}.${role}`, errors);
     }
   }
   return errors;

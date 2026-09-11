@@ -21,7 +21,7 @@
       "automations/benny/templates/triage-automation-prompt.md": "e0bba594547834f013ec805915610eb597e7929efe3ffbe85ae00339ee16d474"
     },
     "guide": {
-      "docs/guide/01-setup.md": "b6ef89aa895f1fe19cec0385e3657d1ca3bb3bf888fc7a247c9efdbbcb56dc2b",
+      "docs/guide/01-setup.md": "6786c9090de6092d87836214b690e2b5640ddc7f34b19c0b9e2af794fcc17e7e",
       "docs/guide/02-meta-mode.md": "c169bbee5eae6ea6b16ea4d3df1442b05031778b20eb9af8cc19c1a7bac5282a",
       "docs/guide/03-understand.md": "5db58a1fc2cc7bf1843945fcc7d93eba4f73e26fde5cd097d006be641fe5883e",
       "docs/guide/04-design.md": "216bc41d25e3481333acfffef4ea486ce8dabcc5dfa736d16eb0afd979aa03a1",
@@ -30,7 +30,7 @@
       "docs/guide/07-overnight.md": "060294d4dbda952e3211e285f75e471c8d454d7705767b42377c4e1963841ad2",
       "docs/guide/08-principles.md": "4dba3340352310e432905a27dd70552b4e034bb7d37a55dcab59a4b378e59ef1",
       "docs/guide/09-make-it-yours.md": "04b21905a0a152ea9e57dcbecf25112112a1e7584037feabf501132f2d8cc64c",
-      "docs/guide/10-recipes-and-pitfalls.md": "425b08f452cf1ca2b95ce8c035ae8c8d0e1b315794ac35c45c3c8e45cc3f15a5",
+      "docs/guide/10-recipes-and-pitfalls.md": "56b6e1360c070029ac26ec39f00f7c6c587f1203255682808ae93b3176f90746",
       "docs/guide/images/design.jpg": "b8ed07427f6a0c37dd8ba97961fc0eb5071efeee6c4a230648bdb7547f6f2a8f",
       "docs/guide/images/overnight.jpg": "4b4405e4df8925c5b3abbe702f681af0f3b1f5f32271b599f95717f578f1a0c8",
       "docs/guide/images/recipes.jpg": "9fa2d51b476635712737795ddef81806efaa0086bb3bfa9f9f45695d9ab0f8e8",
@@ -97,7 +97,7 @@
     },
     "interrogate": {
       "source": "8aef2c35f2282bbc2636e10b4b52fe41ed5d00c86e775e82fbf8771b2b07f9be",
-      "target": "8772ecf8ed7e64118459160d4cd61096877b52cc557104a3ae305b036be16ac9"
+      "target": "ab2508809da00eac47444b102cd7d11730f15b2476cd6cd947e330cc08814e78"
     },
     "maintain-verification-skill": {
       "source": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
@@ -109,7 +109,7 @@
     },
     "meta-mode": {
       "source": "9319963075ef537e1d83edc4814f6bc6a7c90779ea261227934c984a0a5e88fb",
-      "target": "65337fe034b2b34f782f2184e7df15bee535b58918a18efbe969206016c96b1e"
+      "target": "53cb6ae809072973802f78fac92fc75efbe111330271513fa756cd2f0d053ad4"
     },
     "no-comments": {
       "source": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
@@ -213,11 +213,11 @@
     },
     "reflect": {
       "source": "6a4d4ccaace9ce88c3e268fcbedf3cfd40e527162a5e5aad6de8edbaf5e2b83f",
-      "target": "baedc055aceb55ed320db637c37a7e37270f5cbd654b41bd6246b158e172a5d4"
+      "target": "008d424f5a4570c0452852322591a50a75c4e90828f85bbb8662b5dabcc26e47"
     },
     "setup-mstack": {
       "source": "a11137437e12831c73f228f449bdfefab487bf7e2c69a4b306189e8fb1e6ab3e",
-      "target": "5aeab4f18c5387b6c32ab72fd87c3b48fdfe419109e681045dfe42c155e33bcc"
+      "target": "555c577bf494baafafa980ee3f647149c180a615a706ef409845cd03cd16e142"
     },
     "show-me-your-work": {
       "source": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",

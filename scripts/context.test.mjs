@@ -178,19 +178,21 @@ test("model configuration uses the platform home directory by default", () => {
   }
 });
 
-test("run-role emits a harness command and omits inherited model flags", () => {
+test("run-role emits a harness command using the explicit CLI default", () => {
   const result = run(runRole, [
     "--harness",
     "pi",
     "--role",
     "implementer",
+    "--model",
+    "auto",
     "--prompt",
     "inspect the repository",
   ]);
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
   assert.equal(plan.harness, "pi");
-  assert.equal(plan.model, "inherit-parent");
+  assert.equal(plan.model, "auto");
   assert.equal(plan.command, "pi");
   assert.deepEqual(plan.args, ["-p", "--no-session", "inspect the repository"]);
 });

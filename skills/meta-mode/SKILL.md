@@ -131,7 +131,14 @@ worker a focused file or question and read its complete result before deciding.
 Choose models by difficulty. Route cross-cutting design, concurrency, and subtle
 algorithms to the strongest configured judgment role. Route trivial mechanical
 edits to the fast implementer role. Role-specific settings override these
-defaults, and `inherit-parent` uses the parent chat model.
+defaults. Resolve `inherit-parent` through the Harness's documented native
+inheritance; `auto` uses its documented default model selection. A new CLI process
+does not inherit the parent chat's model. With `run-role`, pass the known parent
+model as `--parent-model <name>`, or choose `--model auto` for the CLI default.
+For a reviewer list, assign one string per worker in configuration order and
+cycle when a fixed-size workflow needs more workers. `interrogate` instead runs
+one reviewer per entry. CLI fanout via `--all-models` requires `--read-only`;
+launch writable workers individually with separate worktrees.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
