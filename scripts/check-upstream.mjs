@@ -335,7 +335,9 @@ if (!existsSync(manifestPath)) {
   if (manifest) {
     const canonicalSkills = manifest.canonicalSkills;
     if (!canonicalSkills || typeof canonicalSkills !== "object" || Array.isArray(canonicalSkills)) {
-      console.warn("Upstream manifest has no canonicalSkills body baselines; skill body drift was not checked.");
+      const message = "Upstream manifest has no valid canonicalSkills body baselines; skill body drift was not checked.";
+      (strict ? console.error : console.warn)(message);
+      if (strict) artifactProblems += 1;
     } else {
       const canonicalProblems = [];
       for (const sourceName of readdirSync(sourceSkills, { withFileTypes: true })
@@ -345,6 +347,10 @@ if (!existsSync(manifestPath)) {
         const entry = canonicalSkills[targetName];
         const sourcePath = resolveInside(sourceRoot, join("skills", sourceName, "SKILL.md"), `canonical source skill ${sourceName}`);
         const targetPath = resolveInside(targetRoot, join("skills", targetName, "SKILL.md"), `canonical target skill ${targetName}`);
+        if (!existsSync(sourcePath)) {
+          canonicalProblems.push(`${targetName}: upstream source SKILL.md is missing`);
+          continue;
+        }
         if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
           canonicalProblems.push(`${targetName}: missing manifest entry`);
           continue;

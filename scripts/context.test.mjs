@@ -18,6 +18,7 @@ const optimizer = resolve("scripts", "optimize-context.mjs");
 const reconciler = resolve("scripts", "reconcile-context.mjs");
 const modelConfig = resolve("scripts", "model-config.mjs");
 const runRole = resolve("scripts", "run-role.mjs");
+const smokeHarnesses = resolve("scripts", "smoke-harnesses.mjs");
 
 function fixture(prefix) {
   return mkdtempSync(join(tmpdir(), `${prefix} 测试-`));
@@ -217,6 +218,51 @@ test("run-role resolves a configured model override", () => {
     const plan = JSON.parse(result.stdout);
     assert.equal(plan.model, "remote-model");
     assert.deepEqual(plan.args, ["run", "--pure", "--model", "remote-model", "inspect the repository"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("run-role expands a Windows-style home path for an explicit model file", () => {
+  const root = fixture("run-role-home-path");
+  const configPath = join(root, "models.json");
+  try {
+    writeFileSync(
+      configPath,
+      `${JSON.stringify({ roles: { implementer: "parent-model" }, overrides: { opencode: { implementer: "remote-model" } } })}\n`,
+      "utf8",
+    );
+    const result = run(runRole, [
+      "--harness",
+      "opencode",
+      "--role",
+      "implementer",
+      "--prompt",
+      "inspect the repository",
+      "--file",
+      "~\\models.json",
+    ], {
+      HOME: root,
+      USERPROFILE: root,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).model, "remote-model");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("smoke harnesses expands a Windows-style home path for skill targets", () => {
+  const root = fixture("smoke-home-path");
+  try {
+    const result = run(smokeHarnesses, ["--harness", "codex", "--skill", "meta-mode", "--json"], {
+      HOME: root,
+      USERPROFILE: root,
+      HARNESS_SKILLS_CODEX_DIR: "~\\codex skills",
+    });
+    const entries = JSON.parse(result.stdout);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].target, join(root, "codex skills"));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -18,7 +18,7 @@ function valueAfter(flag) {
 
 function expandHome(path) {
   if (path === "~") return homedir();
-  return path?.startsWith("~/") ? join(homedir(), path.slice(2)) : path;
+  return path?.startsWith("~/") || path?.startsWith("~\\") ? join(homedir(), path.slice(2)) : path;
 }
 
 function targetFor(harness) {

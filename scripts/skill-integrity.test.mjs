@@ -88,10 +88,7 @@ test("canonical skill manifest detects body drift", () => {
     assert.ok(existsSync(join(skillsRoot, name, "SKILL.md")), `${name} manifest entry has no target skill`);
     const content = readSkill(name);
     assert.equal(entries[name].target, normalizedDigest(content), `${name} body differs from its reviewed baseline`);
-    assert.notEqual(
-      entries[name].target,
-      normalizedDigest(`${content}\nThis mutation must invalidate the canonical body digest.`),
-      `${name} digest must change when its body changes`,
-    );
+    const truncated = content.slice(0, Math.max(1, Math.floor(content.length / 2)));
+    assert.notEqual(entries[name].target, normalizedDigest(truncated), `${name} digest must detect truncation`);
   }
 });

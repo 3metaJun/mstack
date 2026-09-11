@@ -266,9 +266,10 @@ reviewed body digest for every canonical pstack skill, reports the portable
 skill count, and reports the state of the agents, Benny automation, guide, and
 meta-mode tools. Add `--strict` to fail when a canonical skill body or
 configured artifact is missing, differs, or remains after removal upstream.
-Strict mode requires
-the source to be a clean Git checkout whose `HEAD` exactly matches the pinned
-commit.
+Strict mode requires the source to be a clean Git checkout whose `HEAD` exactly
+matches the pinned commit. If you intentionally edit a canonical skill, update
+its reviewed target digest in `canonicalSkills` as part of that review; sync
+preserves these entries and does not silently re baseline them.
 
 To preview and apply a transformed refresh of those non-skill artifacts:
 
