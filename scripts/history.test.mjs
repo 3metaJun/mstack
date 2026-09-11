@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { history } from "../skills/recall/scripts/history.mjs";
 
@@ -174,4 +175,24 @@ test("the copied recall skill runs without repository scripts and validates CLI 
     assert.notEqual(failed.status, 0);
     assert.doesNotMatch(failed.stderr, /at file:/);
   }
+});
+
+test("the recall CLI runs through a linked directory while imports stay silent", (t) => {
+  const { root, workspace } = fixture(t);
+  const installed = join(root, "installed-recall");
+  const linked = join(root, "linked-recall");
+  cpSync(resolve("skills/recall"), installed, { recursive: true });
+  symlinkSync(installed, linked, process.platform === "win32" ? "junction" : "dir");
+  const script = join(linked, "scripts", "history.mjs");
+  const args = [script, "list", "--harness", "codex", "--workspace", workspace, "--root", join(root, "empty")];
+  for (const flags of [[], ["--preserve-symlinks-main"]]) {
+    const result = spawnSync(process.execPath, [...flags, ...args], { encoding: "utf8", cwd: root });
+    assert.equal(result.status, 0, result.stderr);
+    assert.notEqual(result.stdout.trim(), "", "the CLI must run when its entry path has a symlink alias");
+    assert.deepEqual(JSON.parse(result.stdout).sessions, []);
+  }
+  const importing = spawnSync(process.execPath, ["--input-type=module", "--eval", `await import(${JSON.stringify(pathToFileURL(script).href)})`], { encoding: "utf8", cwd: root });
+  assert.equal(importing.status, 0, importing.stderr);
+  assert.equal(importing.stdout, "");
+  assert.equal(importing.stderr, "");
 });

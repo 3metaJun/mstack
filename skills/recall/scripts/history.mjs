@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
-import { createReadStream } from "node:fs";
+import { createReadStream, realpathSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const HARNESSES = ["codex", "claude", "opencode", "pi"];
 const MAX_FILE_BYTES = 16 * 1024 * 1024;
@@ -268,7 +267,8 @@ function argumentsFor(argv) {
   return options;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+// Node can resolve module symlinks while argv retains the original launch path.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(new URL(import.meta.url))) {
   try {
     if (process.argv.includes("--help")) {
       console.log("Usage: node history.mjs <list|read> --harness <codex|claude|opencode|pi> --workspace <path>\nOptions: --root <path> --since <ISO date> --exclude <id> (repeatable) --limit <count>\nRead: --session <id> [--query <text>] [--max-chars <count>] [--leaf <id>]\nOpenCode read: --local-text returns private, unsanitized message text.");
