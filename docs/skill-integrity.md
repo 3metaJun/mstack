@@ -7,6 +7,12 @@ bytes. The complete target skill tree is checked, including files added locally.
 omissions. Every source file must map to an existing target or an omission with
 a reason. Missing files cannot become accepted omissions by refreshing hashes.
 
+Target inventories include `skills/` and each move's exact target. A moved
+directory includes local additions recursively; a single-file move includes
+only that file, not its siblings. Installed `node_modules/` dependencies are
+excluded from the target inventory. Preview and write use the same inventory
+as checks, so intentional additions can be reviewed and recorded normally.
+
 These are adapted workflows. A matching baseline proves that the recorded files
 have not drifted. It does not prove semantic equivalence, that a shorter rewrite
 retains every instruction, or that a Harness executed a workflow successfully.

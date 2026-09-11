@@ -21,12 +21,13 @@ export function inside(root, path) {
   return current;
 }
 
-export function filesUnder(root, path) {
+export function filesUnder(root, path, { excludeDependencies = false } = {}) {
   const directory = inside(root, path);
   return readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, "en"))
     .flatMap((entry) => {
+      if (excludeDependencies && entry.name === "node_modules" && (entry.isDirectory() || entry.isSymbolicLink())) return [];
       const child = `${path}/${entry.name}`;
-      if (entry.isDirectory()) return filesUnder(root, child);
+      if (entry.isDirectory()) return filesUnder(root, child, { excludeDependencies });
       if (!entry.isFile()) throw new Error(`Unsupported file type: ${child}`);
       return [child];
     });
@@ -47,6 +48,23 @@ function json(root, path) {
   return JSON.parse(readFileSync(inside(root, path), "utf8"));
 }
 
+function targetFiles(root, profiles) {
+  const options = { excludeDependencies: true };
+  const files = new Set(filesUnder(root, "skills", options));
+  for (const spec of Object.values(profiles)) {
+    for (const move of Object.values(spec.moves ?? {})) {
+      const target = inside(root, move.target);
+      if (!existsSync(target)) continue;
+      const entry = lstatSync(target);
+      if (entry.isDirectory()) {
+        for (const path of filesUnder(root, move.target, options)) files.add(path);
+      } else if (entry.isFile()) files.add(move.target);
+      else throw new Error(`Unsupported file type: ${move.target}`);
+    }
+  }
+  return files;
+}
+
 export function checkLocalBaseline(root, manifest) {
   if (!record(manifest) || manifest.version !== 1 || !record(manifest.files) ||
       !record(manifest.omitted) || !record(manifest.sources)) {
@@ -60,7 +78,7 @@ export function checkLocalBaseline(root, manifest) {
   for (const name of Object.keys(manifest.sources)) {
     if (!upstreams[name]) problems.push(`${name}: stale source pin`);
   }
-  const actual = new Set(filesUnder(root, "skills"));
+  const actual = targetFiles(root, json(root, "profiles/skill-sources.json"));
   for (const [path, entry] of Object.entries(manifest.files)) {
     const target = inside(root, path);
     if (!record(entry) || !hashPattern.test(entry.targetDigest ?? "")) {
@@ -151,8 +169,8 @@ export function buildBaseline(root, sourceRoots) {
   }
   const expectedSkills = json(root, "profiles/skills.json").skills;
   if (JSON.stringify([...owners].sort()) !== JSON.stringify([...expectedSkills].sort())) throw new Error("Skill sources do not cover the declared skill inventory");
-  for (const path of filesUnder(root, "skills")) {
-    if (!owners.has(path.split("/")[1])) throw new Error(`${path}: no upstream skill owner`);
+  for (const path of targetFiles(root, profiles)) {
+    if (path.startsWith("skills/") && !owners.has(path.split("/")[1])) throw new Error(`${path}: no upstream skill owner`);
     manifest.files[path] ??= { upstream: null, reason: "Local portability guidance or implementation; review alongside its owning skill.", targetDigest: contentDigest(root, path) };
   }
   manifest.files = Object.fromEntries(Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b, "en")));

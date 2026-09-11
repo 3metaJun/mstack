@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -99,6 +99,75 @@ test("local checks detect truncated references, deleted moved files, and untrack
   assert.match(result.stderr, /skills\/diagnosis\/new.md: untracked skill file/);
 });
 
+function movedFixture(t) {
+  const f = fixture(t);
+  write(f.pstack, "skills/poteto-mode/scripts/run.mjs", "console.log('upstream');\n");
+  write(f.pstack, "skills/poteto-mode/logger.sh", "echo log\n");
+  f.pins.pstack.commit = commit(f.pstack);
+  json(f.target, "profiles/upstreams.json", f.pins);
+  f.mappings.pstack.moves = {
+    "skills/poteto-mode/scripts": { target: "tools/meta-mode", reason: "Packaged runtime tools" },
+    "skills/poteto-mode/logger.sh": { target: "tools/logger/log.mjs", reason: "Portable logger" },
+  };
+  json(f.target, "profiles/skill-sources.json", f.mappings);
+  write(f.target, "tools/meta-mode/run.mjs", "console.log('upstream');\n");
+  write(f.target, "tools/logger/log.mjs", "console.log('log');\n");
+  write(f.target, "tools/logger/unrelated.md", "Not owned by the single-file move.\n");
+  f.record();
+  return f;
+}
+
+test("moved directories detect and record local additions without including a file move's siblings", (t) => {
+  const f = movedFixture(t);
+  write(f.target, "tools/meta-mode/nested/local.mjs", "console.log('review me');\n");
+  const unchecked = f.run("--check");
+  assert.notEqual(unchecked.status, 0);
+  assert.match(unchecked.stderr, /tools\/meta-mode\/nested\/local.mjs: untracked skill file/);
+  assert.doesNotMatch(unchecked.stderr, /unrelated.md/);
+  const preview = f.run(...f.sources, "--diff");
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.match(preview.stdout, /Local addition: tools\/meta-mode\/nested\/local.mjs/);
+  assert.match(preview.stdout, /console.log\('review me'\)/);
+  const recorded = JSON.parse(f.record());
+  assert.equal(recorded.files["tools/meta-mode/nested/local.mjs"].upstream, null);
+  const checked = f.run(...f.sources, "--check");
+  assert.equal(checked.status, 0, checked.stderr);
+  assert.match(checked.stdout, /8 tracked files, 1 explicit omissions, 0 baseline changes/);
+  write(f.target, "tools/meta-mode/nested/local.mjs", "console.log('changed');\n");
+  const changed = f.run("--check");
+  assert.notEqual(changed.status, 0);
+  assert.match(changed.stderr, /tools\/meta-mode\/nested\/local.mjs: target content changed/);
+});
+
+test("moved target inventories exclude installed dependencies but reject linked or escaping paths", (t) => {
+  const f = movedFixture(t);
+  const before = f.record();
+  write(f.target, "tools/meta-mode/node_modules/pkg/dependency.mjs", "console.log('installed dependency');\n");
+  const checked = f.run("--check");
+  assert.equal(checked.status, 0, checked.stderr);
+  assert.match(checked.stdout, /All skill files match/);
+  assert.equal(f.record(), before);
+
+  const outside = join(f.root, "outside");
+  write(outside, "private.md", "Do not read this outside the target root.\n");
+  const link = join(f.target, "tools/meta-mode/linked");
+  symlinkSync(outside, link, process.platform === "win32" ? "junction" : "dir");
+  const linked = f.run("--check");
+  assert.notEqual(linked.status, 0);
+  assert.match(linked.stderr, /Unsupported file type: tools\/meta-mode\/linked/);
+  assert.doesNotMatch(linked.stderr, /Do not read this/);
+  rmSync(link);
+
+  f.mappings.pstack.moves["skills/poteto-mode/scripts"].target = "../outside";
+  json(f.target, "profiles/skill-sources.json", f.mappings);
+  for (const args of [["--check"], [...f.sources, "--write"]]) {
+    const escaped = f.run(...args);
+    assert.notEqual(escaped.status, 0);
+    assert.match(escaped.stderr, /Invalid checkout-relative path: \.\.\/outside/);
+  }
+  assert.equal(readFileSync(join(f.target, "profiles/skill-manifest.json"), "utf8"), before);
+});
+
 test("refresh refuses to bless a deleted source-mapped file and preserves the previous manifest", (t) => {
   const f = fixture(t);
   const before = f.record();
@@ -158,4 +227,7 @@ test("checks require a valid manifest and reject path escapes before reading out
   const badArgument = f.run("--source", "--write");
   assert.notEqual(badArgument.status, 0);
   assert.match(badArgument.stderr, /--source requires a value/);
+  const noOptions = f.run();
+  assert.notEqual(noOptions.status, 0);
+  assert.match(noOptions.stderr, /Use --check for a local check or --help for usage/);
 });

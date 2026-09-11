@@ -30,6 +30,9 @@ const sourceRoots = {
   pstack: options["--source"] ?? process.env.MSTACK_PSTACK_SOURCE,
   "mattpocock/skills": options["--matt-source"] ?? process.env.MSTACK_MATT_SOURCE,
 };
+if (!options["--check"] && !Object.values(sourceRoots).some(Boolean)) {
+  throw new Error("Pass --source <pstack> and --matt-source <mattpocock/skills> to preview or refresh a baseline. Use --check for a local check or --help for usage.");
+}
 const lock = acquireUpstreamSyncLock(root, { recoverStale: false });
 try {
   assertUpstreamSyncTargetReadable(root, lock);
