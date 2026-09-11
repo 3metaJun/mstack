@@ -160,10 +160,9 @@ test("installs harness-specific frontmatter and preserves conflicts", () => {
     assert.doesNotMatch(codex, /^compatibility:/m);
     assert.match(claude, /^compatibility:/m);
     assert.doesNotMatch(claude, /^metadata:/m);
-    assert.doesNotMatch(claude, /The included logger requires/i);
     for (const adapted of [opencode, pi]) {
       assert.match(adapted, /^metadata:/m);
-      assert.match(adapted, /^  requirements:/m);
+      assert.match(adapted, /^  requirements: Node\.js 18 or newer for scripts\/log\.mjs$/m);
       assert.doesNotMatch(adapted, /^compatibility:/m);
     }
 

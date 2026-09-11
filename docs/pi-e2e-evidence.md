@@ -2,15 +2,16 @@
 
 The three requested skills ran through pi `0.85.1` in a disposable Git
 workspace on 2026-09-11. The installer copied all 50 skills into the workspace
-project root at `.pi/skills/`.
+project root at `.pi/skills/` with `HARNESS_SKILLS_PI_DIR=<workspace>/.pi/skills`.
 
-Each command used pi's documented non-interactive mode, disabled session writes,
-and allowed only read tools:
+Each command used pi's documented non-interactive mode, approved the project so
+project-local skills were discoverable, emitted JSONL events, kept a session
+directory for inspection, and allowed only read tools:
 
 ```text
-pi -p --no-session --tools read,grep,find,ls -- "/skill:meta-mode Smoke check only. Do not edit files or delegate. Reply exactly mstack-meta-mode-ok."
-pi -p --no-session --tools read,grep,find,ls -- "/skill:architect Smoke check only. Do not edit files or delegate. Reply exactly mstack-architect-ok."
-pi -p --no-session --tools read,grep,find,ls -- "/skill:create-verification-skill Inspect this disposable repository. Do not create files or run an app. Reply exactly mstack-create-verification-skill-ok."
+pi -p --approve --mode json --session-dir .pi/e2e-sessions --tools read,grep,find,ls -- "/skill:meta-mode Read the installed skill before answering. Reply exactly mstack-meta-mode-ok."
+pi -p --approve --mode json --session-dir .pi/e2e-sessions --tools read,grep,find,ls -- "/skill:architect Read the installed skill before answering. Reply exactly mstack-architect-ok."
+pi -p --approve --mode json --session-dir .pi/e2e-sessions --tools read,grep,find,ls -- "/skill:create-verification-skill Read the installed skill before answering. Do not create files or run an app. Reply exactly mstack-create-verification-skill-ok."
 ```
 
 Observed output:
@@ -21,7 +22,10 @@ mstack-architect-ok
 mstack-create-verification-skill-ok
 ```
 
-The run proves skill discovery and invocation through pi. It does not claim
-that `create-verification-skill` drove an application, because this smoke
-workspace has no application to launch.
-
+Each JSONL session contains a user `message_start` event whose text includes the
+resolved `<skill name="..." location=".../.pi/skills/.../SKILL.md">` block,
+followed by the marker in the assistant `message_end` event. The run proves
+project skill discovery and invocation through pi. The marker prompts exercise
+loading only. They do not claim that the skills completed their full workflows.
+In particular, `create-verification-skill` did not drive an application because
+this smoke workspace has no application to launch.
