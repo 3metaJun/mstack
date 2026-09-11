@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { execFile, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildSshInvocation, environmentCwd, readEnvironment } from "./environment-lib.mjs";
-import { readModelConfig, resolveRoleModel, validateModelConfig } from "./model-config-lib.mjs";
+import { isValidModel, readModelConfig, resolveRoleModel, validateModelConfig } from "./model-config-lib.mjs";
 import { processInvocation } from "./runtime-lib.mjs";
 import { parseCliArgs } from "./cli-args.mjs";
 
@@ -16,6 +16,12 @@ const options = parseCliArgs(process.argv.slice(2), [
   "--harness", "--role", "--prompt", "--environment", "--file", "--model",
   "--parent-model", "--model-index", "--cwd",
 ], ["--execute", "--read-only", "--all-models"]);
+
+for (const flag of ["--model", "--parent-model"]) {
+  if (options[flag] !== undefined && !isValidModel(options[flag])) {
+    throw new Error(`${flag} must be a non-empty model string without surrounding whitespace or NUL characters`);
+  }
+}
 
 function requireValue(flag) {
   const value = options[flag];

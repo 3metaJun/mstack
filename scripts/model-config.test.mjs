@@ -42,6 +42,31 @@ test("model configuration rejects empty, duplicate and non-reviewer lists", () =
   assert.deepEqual(validateModelConfig({ roles: { reviewer: "auto" } }, harnesses), []);
 });
 
+test("model configuration rejects padded names in defaults, lists and overrides", (t) => {
+  for (const config of [
+    { roles: { reviewer: " review-a" } },
+    { roles: { reviewer: ["review-a", "review-b "] } },
+    { roles: { reviewer: "auto" }, overrides: { pi: { reviewer: "\treview-a" } } },
+  ]) {
+    const { file, run } = fixture(t, config);
+    const result = run(["--file", file, "--harness", "pi"], checkModels);
+    assert.notEqual(result.status, 0, JSON.stringify(config));
+    assert.match(result.stderr, /whitespace/);
+  }
+});
+
+test("explicit CLI model selections reject padded names before planning a worker", (t) => {
+  const { file, run } = fixture(t, { roles: { reviewer: "inherit-parent" } });
+  const args = ["--harness", "pi", "--role", "reviewer", "--prompt", "inspect", "--file", file];
+  for (const flag of ["--model", "--parent-model"]) {
+    for (const value of [" review-a", "review-a ", "\treview-a"]) {
+      const result = run([...args, flag, value]);
+      assert.notEqual(result.status, 0, `${flag}: ${JSON.stringify(value)}`);
+      assert.match(result.stderr, /whitespace/);
+    }
+  }
+});
+
 test("list execution requires explicit selection and preserves model arguments for every Harness", (t) => {
   const { file, run } = fixture(t);
   for (const harness of harnesses) {

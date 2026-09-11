@@ -221,7 +221,8 @@ Replace `roles.reviewer` or `overrides.codex.reviewer` with a JSON array of the
 model names you selected. Add `--parent-model <known-parent-model>` if an entry
 is `inherit-parent`. Without `--execute`, fanout prints a JSON array of plans.
 Execution returns a JSON array with each model's `stdout`, `stderr`, and `status`,
-in configuration order. Any failure makes the overall exit code nonzero. Output
+in configuration order. A string role used with `--all-models` returns the same
+array shape with one entry. Any failure makes the overall exit code nonzero. Output
 is buffered up to 16 MiB per stream per worker; larger output fails that worker.
 `--all-models` requires `--read-only`. Writable workers need individual launches
 with separate worktrees. Review the Harness's read-only limits below.

@@ -15,17 +15,17 @@ export function readModelConfig(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
-function validModel(model) {
-  return typeof model === "string" && model.trim().length > 0 && !model.includes("\0");
+export function isValidModel(model) {
+  return typeof model === "string" && model.trim() === model && model.length > 0 && !model.includes("\0");
 }
 
 function validateRoleValue(role, model, path, errors) {
   if (role === "reviewer" && Array.isArray(model)) {
-    if (!model.length || model.some((entry) => !validModel(entry)) || new Set(model).size !== model.length) {
-      errors.push(`${path} must be a non-empty list of unique model strings`);
+    if (!model.length || model.some((entry) => !isValidModel(entry)) || new Set(model).size !== model.length) {
+      errors.push(`${path} must be a non-empty list of unique model strings without surrounding whitespace or NUL characters`);
     }
-  } else if (!validModel(model)) {
-    errors.push(`${path} must be a non-empty string`);
+  } else if (!isValidModel(model)) {
+    errors.push(`${path} must be a non-empty string without surrounding whitespace or NUL characters`);
   }
 }
 
