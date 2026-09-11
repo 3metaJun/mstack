@@ -6,15 +6,13 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { processInvocation } from "./runtime-lib.mjs";
+import { parseCliArgs } from "./cli-args.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const registry = JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8"));
-const args = process.argv.slice(2);
-
-function valueAfter(flag) {
-  const index = args.indexOf(flag);
-  return index === -1 ? undefined : args[index + 1];
-}
+const options = parseCliArgs(process.argv.slice(2), [
+  "--harness", "--skill", "--file", "--model", "--parent-model",
+], ["--execute", "--require-installed", "--json"]);
 
 function expandHome(path) {
   if (path === "~") return homedir();
@@ -55,16 +53,16 @@ function cleanLines(value) {
     .filter(Boolean);
 }
 
-const requested = valueAfter("--harness") ?? "all";
+const requested = options["--harness"] ?? "all";
 const harnesses = requested === "all" ? Object.keys(registry) : requested.split(",");
 const unknown = harnesses.filter((harness) => !Object.hasOwn(registry, harness));
 if (!harnesses.length || unknown.length) throw new Error(`Unsupported harness: ${unknown.join(", ") || requested}`);
 if (new Set(harnesses).size !== harnesses.length) throw new Error(`Duplicate harness in --harness: ${requested}`);
 
-const skill = valueAfter("--skill") ?? "meta-mode";
+const skill = options["--skill"] ?? "meta-mode";
 if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(skill)) throw new Error(`Invalid skill name: ${skill}`);
-const execute = args.includes("--execute");
-const requireInstalled = args.includes("--require-installed");
+const execute = options["--execute"];
+const requireInstalled = options["--require-installed"];
 const results = [];
 
 for (const harness of harnesses) {
@@ -82,7 +80,7 @@ for (const harness of harnesses) {
     version: version.output.split(/\r?\n/)[0] ?? "",
   };
   if (execute && version.ok) {
-    const modelConfig = valueAfter("--file");
+    const modelConfig = options["--file"];
     const roleArgs = [
       join(repoRoot, "scripts", "run-role.mjs"),
       "--harness",
@@ -95,6 +93,9 @@ for (const harness of harnesses) {
       "--read-only",
     ];
     if (modelConfig) roleArgs.push("--file", modelConfig);
+    if (options["--parent-model"]) roleArgs.push("--parent-model", options["--parent-model"]);
+    if (options["--model"]) roleArgs.push("--model", options["--model"]);
+    else if (!modelConfig && !options["--parent-model"]) roleArgs.push("--model", "auto");
     const live = spawnSync(process.execPath, roleArgs, { encoding: "utf8", stdio: "pipe" });
     const lines = cleanLines(`${live.stdout ?? ""}${live.stderr ?? ""}`);
     entry.live = live.status === 0 && lines.includes("mstack-smoke-ok") ? "passed" : "failed";
@@ -103,7 +104,7 @@ for (const harness of harnesses) {
   results.push(entry);
 }
 
-const output = args.includes("--json") ? JSON.stringify(results, null, 2) : results.map((entry) => {
+const output = options["--json"] ? JSON.stringify(results, null, 2) : results.map((entry) => {
   const live = entry.live ? `, live ${entry.live}` : "";
   return `${entry.harness}: CLI ${entry.cli}, ${entry.skill} ${entry.installed ? "installed" : "missing"}${live} (${entry.target})`;
 }).join("\n");

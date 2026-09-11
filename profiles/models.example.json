@@ -1,7 +1,7 @@
 {
   "roles": {
     "implementer": "inherit-parent",
-    "reviewer": "inherit-parent",
+    "reviewer": ["inherit-parent"],
     "judge": "inherit-parent",
     "explorer": "inherit-parent",
     "synthesizer": "inherit-parent",

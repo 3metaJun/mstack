@@ -62,6 +62,7 @@ test("run-role emits an SSH plan for a named environment", () => {
       "--prompt", "say 'hello'; do not edit",
       "--environment", "fleet",
       "--file", join(root, "missing-models.json"),
+      "--model", "auto",
     ], { cwd: resolve("."), env: { ...process.env, MSTACK_ENVIRONMENTS_FILE: configPath }, encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
     const plan = JSON.parse(result.stdout);
@@ -97,6 +98,7 @@ test("environment consumers reject a relative MSTACK_ENVIRONMENTS_FILE", () => {
       "--prompt", "inspect",
       "--environment", "fleet",
       "--file", join(root, "missing-models.json"),
+      "--model", "auto",
     ], { cwd: root, env, encoding: "utf8" });
 
     for (const result of [installResult, roleResult]) {
@@ -113,6 +115,7 @@ test("Codex runtime uses flags supported by the current exec CLI", () => {
     "--harness", "codex",
     "--role", "explorer",
     "--prompt", "inspect the repository",
+    "--model", "auto",
   ], { cwd: resolve("."), encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
@@ -125,6 +128,7 @@ test("OpenCode read-only plans select the built-in plan agent", () => {
     "--harness", "opencode",
     "--role", "explorer",
     "--prompt", "inspect the repository",
+    "--model", "auto",
     "--read-only",
   ], { cwd: resolve("."), encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);

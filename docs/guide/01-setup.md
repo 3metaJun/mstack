@@ -23,9 +23,9 @@ Run:
 
 [`/setup-mstack`](../../skills/setup-mstack/SKILL.md) detects the models you have access to, shows you each role (code delegates, judgment, the review panels), and asks what you want. Answer the questions. It writes `~/.config/mstack/models.json`, the portable configuration every mstack skill reads.
 
-You only override what you care about. A role with no entry keeps the skill's default. To restore it later, delete that role's entry, or run `/setup-mstack` again.
+You only override what you care about. To restore a role to the parent chat model, set it to `inherit-parent` or run `/setup-mstack` again. Setup preserves other choices and Harness overrides.
 
-You might be wondering what happens if you use Auto. Set a role to `inherit-parent` or `auto` and mstack omits the subagent `model` field, so the subagent inherits your parent chat model. Both values mean the same thing, and neither is a model slug. For a panel role the value is a list, and one subagent runs per entry, so the list length sets the panel size. Setup also configures `swarm workers`, the default model for every `/swarm` worker unless a race names a model for each arm.
+Use `inherit-parent` for the current chat model through the Harness's documented native inheritance. A new CLI process needs `run-role --parent-model <known-parent-model>` to use that same model. `auto` requests the Harness's default selection, which may differ from the chat model. Neither value is a model name. The `reviewer` role accepts a model string or a non-empty list of unique model strings. `/interrogate` runs one reviewer per list entry. CLI fanout uses `--all-models --read-only`; select just one entry with `--model-index 0`. The `implementer` role sets the default model for `/swarm` workers unless a race names a model for each arm.
 
 ## Accept the verification offer, or don't
 

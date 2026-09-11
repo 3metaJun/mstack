@@ -181,7 +181,7 @@ The SSH/rsync path has been verified end to end against a disposable POSIX
 target, including remote locking, atomic installation, checksum comparison,
 and cleanup.
 
-## Run a role remotely
+## Run a configured role
 
 `run-role` turns a configured role into the selected Harness command. Without
 `--execute` it only prints the plan:
@@ -189,22 +189,57 @@ and cleanup.
 ```bash
 npm run run-role -- --harness opencode --role explorer \
   --prompt "Inspect the repository and do not edit files" \
-  --environment fleet-ssh
+  --environment fleet-ssh --model auto
 ```
 
 Add `--execute` to run the command. SSH environments pass the prompt through
 strict POSIX quoting or a PowerShell encoded command, depending on `shell`.
 
+Model roles live in `~/.config/mstack/models.json`. Each role accepts a model
+string. The `reviewer` role also accepts a non-empty list of unique model strings.
+A Harness override replaces the role's whole value. Use `/setup-mstack` to choose
+names reported by your Harness; existing string configurations remain valid.
+
+`inherit-parent` requests the current chat model. Native delegation can use its
+documented inheritance mechanism, but `run-role` starts a new CLI process and
+requires `--parent-model <known-parent-model>` for that value. `auto` omits the
+model argument and selects the CLI's default, which may be different. Existing
+CLI calls that used `inherit-parent` must add `--parent-model`, or explicitly
+choose `--model auto`. With no configuration file, the seven roles default to
+`inherit-parent`, so the same choice is required.
+
+For a configured reviewer list, select one entry with `--model-index 0` or run
+all entries concurrently:
+
+```bash
+npm run run-role -- --harness codex --role reviewer \
+  --file ~/.config/mstack/models.json --prompt "Review this diff" \
+  --all-models --read-only --execute
+```
+
+Replace `roles.reviewer` or `overrides.codex.reviewer` with a JSON array of the
+model names you selected. Add `--parent-model <known-parent-model>` if an entry
+is `inherit-parent`. Without `--execute`, fanout prints a JSON array of plans.
+Execution returns a JSON array with each model's `stdout`, `stderr`, and `status`,
+in configuration order. Any failure makes the overall exit code nonzero. Output
+is buffered up to 16 MiB per stream per worker; larger output fails that worker.
+`--all-models` requires `--read-only`. Writable workers need individual launches
+with separate worktrees. Review the Harness's read-only limits below.
+
 ## Smoke test Harnesses
 
-Check CLI availability and skill discovery after installation:
+Check CLI availability and installed skill files after installation:
 
 ```bash
 npm run smoke-harnesses -- --harness all --require-installed
 ```
 
-Add `--execute` for a live prompt on every available Harness. With
-`--read-only`, Codex, Claude Code, and pi use CLI-enforced tool restrictions.
+Add `--execute` for a live prompt on every available Harness. It uses the CLI
+default model unless you supply `--model`, `--parent-model`, or a `--file` with
+model choices. An inherited role in that file needs `--parent-model`. The live
+prompt checks a reply marker; it does not prove that the Harness loaded the skill
+or completed its workflow. These live calls always use `--read-only`.
+Codex, Claude Code, and pi use CLI-enforced tool restrictions.
 OpenCode selects its built-in `plan` agent, which denies direct edits but still
 allows shell commands in OpenCode 1.18; use a disposable checkout when its
 prompt-only write boundary is insufficient. A live check also needs that
