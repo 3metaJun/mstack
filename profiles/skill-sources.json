@@ -1,0 +1,37 @@
+{
+  "pstack": {
+    "root": "skills",
+    "moves": {
+      "skills/poteto-mode/scripts": {
+        "target": "tools/meta-mode",
+        "reason": "Runtime tools are packaged separately from portable skill instructions."
+      },
+      "skills/show-me-your-work/scripts/log.sh": {
+        "target": "skills/show-me-your-work/scripts/log.mjs",
+        "reason": "The Node implementation replaces the Bash logger for Windows portability."
+      }
+    }
+  },
+  "mattpocock/skills": {
+    "skills": {
+      "skills/engineering/codebase-design": "codebase-design",
+      "skills/engineering/diagnosing-bugs": "diagnosing-bugs",
+      "skills/productivity/writing-for-agents": "writing-for-agents"
+    },
+    "moves": {
+      "skills/engineering/codebase-design/DEEPENING.md": {
+        "target": "skills/codebase-design/references/deepening.md",
+        "reason": "The adapted dependency guidance lives beside the other design references."
+      },
+      "skills/engineering/codebase-design/DESIGN-IT-TWICE.md": {
+        "target": "skills/codebase-design/references/design-alternatives.md",
+        "reason": "The adapted design comparison workflow lives under references."
+      }
+    },
+    "omit": {
+      "skills/engineering/codebase-design/agents/openai.yaml": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters.",
+      "skills/engineering/diagnosing-bugs/agents/openai.yaml": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters.",
+      "skills/productivity/writing-for-agents/agents/openai.yaml": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters."
+    }
+  }
+}

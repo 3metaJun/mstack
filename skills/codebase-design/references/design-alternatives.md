@@ -1,24 +1,44 @@
-# Comparing interface designs
+# Design it twice
 
-Explore alternatives only when interface shape has lasting architectural cost.
-For a small local refactor, choose the simplest adequate design directly.
+When the user wants to explore alternative interfaces for a chosen deepening candidate, use this parallel sub-agent pattern. Based on "Design It Twice" (Ousterhout): your first idea is unlikely to be the best.
 
-Frame the fixed constraints first: callers, invariants, dependency categories,
-failure modes, and performance requirements. Then produce genuinely different
-designs rather than cosmetic naming variants. Useful perspectives include:
+Uses the vocabulary in [SKILL.md](../SKILL.md): **module**, **interface**, **seam**, **adapter**, **leverage**.
 
-- The smallest interface that maximizes depth.
-- An interface optimized for the most common caller.
-- A more extensible interface when concrete future variants already exist.
-- A ports-and-adapters design when an owned or external remote dependency sets
-  the seam.
+## Process
 
-For each design, show the interface, one realistic call site, hidden
-responsibilities, dependency strategy, and known tradeoffs. Compare depth,
-locality, invalid states, error handling, and migration cost. Recommend one
-design or a specific hybrid.
+### 1. Frame the problem space
 
-Use parallel agents only when independent designs add useful breadth and the
-task warrants multi-agent work. Give each agent file paths, constraints, and a
-different design objective. Keep file ownership separate if they produce
-artifacts.
+Before spawning sub-agents, write a user-facing explanation of the problem space for the chosen candidate:
+
+- The constraints any new interface would need to satisfy
+- The dependencies it would rely on, and which category they fall into (see [Deepening](deepening.md))
+- A rough illustrative code sketch to ground the constraints, not a proposal, just a way to make the constraints concrete
+
+Show this to the user, then immediately proceed to Step 2. The user reads and thinks while the sub-agents work in parallel.
+
+### 2. Spawn sub-agents
+
+Use the active Harness's native delegation to assign three independent candidates, within its available concurrency. Each must produce a **radically different** interface for the deepened module. If delegation is unavailable, run separate design passes with these same briefs and disclose that they share one agent's context. Keep the passes read-only; design alternatives do not need to edit a shared checkout.
+
+Prompt each sub-agent with a separate technical brief (file paths, coupling details, dependency category from [Deepening](deepening.md), what sits behind the seam). The brief is independent of the user-facing problem-space explanation in Step 1. Give each agent a different design constraint:
+
+- Agent 1: "Minimize the interface: aim for 1–3 entry points max. Maximise leverage per entry point."
+- Agent 2: "Maximise flexibility: support many use cases and extension."
+- Agent 3: "Optimise for the most common caller: make the default case trivial."
+- Agent 4 (if applicable): "Design around ports & adapters for cross-seam dependencies."
+
+Include both [SKILL.md](../SKILL.md) vocabulary and the repository's domain vocabulary from CONTEXT.md when it exists in the brief so each sub-agent names things consistently with the architecture language and the project's domain language.
+
+Each sub-agent outputs:
+
+1. Interface (types, methods, params, plus invariants, ordering, error modes)
+2. Usage example showing how callers use it
+3. What the implementation hides behind the seam
+4. Dependency strategy and adapters (see [Deepening](deepening.md))
+5. Trade-offs: where leverage is high, where it's thin
+
+### 3. Present and compare
+
+Present designs sequentially so the user can absorb each one, then compare them in prose. Contrast by **depth** (leverage at the interface), **locality** (where change concentrates), and **seam placement**.
+
+After comparing, give your own recommendation: which design you think is strongest and why. If elements from different designs would combine well, propose a hybrid. Be opinionated: the user wants a strong read, not a menu.

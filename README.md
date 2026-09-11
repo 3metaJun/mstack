@@ -326,7 +326,25 @@ To validate and print a user's model configuration, run:
 npm run check-models -- --file ~/.config/mstack/models.json
 ```
 
-To compare the local inventory with a pstack checkout, run:
+To check the complete skill trees against both pinned upstreams, run:
+
+```bash
+npm run skill-baseline -- --check --source /path/to/pstack --matt-source /path/to/mattpocock-skills
+```
+
+This checks every file in all 50 skill trees, including references, playbooks,
+and scripts. It also checks tools moved out of skill directories. Local
+additions and intentional upstream omissions are recorded explicitly. Both
+source checkouts must be clean and at their pinned commits. `npm test` checks
+the target files without needing upstream checkouts.
+
+For intentional changes, preview with the same source arguments and `--diff`,
+review the source-to-adaptation patches, then use `--write` to update
+`profiles/skill-manifest.json`. Commit the baseline with the corresponding
+content changes. The hashes detect drift; they do not establish that an adapted
+workflow behaves like its source. See [the baseline review process](docs/skill-integrity.md).
+
+To compare the pstack inventory and non-skill artifacts, run:
 
 ```bash
 npm run check-upstream -- --source /path/to/pstack
