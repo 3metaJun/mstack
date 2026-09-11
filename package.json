@@ -34,7 +34,6 @@
     "automations",
     "docs",
     "tools",
-    "tools/meta-mode/.npmignore",
     "adapters",
     "profiles",
     "scripts",
