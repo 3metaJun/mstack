@@ -54,6 +54,7 @@ async function filesUnder(directory, warnings) {
 
 async function metadata(path, harness) {
   const stream = createReadStream(path, { encoding: "utf8", highWaterMark: 4096, end: 1024 * 1024 - 1 });
+  const closed = new Promise((resolveClosed) => stream.once("close", resolveClosed));
   const lines = createInterface({ input: stream, crlfDelay: Infinity });
   let count = 0;
   try {
@@ -79,6 +80,8 @@ async function metadata(path, harness) {
   } finally {
     lines.close();
     stream.destroy();
+    // On Windows, destroy() returns before its file descriptor is closed.
+    await closed;
   }
 }
 

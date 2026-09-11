@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -51,6 +51,25 @@ test("Claude scopes its project directory and follows the selected conversation 
   const reading = await history(options);
   assert.deepEqual(reading.messages.map((message) => message.text), ["Start", "New approach"]);
   assert.deepEqual((await history({ ...options, leaf: "discarded" })).messages.map((message) => message.text), ["Start", "Old approach"]);
+});
+
+test("history discovery releases file handles before callers move and delete the store", async (t) => {
+  const { root, workspace } = fixture(t);
+  const headers = [
+    { type: "session_meta", payload: { id: "matching", cwd: workspace } },
+    { type: "session_meta", payload: { id: "unrelated", cwd: join(root, "other") } },
+    "MALFORMED HEADER",
+  ];
+  for (let index = 0; index < headers.length; index++) {
+    const store = join(root, `store-${index}`);
+    const moved = join(root, `moved-${index}`);
+    jsonl(join(store, "archived_sessions", "session.jsonl"), [headers[index], "Unneeded body".repeat(1000)]);
+    const result = await history({ harness: "codex", workspace, root: store, env: {}, command: "list" });
+    assert.equal(result.sessions.length, index === 0 ? 1 : 0);
+    renameSync(store, moved);
+    rmSync(moved, { recursive: true, force: true });
+    assert.equal(existsSync(moved), false);
+  }
 });
 
 test("discovery sorts by modification time, deduplicates newest records and honors the time window", async (t) => {
