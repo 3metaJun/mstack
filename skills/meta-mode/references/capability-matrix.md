@@ -21,7 +21,7 @@ credentials, and run history when it is available. A local or SSH fallback
 must provide those lifecycle guarantees explicitly, so report the difference
 when it affects the result or the operator's control.
 
-Benny remains a Cursor-specific automation pack because its Slack triggers and
-run lifecycle depend on Cursor Automations. Its operational skills can reuse
-mstack workflows, but installing mstack in another Harness does not recreate
-those triggers.
+Benny remains a vendor-specific automation pack because its Slack triggers and
+run lifecycle depend on one Harness's automation service. Its operational
+skills can reuse mstack workflows, but installing mstack in another Harness
+does not recreate those triggers.

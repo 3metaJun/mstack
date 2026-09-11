@@ -27,7 +27,7 @@ For each candidate, read the first JSONL line and check that `message.content[0]
 
 ### 2. Spawn three reviewers in parallel
 
-One message, three `Task` calls, `worker type: generalPurpose`, explicit `model:` on each, agent mode (`readonly: false`). Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Readonly strips MCPs.
+One delegation request with three reviewers, an explicit model on each, and agent mode with the access needed for context lookups (tickets, chat threads, and observability traces referenced in the transcript). Reviewers need the active Harness's connected tools.
 
 | Lens | `model` | Prompt template |
 |---|---|---|
@@ -35,11 +35,11 @@ One message, three `Task` calls, `worker type: generalPurpose`, explicit `model:
 | Tooling | the active mstack `reviewer` role, default `inherit-parent` | `references/tooling-reviewer.md` |
 | Divergent | the active mstack `reviewer` role, default `inherit-parent` | `references/divergent-reviewer.md` |
 
-Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the `Task` response body.
+Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the delegation result body.
 
 ### 3. Synthesize
 
-One `Task` call, `worker type: generalPurpose`, using the active mstack `synthesizer` role (default `inherit-parent`), agent mode (`readonly: false`). The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Readonly strips MCPs. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
+One delegation request using the active mstack `synthesizer` role (default `inherit-parent`) and the access needed for citation checks. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
 
 ### 4. Structural enforcement check
 

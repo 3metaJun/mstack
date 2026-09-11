@@ -28,6 +28,7 @@ if (args.includes("--help")) {
 }
 
 const targetRoot = resolve(valueAfter("--target") ?? repoRoot);
+const strict = args.includes("--strict");
 const syncLock = acquireUpstreamSyncLock(targetRoot, { recoverStale: false });
 const releaseReadLockAtExit = () => {
   try {
@@ -46,8 +47,9 @@ if (!pstack || typeof pstack !== "object") throw new Error("profiles/upstreams.j
 
 const source = valueAfter("--source") ?? process.env.MSTACK_PSTACK_SOURCE;
 if (!source) {
-  console.log("Pass --source <pstack checkout> or set MSTACK_PSTACK_SOURCE to check the upstream inventory.");
-  process.exit(0);
+  const message = "Pass --source <pstack checkout> or set MSTACK_PSTACK_SOURCE to check the upstream inventory.";
+  (strict ? console.error : console.log)(message);
+  process.exit(strict ? 1 : 0);
 }
 
 const sourceRoot = resolve(source);
@@ -102,7 +104,6 @@ function resolveInside(root, path, label) {
 
 const sourceSkills = resolveInside(sourceRoot, "skills", "upstream skills directory");
 if (!existsSync(sourceSkills)) throw new Error(`Upstream skills directory not found: ${sourceSkills}`);
-const strict = args.includes("--strict");
 
 function gitOutput(arguments_) {
   try {
