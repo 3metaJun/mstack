@@ -49,6 +49,13 @@ if (forbidden.length) {
   throw new Error(`npm package contains excluded files:\n${forbidden.join("\n")}`);
 }
 
+const baseline = JSON.parse(readFileSync(join(repoRoot, "profiles", "skill-manifest.json"), "utf8"));
+const packedFiles = new Set(report.files.map((file) => file.path));
+const missing = Object.keys(baseline.files).filter((path) => !packedFiles.has(path));
+if (missing.length) {
+  throw new Error(`npm package is missing reviewed skill files:\n${missing.join("\n")}`);
+}
+
 console.log(
   `Package contains ${report.entryCount} files (${report.size} bytes packed, ${report.unpackedSize} bytes unpacked).`,
 );

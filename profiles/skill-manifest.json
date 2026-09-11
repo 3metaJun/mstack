@@ -692,11 +692,6 @@
       "sourceDigest": "551adca942227b44192edba88acd4e8db911f0121ce58ad16944ccf6a896a74a",
       "targetDigest": "3b50712cac5d212e449bc9e9baeed4866412b152aa30feef53fdc4a0f3791840"
     },
-    "tools/meta-mode/.npmignore": {
-      "upstream": null,
-      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "4d56952b0fb13bf8f9b6c13a6d4c34a075bac3af447636a1df4335d7576e2f97"
-    },
     "tools/meta-mode/bootstrap.ts": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/bootstrap.ts",
