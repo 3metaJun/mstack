@@ -28,7 +28,7 @@ Open a todolist with one entry per phase before launching anything.
 
 Spawn all N workers through the active Harness's delegation API, using the configured model and background execution when supported. Use a local worker when the task needs access to something on the user's computer.
 
-When a worker must start from a non-default pushed branch, pass `cloud_base_branch`.
+When a worker must start from a non-default pushed branch, provide the active Harness's base-branch option.
 
 Every brief stands alone. Include the goal, scope, exact slice or race arm, how to verify, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence.
 

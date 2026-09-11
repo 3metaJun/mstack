@@ -5,6 +5,18 @@ description: "Route a non-trivial engineering task through a verifiable mstack w
 
 # Meta mode
 
+## Apply the mode
+
+1. State the requested result in one sentence.
+2. Choose the smallest matching playbook from `playbooks/`.
+3. Read that playbook and every principle it names before you act.
+4. Write a short todo list whose first entries are the playbook steps.
+5. Choose a local or configured remote execution environment. Use a remote environment only when the task needs another machine.
+6. Choose a model for each role from the user's mstack model configuration. Use `inherit-parent` when no override exists.
+7. End each step with evidence from the real artifact.
+
+The mode stays active for the current task. Do not apply it to a casual turn or after the user opts out.
+
 ## Non-negotiables
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
@@ -28,6 +40,29 @@ Remaining triggers:
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
 - Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "/loop until X") → a decision trail via the **show-me-your-work** skill. Commit it when stakes need an auditable record. Keep it local otherwise.
+
+## Map capabilities
+
+Read [the capability map](references/capability-matrix.md) when a playbook
+mentions delegation, background work, remote execution, model roles, or session
+history. The map distinguishes a native implementation from a documented
+fallback. Report the distinction when it changes the result.
+
+The canonical skill tree uses capability names. Adapters map those names to a
+Harness. Keep vendor-specific paths, commands, transcript formats, and model
+names in the Harness adapter or a user environment profile.
+
+## Resolve installed paths
+
+Playbooks use `<mstack-skills>` for the directory that contains the installed
+mstack skills. They use `<meta-mode-tools>` for the optional `meta-mode-tools`
+artifact directory. Resolve both paths from the active `meta-mode` skill before
+you run a command. In this repository, the paths are `<repo>/skills` and
+`<repo>/tools/meta-mode`. The default installer places them at
+`<Harness root>/skills` and `<Harness root>/tools/meta-mode`, so the tools are at
+`../../tools/meta-mode` from the `meta-mode` skill directory. If the install
+uses an artifact destination override, use the destination that the installer
+reports.
 
 ## Principles
 
@@ -92,6 +127,11 @@ Run independent workers concurrently when the Harness supports it. If it does
 not, run them one at a time and record the fallback. Select each worker's model
 from `/setup-mstack`; use `inherit-parent` when no override exists. Give each
 worker a focused file or question and read its complete result before deciding.
+
+Choose models by difficulty. Route cross-cutting design, concurrency, and subtle
+algorithms to the strongest configured judgment role. Route trivial mechanical
+edits to the fast implementer role. Role-specific settings override these
+defaults, and `inherit-parent` uses the parent chat model.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary. A second opinion is the same prompt against a different model. Agreement is high-signal.
 

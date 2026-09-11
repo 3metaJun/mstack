@@ -20,6 +20,12 @@ import test from "node:test";
 const synchronizer = resolve("scripts", "sync-upstream.mjs");
 const checker = resolve("scripts", "check-upstream.mjs");
 
+test("strict upstream checks require a source checkout", () => {
+  const checked = run(checker, ["--strict"]);
+  assert.notEqual(checked.status, 0);
+  assert.match(checked.stderr, /Pass --source <pstack checkout>/);
+});
+
 function write(path, content) {
   mkdirSync(resolve(path, ".."), { recursive: true });
   writeFileSync(path, content, "utf8");

@@ -39,7 +39,7 @@ Launch all reviewers in a single message using the delegation tool. Use the conf
 | Reviewer | mstack `reviewer` role |
 
 For each reviewer:
-- `worker type`: `generalPurpose`
+- `worker role`: `reviewer`
 - `model`: the configured mstack `reviewer` role, or `inherit-parent` when no override exists
 - `readonly`: `true`
 

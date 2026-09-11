@@ -20,7 +20,7 @@ When in doubt, take the simple path.
 
 Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
 
-- `worker type`: `generalPurpose`
+- `worker role`: `explorer`
 - `model`: the active mstack `explorer` role, defaulting to `inherit-parent`
 - `readonly`: `true`
 
@@ -30,7 +30,7 @@ Each explorer gets the prompt in `references/explorer-prompt.md` with its angle 
 
 Spawn one Task subagent that explores and explains in one pass:
 
-- `worker type`: `generalPurpose`
+- `worker role`: `synthesizer`
 - `model`: the active mstack `synthesizer` role, defaulting to `inherit-parent`
 - `readonly`: `true`
 
@@ -40,7 +40,7 @@ Build its prompt from `references/explainer-prompt.md` without the explorer-find
 
 Once all explorers have returned, spawn one Task subagent to synthesize their findings into one explanation:
 
-- `worker type`: `generalPurpose`
+- `worker role`: `synthesizer`
 - `model`: the active mstack `synthesizer` role, defaulting to `inherit-parent`
 - `readonly`: `true`
 

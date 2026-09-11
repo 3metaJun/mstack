@@ -35,7 +35,7 @@ One delegation request with three reviewers, an explicit model on each, and agen
 | Tooling | the active mstack `reviewer` role, default `inherit-parent` | `references/tooling-reviewer.md` |
 | Divergent | the active mstack `reviewer` role, default `inherit-parent` | `references/divergent-reviewer.md` |
 
-Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the `Task` response body.
+Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the delegation result body.
 
 ### 3. Synthesize
 
