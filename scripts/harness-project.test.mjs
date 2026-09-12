@@ -15,8 +15,7 @@ function git(root, ...args) {
   return execFileSync("git", ["-C", root, ...args], { encoding: "utf8", windowsHide: true }).trim();
 }
 
-function fixture(t) {
-  const scratch = existsSync("G:/agents_temp") ? "G:/agents_temp" : tmpdir();
+function fixture(t, scratch = existsSync("G:/agents_temp") ? "G:/agents_temp" : tmpdir()) {
   const temporary = mkdtempSync(join(scratch, "mstack-project-"));
   t.after(() => rmSync(temporary, { recursive: true, force: true }));
   const root = join(temporary, "repo");
@@ -103,6 +102,33 @@ test("init preserves user instructions, repeats safely, and leaves unfinished co
   assert.equal(readFileSync(join(root, "AGENTS.md"), "utf8"), before);
   const missing = run(root, ["check"], 1);
   assert.match(missing.stderr, /contract\.md/);
+});
+
+test("Windows path aliases identify the same repository and linked worktree", { skip: process.platform !== "win32" }, (t) => {
+  const { root, temporary } = fixture(t, tmpdir());
+  const shortPath = (path) => execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
+    "(New-Object -ComObject Scripting.FileSystemObject).GetFolder($env:MSTACK_TEST_ALIAS_PATH).ShortPath"], {
+    encoding: "utf8", windowsHide: true, env: { ...process.env, MSTACK_TEST_ALIAS_PATH: path },
+  }).trim();
+  const alias = root.toUpperCase();
+  assert.notEqual(alias, root);
+  const initialized = JSON.parse(init(shortPath(root)).stdout);
+  assert.equal(initialized.status, "needs-contract");
+  assert.deepEqual(JSON.parse(init(alias).stdout).created, []);
+  contracts(root);
+  run(alias, ["wrappers"]);
+  git(root, "add", ".");
+  git(root, "commit", "-m", "Adopt contract through a Windows path alias");
+  git(root, "update-ref", "refs/remotes/origin/main", "HEAD");
+  const worktree = join(temporary, "worktree");
+  git(root, "worktree", "add", "-b", "task/windows-alias", worktree);
+  const checked = JSON.parse(run(worktree.toUpperCase(), ["preflight", ...declaration()]).stdout);
+  assert.equal(checked.branch, "task/windows-alias");
+  assert.equal(checked.head, git(worktree, "rev-parse", "HEAD"));
+  assert.equal(JSON.parse(run(shortPath(worktree), ["preflight", ...declaration()]).stdout).head, checked.head);
+  const nested = join(worktree, "nested");
+  mkdirSync(nested);
+  assert.match(run(nested.toUpperCase(), ["init", "--app", "web", "--pstack", pstack, "--check", "node verify.mjs"], 1).stderr, /--root must be the Git worktree root/);
 });
 
 test("wrappers converge to shared facts and preserve conflicting legacy instructions", (t) => {

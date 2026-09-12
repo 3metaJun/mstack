@@ -2,7 +2,7 @@ import {
   existsSync, readFileSync, writeFileSync, mkdirSync, realpathSync, lstatSync,
   openSync, closeSync, rmSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
@@ -32,8 +32,8 @@ function git(root, ...args) {
 }
 
 function requireRepositoryRoot(root) {
-  const top = realpathSync(git(root, "rev-parse", "--show-toplevel"));
-  if (realpathSync(root) !== top) throw new Error("--root must be the Git worktree root");
+  const top = realpathSync.native(git(root, "rev-parse", "--show-toplevel"));
+  if (relative(realpathSync.native(root), top) !== "") throw new Error("--root must be the Git worktree root");
 }
 
 function writePlan(root, files) {
@@ -154,9 +154,9 @@ export function preflight(root, policy, options) {
   if (options.revision !== policy.workflows[options.workflow].revision) throw new Error("Declared --revision differs from the pinned workflow revision");
   const branch = git(root, "branch", "--show-current");
   if (!branch || policy.integration.protectedBranches.includes(branch)) throw new Error("Use a dedicated task branch, not a protected or detached HEAD");
-  const gitDir = realpathSync(git(root, "rev-parse", "--absolute-git-dir"));
-  const common = realpathSync(resolve(root, git(root, "rev-parse", "--git-common-dir")));
-  if (common === gitDir) throw new Error("Use a dedicated linked worktree for development");
+  const gitDir = realpathSync.native(git(root, "rev-parse", "--absolute-git-dir"));
+  const common = realpathSync.native(resolve(root, git(root, "rev-parse", "--git-common-dir")));
+  if (relative(common, gitDir) === "") throw new Error("Use a dedicated linked worktree for development");
   if (git(root, "status", "--porcelain=v1", "--untracked-files=all")) throw new Error("Commit or preserve changes before preflight; the worktree is dirty");
   const baseRef = options["base-ref"];
   const base = fetchedBase(root, policy, baseRef);
