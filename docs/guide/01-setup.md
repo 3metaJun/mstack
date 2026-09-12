@@ -29,9 +29,11 @@ Use `inherit-parent` for the current chat model through the Harness's documented
 
 ## Accept the verification offer, or don't
 
-At the end of setup, `/setup-mstack` looks for a way to prove app behavior in your project, either a `verify-*` skill or an existing harness. If it finds neither, it offers once to generate one with [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md).
+At the end of setup, `/setup-mstack` looks for a shared verification contract, a `verify-*` wrapper, or an existing repository driver. Several wrappers pointing at one contract count as one workflow. Setup reports conflicting legacy definitions instead of creating another copy.
 
-Say yes and it writes `verify-<app>/` under the active Harness's project skill root. See [the project skill paths](../../skills/create-verification-skill/references/harness-paths.md) for the root used by each Harness. The generated skill teaches agents to drive your app the way a user does, and setup proves it once before handing it over. Say no and setup moves on. You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
+If it finds neither a reusable verification workflow nor a repository driver, setup offers once to run [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md). When you accept, the generator writes `.harness/verify/<app>/contract.md`, its feature map, and thin discovery wrappers. It proves one feature in the real app before handing over the result. Model setup alone does not start the app or create a team policy.
+
+You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers the proof. For a team using both native pstack and mstack, follow [the mixed-Harness adoption guide](./11-mixed-harness.md) to add the shared project workflow and CI checks.
 
 After setup, start a new session. The model configuration applies to new sessions.
 

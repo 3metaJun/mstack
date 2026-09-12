@@ -34,11 +34,13 @@ The UI bullet above hides a real requirement. The agent needs a scripted way to 
 
 [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) interviews the repository, not you. It works out what a user touches, how the app launches locally, what can drive it (an existing harness first, otherwise browser and CDP, a PTY, or plain HTTP), what evidence proves behavior, and whether two instances can run side by side. It asks you only what the code can't answer.
 
-It writes `verify-<app>/` under the active Harness's project skill root. See [the project skill paths](../../skills/create-verification-skill/references/harness-paths.md) for the root used by each Harness. The generated skill contains exact Launch, Doctor, Drive, Evidence, and Cleanup sections, plus a feature map under `features/` that indexes what the app does and what result proves each feature works. The skill ships a [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) with a README index and one file per feature using the four required H2s. Before handing it over, the generator proves the skill once end to end: launch, doctor check, drive one feature, capture evidence, and clean up. If that proof fails, don't use the output.
+It writes one `.harness/verify/<app>/contract.md` with Launch, Isolation, Doctor, Drive, Evidence, Cleanup, and Helpers sections. The adjacent `features/README.md` indexes the app's user paths and expected results. Owned scripts live in `helpers/`. The [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) shows the required detail.
 
-From then on, "verify it in the app" is a step any agent can execute, in this repo, with no setup conversation.
+The generator then renders thin `verify-<app>` wrappers for the configured Harnesses. Each wrapper's `metadata.verification-contract` points at the same contract from the repository root. Wrappers select an available driver without copying launch commands, selectors, or proof requirements. Because Cursor also discovers `.agents/skills/`, a project using both Cursor and Codex has one shared wrapper there. See [the wrapper paths](../../skills/create-verification-skill/references/harness-paths.md).
 
-Once the verify skill works, a [`/swarm`](../../skills/swarm/SKILL.md) can split a full pass by feature-map entry and aggregate the results.
+Before handing over the result, the generator launches an isolated instance, runs Doctor, drives one feature, captures evidence, and cleans up. The evidence must survive cleanup. One successful feature does not prove every mapped path or every Harness. A missing required capability remains a reported gap.
+
+A [`/swarm`](../../skills/swarm/SKILL.md) can split a full pass by feature-map entry. Give concurrent drivers separate instances, ports, and data directories. When the app cannot isolate them, keep one coordinator driving serially.
 
 ## Keep the verification skill honest
 
@@ -48,7 +50,11 @@ Apps change and feature maps rot. When yours drifts, run:
 /maintain-verification-skill
 ```
 
-[`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) audits the generated skill: one read-only source reader per feature in parallel, then one live pass that drives every mapped feature. It ends in exactly one of three outcomes. `clean` means full coverage and nothing to ship. `changed` means one PR of proven corrections, confined to the verification skill's own directory. `blocked` names the blocker. It never edits product code. If the live pass catches a product regression, it reports the regression instead of papering over it in docs.
+[`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) resolves wrappers to the canonical contract. Read-only source readers cover features in parallel, then one coordinator drives every mapped feature. Corrections go into `.harness/verify/<app>/`, with wrapper regeneration only when needed. Cursor automation and a local Claude Code session maintain the same map.
+
+The outcome is `clean` when all features have source and live coverage without corrections, `changed` when one PR contains proven corrections, or `blocked` when coverage cannot finish. The pass never edits product code. It reports product regressions without changing the map to accept broken behavior.
+
+For repositories with `.harness/policy.json`, follow `.harness/workflow.md` to run required commands and record evidence at the final commit. A passing policy check or command receipt does not certify app behavior. Review the named artifacts against the mapped feature. [Mixed-Harness adoption](./11-mixed-harness.md) describes the CI and handoff steps.
 
 ## Open the PR
 

@@ -1,9 +1,10 @@
 # Notes verification map
 
-This worked example describes a fictional Notes app and its `control-notes`
-driver. The commands show the precision a real feature map needs; they are
-not tools shipped by mstack. Replace the app, driver, paths, and seeded data
-when writing your project's map.
+This worked example describes a fictional Notes app and its repository-owned
+`control-notes` driver. The commands are not tools shipped by mstack. Replace
+the app, driver, paths, and seeded data with observed project behavior. Save the
+real index at `.harness/verify/<app>/features/README.md`, beside its feature files.
+Every Harness wrapper and automation reads that same index.
 
 ## Baseline preconditions
 
@@ -28,11 +29,14 @@ exactly these four H2 sections:
 
 1. `Sub-features`
 2. `How to get to it (user POV)`
-3. `Driving it with <harness>`
+3. `Driving it with <repository driver or required capability>`
 4. `Gotchas`
 
 Keep implementation details out. Record user paths, stable handles, required
-state, literal commands, and observable proof.
+state, literal commands, and observable proof. Name a repository-owned driver
+or a capability such as a browser with accessible selectors. Keep installed
+Harness tool names out of the map. Record which driver actually ran in the
+evidence instead.
 
 ## Features
 

@@ -10,6 +10,12 @@ Wait for a trusted triage marker in the source thread. Reproduce the exact sympt
 
 Load the external Benny configuration supplied by the automation. If the config, required actions, control adapter, or completed feature map is missing, fail closed.
 
+Read `AGENTS.md` and `.harness/workflow.md` when present. Use the shared project
+workflow for writable worktree isolation, declared revisions, and evidence.
+Resolve `.harness/policy.json` before selecting an app map. The automation's
+configuration must point at that app's canonical feature index. Report a stale
+or conflicting map instead of silently following it.
+
 ## Hard safety rules
 
 - Freeze the source channel and root thread coordinates before doing any work.
@@ -125,9 +131,16 @@ If no operations channel is configured, keep detailed status in the automation r
 
 ## 5. Load and check the control adapter
 
-Read `references/control-adapter.md` and the completed map at `control.feature_map_path`, then invoke the skill named by `control.skill_name`.
+Read `references/control-adapter.md` and the completed map at
+`control.feature_map_path`, then invoke the skill named by `control.skill_name`.
+For a canonical `features/README.md`, read the matching linked feature file and
+its app's `contract.md`. Resolve a wrapper's `metadata.verification-contract`
+from the repository root. Adapt the contract to the available driver without
+creating a second map or changing the required proof.
 
-Find the feature-map section that matches the reported user path. Read it before driving the app. If no section covers the feature, mark the run blocked instead of inventing a path or selector.
+Find the mapped feature that matches the reported user path. Read it before
+driving the app. If no entry covers the feature, mark the run blocked instead of
+inventing a path or selector.
 
 Require all seven capabilities:
 
@@ -286,7 +299,10 @@ Run focused tests, then smoke the blast radius around the changed behavior. Cove
 Only after before-and-after proof:
 
 - Review the final diff for unrelated changes and secrets.
-- Run the repository's required checks.
+- Run the repository's required checks. When `.harness/policy.json` exists,
+  follow `.harness/workflow.md` to record the final commit and canonical feature
+  evidence. Include the receipt and retained artifacts in the review handoff.
+  Passing commands alone do not prove the reported UI behavior.
 - Create small ordered commits when the repository workflow allows it.
 - Open a draft pull request. Never merge or deploy from this workflow.
 - Link the configured tracker issue using the tracker's supported pull request syntax.

@@ -83,7 +83,7 @@
       "upstream": "pstack",
       "source": "skills/create-verification-skill/references/feature-map-example/README.md",
       "sourceDigest": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
-      "targetDigest": "3810cf289bdd6657f3f23f974262536304a7365ee038e125b7a80343ce7000bf"
+      "targetDigest": "a23475211980e77339bf471bd02bb0c107f72f8149303ae1557de80e36df94df"
     },
     "skills/create-verification-skill/references/feature-map-example/search.md": {
       "upstream": "pstack",
@@ -94,13 +94,13 @@
     "skills/create-verification-skill/references/harness-paths.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "9b785b0c2dd47b2c9216710641107864a34db2940dd3633869c5d7ccdae182e5"
+      "targetDigest": "62705c0e0ae6832c20c1f1b53bb91b05c036dd6879f789de6bc4499815c99ab4"
     },
     "skills/create-verification-skill/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/create-verification-skill/SKILL.md",
       "sourceDigest": "644f2551403c1bca01a2855b34611b6e7be0ce0dc5b204514c376c0f6a6e6ac4",
-      "targetDigest": "7242b478eb0face01b1f1d27950efa69e415219b278993bc3e75f297707bba48"
+      "targetDigest": "eca219cac2808714d6aa3090fd3065d1da6a579d432f277aef334f1ca0dfe770"
     },
     "skills/diagnosing-bugs/references/feedback-loops.md": {
       "upstream": null,
@@ -182,7 +182,7 @@
       "upstream": "pstack",
       "source": "skills/maintain-verification-skill/SKILL.md",
       "sourceDigest": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
-      "targetDigest": "bfa8b97a5ca35d618228c37eb02c74589c0fcb1af13d06201b10e0eb3274e32c"
+      "targetDigest": "b236ab1a439ae067d41d0fc191517992da1130d7935d3c8fa5084def26512296"
     },
     "skills/make-bot-ui/SKILL.md": {
       "upstream": "pstack",
@@ -343,7 +343,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "6bbf35cb2111c358461c7ba90f210dad4573f3a3ada92f6459eac0c69d83b01a",
-      "targetDigest": "53cb6ae809072973802f78fac92fc75efbe111330271513fa756cd2f0d053ad4"
+      "targetDigest": "798df0dae0ca4959b81d6465b1c3c392ffc5cefd98f5b0834a53262eb1b2fa86"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",
@@ -539,7 +539,7 @@
       "upstream": "pstack",
       "source": "skills/setup-pstack/SKILL.md",
       "sourceDigest": "5acdc3db4f15f3e9b81fb56eab7f17cdccde1a11a40053ed7743f7467729c8a9",
-      "targetDigest": "555c577bf494baafafa980ee3f647149c180a615a706ef409845cd03cd16e142"
+      "targetDigest": "5fbe454ff5cea061d8b29e5be4a0eb1d2f040f99927f23ccd6007ec5c02e5b6a"
     },
     "skills/show-me-your-work/references/decision-log-template.tsv": {
       "upstream": "pstack",

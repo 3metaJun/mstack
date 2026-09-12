@@ -1,8 +1,17 @@
 # Feature-map example
 
+In a project with `.harness/policy.json`, use these fields to complete the
+canonical feature files under `.harness/verify/<app>/features/`. Set Benny's
+`control.feature_map_path` to their `README.md` index. Do not create a separate
+Benny map. This single-file example also describes legacy maps used before
+shared-project adoption.
+
 Map every user-facing feature Benny may reproduce. Read the relevant section before driving the app. Keep this map at the user point of view. Discover internals and current code paths at runtime instead of freezing them here.
 
-Copy this file outside `.cursor/automations/benny/`, for example to `.cursor/benny/feature-map.md`, and set `control.feature_map_path` to the copy. Pack refreshes must not overwrite it.
+For a legacy project without a shared contract, copy this file outside
+`.cursor/automations/benny/`, then set `control.feature_map_path` to the completed
+copy. Pack refreshes must not overwrite it. During mixed-Harness migration,
+move its reconciled facts to the canonical feature files and retire the copy.
 
 ## Per-feature template
 

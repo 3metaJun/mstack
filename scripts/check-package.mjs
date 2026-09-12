@@ -51,7 +51,12 @@ if (forbidden.length) {
 
 const baseline = JSON.parse(readFileSync(join(repoRoot, "profiles", "skill-manifest.json"), "utf8"));
 const packedFiles = new Set(report.files.map((file) => file.path));
-const missing = Object.keys(baseline.files).filter((path) => !packedFiles.has(path));
+const requiredFiles = [
+  ...Object.keys(baseline.files), ...Object.values(packageManifest.bin),
+  "scripts/harness-project.mjs", "scripts/harness-policy-lib.mjs",
+  "scripts/harness-workflow.md", "scripts/harness-check.mjs",
+];
+const missing = requiredFiles.filter((path) => !packedFiles.has(path));
 if (missing.length) {
   throw new Error(`npm package is missing reviewed skill files:\n${missing.join("\n")}`);
 }

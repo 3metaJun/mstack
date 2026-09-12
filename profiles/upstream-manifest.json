@@ -85,7 +85,7 @@
     },
     "create-verification-skill": {
       "source": "644f2551403c1bca01a2855b34611b6e7be0ce0dc5b204514c376c0f6a6e6ac4",
-      "target": "7242b478eb0face01b1f1d27950efa69e415219b278993bc3e75f297707bba48"
+      "target": "eca219cac2808714d6aa3090fd3065d1da6a579d432f277aef334f1ca0dfe770"
     },
     "figure-it-out": {
       "source": "982f2c1024a3a24f6417426ad8e8a3e027fe6210a8a442308fb85073f8f3f6ef",
@@ -101,7 +101,7 @@
     },
     "maintain-verification-skill": {
       "source": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
-      "target": "bfa8b97a5ca35d618228c37eb02c74589c0fcb1af13d06201b10e0eb3274e32c"
+      "target": "b236ab1a439ae067d41d0fc191517992da1130d7935d3c8fa5084def26512296"
     },
     "make-bot-ui": {
       "source": "3624c8ef16cf2e48deb2a4049e72c6962a9431c8d6c6af90e7bd7ea0375224ec",
@@ -109,7 +109,7 @@
     },
     "meta-mode": {
       "source": "9319963075ef537e1d83edc4814f6bc6a7c90779ea261227934c984a0a5e88fb",
-      "target": "53cb6ae809072973802f78fac92fc75efbe111330271513fa756cd2f0d053ad4"
+      "target": "798df0dae0ca4959b81d6465b1c3c392ffc5cefd98f5b0834a53262eb1b2fa86"
     },
     "no-comments": {
       "source": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
@@ -217,7 +217,7 @@
     },
     "setup-mstack": {
       "source": "a11137437e12831c73f228f449bdfefab487bf7e2c69a4b306189e8fb1e6ab3e",
-      "target": "555c577bf494baafafa980ee3f647149c180a615a706ef409845cd03cd16e142"
+      "target": "5fbe454ff5cea061d8b29e5be4a0eb1d2f040f99927f23ccd6007ec5c02e5b6a"
     },
     "show-me-your-work": {
       "source": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",
@@ -250,6 +250,68 @@
     "why": {
       "source": "222b93789754ba6ee901835137184acdca667f7e47c523bcc85aca86675fb249",
       "target": "873aedc86d1321093e9a195ac8bff1783241b309a1d33808ab74f181c4b8f22d"
+    }
+  },
+  "adaptedArtifacts": {
+    "automations/benny/FOR_AGENTS.md": {
+      "source": "9e86916edf7fdddf3325dac869d947d5cab767ee40f1b5eaf5d16e31f2a5322a",
+      "target": "5a8f7571f9aa66d16434e2d4bb6718c9e76141843f68c14e4e2f6a8fc39accce",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/README.md": {
+      "source": "339fa6a5e1b07dbd708e87bc423e31e25ab3ac7e4292b80d3330abe992ee3245",
+      "target": "4dacbeb44e84630bbb7d88d119bd3ed9a76f679fb691a280463f5473e192d69e",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md": {
+      "source": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
+      "target": "02c92e00d47c70c41bf9f469b556ea8d071483ad1eca70c3b27642dbc1f611f5",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md": {
+      "source": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
+      "target": "c8a6639a5f4c377da6ce4e3a75a1ab3a843b1a17bb640cf758939eee0c1af2ea",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md": {
+      "source": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
+      "target": "d62d3a59cddf77f591ee62b123e367faf805f64ae7d18103741ac04207ebbe39",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/SKILL.md": {
+      "source": "2cb174442390be10cb7e7767e89bb1e94fda4d014426c40888397ad8286060ff",
+      "target": "6cd1740f9a1edaf6ab02eaf93f8690d6f4062e68b35be06c50585ac71f9798b6",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/skills/setup-benny/SKILL.md": {
+      "source": "c5bbca8d97cc6975d34e84c42ac4fd59e04c7f77892e0af534b3e58ca0fd43df",
+      "target": "269ab1c55733cbc176eb07c9268b891a5b03051be90fec1d053dc03ecc870b69",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/templates/configuration.example.yaml": {
+      "source": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
+      "target": "6ba873ecb944db84f46965238f131e195f9ac9e26fd037d6c4a198d9404d3c3b",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "automations/benny/templates/reproduce-automation-prompt.md": {
+      "source": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
+      "target": "f0238f77e8339eba897e2a85fa1ee328ed3845be14f65d01863a8f0938eb538d",
+      "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
+    },
+    "docs/guide/01-setup.md": {
+      "source": "6786c9090de6092d87836214b690e2b5640ddc7f34b19c0b9e2af794fcc17e7e",
+      "target": "b67fd0a7950464e1094225a2f85add0714849c1daab6c5289ad7bbc653baa536",
+      "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
+    },
+    "docs/guide/06-verify-and-ship.md": {
+      "source": "53a6bc8b3e850e34c4d8b1785a488eb7fbcbfe94ed588aeeaca252a5eb6e442c",
+      "target": "e99e7108a757eee96397ebb79c6bbbc6f30084a35eb32d98f8de2e2b9c1aad18",
+      "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
+    },
+    "docs/guide/README.md": {
+      "source": "e76f2e20364a4021707394b0557751e3aa81be2c819b19aaa705de08086515a5",
+      "target": "fe7261350a49c8bf1961e6ad8536d776479e65afcf78b14e1b45d1c0f3969de9",
+      "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     }
   }
 }

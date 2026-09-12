@@ -22,7 +22,7 @@ if (args.includes("--help")) {
     "Usage: node scripts/check-upstream.mjs --source <pstack checkout> [--target <mstack checkout>] [--strict]\n\n" +
       "Reports skill and transformed artifact drift, including files removed upstream according to the previous manifest. " +
       "--strict requires a clean source checkout at the pinned commit and exits non-zero for missing, changed, or removed artifacts. " +
-      "Manifest hashes are transformed upstream baselines; adapted compareContent=false files may differ.",
+      "Manifest hashes are transformed upstream baselines; reviewed adaptedArtifacts pin source and target content separately.",
   );
   process.exit(0);
 }
@@ -262,6 +262,35 @@ function equalContent(path, current, expected) {
 }
 
 let artifactProblems = 0;
+const manifestPath = resolveInside(targetRoot, "profiles/upstream-manifest.json", "upstream manifest");
+let manifest;
+if (!existsSync(manifestPath)) {
+  console.error("Missing upstream provenance manifest: profiles/upstream-manifest.json");
+  if (strict) artifactProblems += 1;
+} else {
+  try { manifest = JSON.parse(readFileSync(manifestPath, "utf8")); }
+  catch (error) {
+    console.error(`Invalid upstream provenance manifest: ${error.message}`);
+    if (strict) artifactProblems += 1;
+  }
+}
+const adaptations = new Map();
+const adaptationProblems = [];
+if (manifest?.adaptedArtifacts !== undefined) {
+  if (!manifest.adaptedArtifacts || typeof manifest.adaptedArtifacts !== "object" || Array.isArray(manifest.adaptedArtifacts)) {
+    adaptationProblems.push("adaptedArtifacts must be an object");
+  } else {
+    for (const [path, entry] of Object.entries(manifest.adaptedArtifacts)) {
+      const target = profilePath(path, "reviewed artifact adaptation", { allowRoot: false });
+      if (target !== path || !entry || typeof entry !== "object" || Array.isArray(entry)
+        || Object.keys(entry).some((key) => !["source", "target", "reason"].includes(key))
+        || !/^[a-f0-9]{64}$/.test(entry.source ?? "") || !/^[a-f0-9]{64}$/.test(entry.target ?? "")
+        || typeof entry.reason !== "string" || !entry.reason.trim()) {
+        adaptationProblems.push(`${path}: adaptation requires a normalized path, source and target SHA-256 hashes, and a review reason`);
+      } else adaptations.set(target, entry);
+    }
+  }
+}
 const expectedTargets = new Map();
 const missingSourceNames = new Set();
 for (const [name, configured] of Object.entries(artifacts)) {
@@ -306,8 +335,14 @@ for (const [name, configured] of Object.entries(artifacts)) {
   const changed = [];
   for (const [target, expectedContent] of expected) {
     const targetPath = resolveInside(targetRoot, target, `artifact ${name} computed target`);
+    const adaptation = adaptations.get(target);
+    if (adaptation) {
+      const contentDigest = (value) => textExtensions.has(extname(target).toLowerCase()) ? normalizedDigest(value) : digest(value);
+      if (adaptation.source !== contentDigest(expectedContent)) adaptationProblems.push(`${target}: reviewed upstream source changed`);
+      if (existsSync(targetPath) && adaptation.target !== contentDigest(readFileSync(targetPath))) adaptationProblems.push(`${target}: reviewed target content changed`);
+    }
     if (!existsSync(targetPath)) missing.push(target);
-    else if (spec.compareContent !== false && !equalContent(targetPath, readFileSync(targetPath), expectedContent)) {
+    else if (!adaptation && spec.compareContent !== false && !equalContent(targetPath, readFileSync(targetPath), expectedContent)) {
       changed.push(target);
     }
   }
@@ -320,18 +355,14 @@ for (const [name, configured] of Object.entries(artifacts)) {
   }
 }
 
-const manifestPath = resolveInside(targetRoot, "profiles/upstream-manifest.json", "upstream manifest");
-if (!existsSync(manifestPath)) {
-  console.error("Missing upstream provenance manifest: profiles/upstream-manifest.json");
-  if (strict) artifactProblems += 1;
-} else {
-  let manifest;
-  try {
-    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  } catch (error) {
-    console.error(`Invalid upstream provenance manifest: ${error.message}`);
-    if (strict) artifactProblems += 1;
-  }
+for (const target of adaptations.keys()) {
+  if (!expectedTargets.has(target)) adaptationProblems.push(`${target}: stale adaptation; no matching upstream artifact`);
+}
+if (adaptations.size || adaptationProblems.length) console.log(`reviewed artifact adaptations: ${adaptations.size} entries, ${adaptationProblems.length} problem(s)`);
+for (const problem of adaptationProblems) console.error(`  ${problem}`);
+if (strict) artifactProblems += adaptationProblems.length;
+
+{
   if (manifest) {
     const canonicalSkills = manifest.canonicalSkills;
     if (!canonicalSkills || typeof canonicalSkills !== "object" || Array.isArray(canonicalSkills)) {

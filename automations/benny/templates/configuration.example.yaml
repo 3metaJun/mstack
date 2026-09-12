@@ -46,7 +46,7 @@ routing:
 
 control:
   skill_name: "control-target-app"
-  feature_map_path: ".cursor/benny/feature-map.md"
+  feature_map_path: ".harness/verify/web/features/README.md"
   environment: "safe-test-environment-placeholder"
   artifact_directory: "/tmp/benny-artifacts"
   artifact_retention_hours: 24
