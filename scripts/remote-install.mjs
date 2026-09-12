@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, posix, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 import { parseRemoteStage, quotePosix, readEnvironment } from "./environment-lib.mjs";
 import { artifactPathParts, validateArtifactOverrides } from "./install-paths.mjs";
 
@@ -19,6 +20,9 @@ const harnessRegistry = JSON.parse(readFileSync(join(profilesRoot, "harnesses.js
 const skillInventory = JSON.parse(readFileSync(join(profilesRoot, "skills.json"), "utf8")).skills;
 const artifactRegistry = JSON.parse(readFileSync(join(profilesRoot, "artifacts.json"), "utf8")).artifacts;
 const args = process.argv.slice(2);
+if (args.includes("--migrate")) {
+  throw new Error("--migrate is not supported over SSH; run the local installer with --migrate on the remote machine to inspect and migrate its discovered skill directories.");
+}
 
 function valueAfter(flag) {
   const index = args.indexOf(flag);
@@ -37,6 +41,10 @@ if (!harnesses.length || harnesses.some((harness) => !Object.hasOwn(harnessRegis
   throw new Error(`Invalid --harness value: ${requestedHarnesses}`);
 }
 if (new Set(harnesses).size !== harnesses.length) throw new Error(`Duplicate harness in --harness: ${requestedHarnesses}`);
+const adapters = Object.fromEntries(harnesses.map((harness) => [
+  harness,
+  JSON.parse(readFileSync(join(repoRoot, "adapters", `${harness}.json`), "utf8")),
+]));
 
 const environmentName = requireValue("--environment");
 const environment = readEnvironment(environmentName, harnesses);
@@ -158,7 +166,15 @@ for (const item of requestedItems) {
     item.name === existing.name &&
     item.source === existing.source &&
     item.format === existing.format;
-  if (!sharedArtifact) {
+  const sharedSkill =
+    item.kind === "skill" &&
+    existing.kind === "skill" &&
+    item.name === existing.name &&
+    item.source === existing.source &&
+    item.harness !== "claude" &&
+    existing.harness !== "claude" &&
+    isDeepStrictEqual(adapters[item.harness], adapters[existing.harness]);
+  if (!sharedArtifact && !sharedSkill) {
     throw new Error(
       `Remote target collision: ${item.target} is selected by ` +
         `${existing.kind}/${existing.name} and ${item.kind}/${item.name}`,
@@ -169,6 +185,23 @@ const itemCounts = {
   skills: items.filter((item) => item.kind === "skill").length,
   artifacts: items.filter((item) => item.kind === "artifact").length,
 };
+
+function backupParent(item) {
+  if (item.kind !== "skill") return posix.dirname(item.target);
+  let root = posix.dirname(item.target);
+  for (let parent = root; parent !== posix.dirname(parent); parent = posix.dirname(parent)) {
+    // Custom targets may be nested inside a recursively discovered skill root.
+    if (["skill", "skills"].includes(posix.basename(parent))) root = parent;
+  }
+  for (const value of Object.values(environment.targets)) {
+    if (typeof value !== "string" || !value.startsWith("/")) continue;
+    const declared = posix.normalize(value).replace(/\/$/, "") || "/";
+    if (declared === "/" || root === declared || root.startsWith(`${declared}/`)) root = declared;
+  }
+  if (root === "/") throw new Error(`Cannot place skill backups outside remote discovery root / for ${item.target}`);
+  return posix.dirname(root);
+}
+const backupParents = new Map(items.map((item) => [item.target, backupParent(item)]));
 
 function remoteScript(script, allowFailure = false) {
   const result = spawnSync(
@@ -239,7 +272,7 @@ try {
       ? join(localRoot, item.harness, "skills", item.name)
       : join(localRoot, item.harness, ...artifactPaths[item.name][item.harness]);
     if (!existsSync(localSource)) throw new Error(`Staged source is missing: ${localSource}`);
-    const parent = posix.dirname(item.target);
+    const parent = item.kind === "skill" ? backupParents.get(item.target) : posix.dirname(item.target);
     const stageOutput = remoteScript(`set -eu; mkdir -p ${quotePosix(parent)}; mktemp -d ${quotePosix(posix.join(parent, ".mstack-stage.XXXXXX"))}`);
     const remoteStage = parseRemoteStage(stageOutput, parent);
     item.stage = remoteStage;
@@ -255,7 +288,7 @@ try {
 
   for (const [index, item] of items.entries()) {
     const backup = posix.join(
-      posix.dirname(item.target),
+      backupParents.get(item.target),
       ".mstack-backups",
       stamp,
       `${String(index).padStart(4, "0")}-${item.kind}-${item.name}`,

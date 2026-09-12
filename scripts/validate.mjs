@@ -95,6 +95,9 @@ for (const harness of harnesses) {
   const adapterPath = join(repoRoot, "adapters", `${harness}.json`);
   try {
     const adapter = JSON.parse(readFileSync(adapterPath, "utf8"));
+    if (adapter.directoryName !== undefined && (harness !== "claude" || adapter.directoryName !== true)) {
+      errors.push(`${harness} adapter cannot use directory-based skill identity`);
+    }
     for (const [skill, fields] of Object.entries(adapter.removeFrontmatter ?? {})) {
       if (!EXPECTED_SKILLS.includes(skill)) errors.push(`${harness} adapter removes fields from unknown skill ${skill}`);
       if (!Array.isArray(fields)) errors.push(`${harness} adapter removeFrontmatter for ${skill} must be an array`);

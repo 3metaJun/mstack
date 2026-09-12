@@ -1,6 +1,6 @@
 {
   "name": "@3metajun/mstack",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Portable engineering skills for Codex, Claude Code, OpenCode, and pi.",
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "install-skills": "node scripts/install.mjs",
     "optimize-context": "node scripts/optimize-context.mjs",
     "reconcile-context": "node scripts/reconcile-context.mjs",
-    "test": "node scripts/validate.mjs && node scripts/skill-baseline.mjs --check && node --test scripts/install.test.mjs scripts/context.test.mjs scripts/model-config.test.mjs scripts/audit-context.test.mjs scripts/worktree-audit.test.mjs scripts/sync-upstream.test.mjs scripts/runtime.test.mjs scripts/environment.test.mjs scripts/skill-integrity.test.mjs scripts/skill-baseline.test.mjs scripts/version-integrity.test.mjs scripts/agent-format.test.mjs scripts/history.test.mjs scripts/harness-policy.test.mjs scripts/harness-project.test.mjs scripts/check-upstream-adaptations.test.mjs"
+    "test": "node scripts/validate.mjs && node scripts/skill-baseline.mjs --check && node --test scripts/install.test.mjs scripts/install-migration.test.mjs scripts/migration-integration.test.mjs scripts/skill-discovery.test.mjs scripts/harness-targets.test.mjs scripts/remote-discovery.test.mjs scripts/context.test.mjs scripts/model-config.test.mjs scripts/audit-context.test.mjs scripts/worktree-audit.test.mjs scripts/sync-upstream.test.mjs scripts/runtime.test.mjs scripts/environment.test.mjs scripts/skill-integrity.test.mjs scripts/skill-baseline.test.mjs scripts/version-integrity.test.mjs scripts/agent-format.test.mjs scripts/history.test.mjs scripts/harness-policy.test.mjs scripts/harness-project.test.mjs scripts/check-upstream-adaptations.test.mjs"
   },
   "bin": {
     "mstack": "scripts/install.mjs",

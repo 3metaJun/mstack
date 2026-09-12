@@ -20,11 +20,14 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
+import { configuredPath, resolveHarnessRoots } from "./harness-targets.mjs";
+import { planSkillMigration } from "./install-migration.mjs";
 import { convertAgentMarkdown } from "./agent-format.mjs";
 import {
   artifactPathParts,
   localPathKey,
   pathIsWithin,
+  physicalPathKey,
   stagingPath,
   targetPathsOverlap,
   validateArtifactOverrides,
@@ -57,6 +60,8 @@ if (args.includes("--help") || !args.includes("--harness")) {
 
 Installs canonical skills and optional artifacts into user-level harness directories.
 Artifacts: ${validArtifacts.join(", ")} (use --artifact all for installable artifacts).
+Codex, OpenCode and pi share ~/.agents/skills by default. Claude uses directory-based names.
+Use --migrate --replace to back up recognized legacy copies outside skill discovery roots.
 Existing directories are preserved unless --replace is supplied.`);
   process.exit(args.includes("--help") ? 0 : 1);
 }
@@ -73,6 +78,8 @@ if (new Set(requestedHarnesses).size !== requestedHarnesses.length) {
 const harnesses = [...requestedHarnesses];
 const dryRun = args.includes("--dry-run");
 const replace = args.includes("--replace");
+const migrate = args.includes("--migrate");
+if (migrate && !replace) throw new Error("--migrate requires --replace to preserve legacy copies in backups");
 const userHome = homedir();
 const hasEnvironment = args.includes("--environment");
 const environmentName = valueAfter("--environment");
@@ -80,30 +87,12 @@ if (hasEnvironment && (!environmentName || environmentName.startsWith("--"))) {
   throw new Error("--environment requires a name");
 }
 
-function expandHome(path) {
-  if (path === "~") return userHome;
-  if (/^~[\\/]/.test(path)) return join(userHome, path.slice(2));
-  return path;
-}
-
-function configuredPath(value, fallback, label) {
-  const expanded = expandHome(value ?? fallback);
-  if (value && !isAbsolute(expanded)) {
-    throw new Error(`${label} must be an absolute path or start with ~/`);
-  }
-  return resolve(expanded);
-}
-
-function pathFromParts(parts) {
-  return parts.reduce((current, part) => join(current, part), userHome);
-}
-
 function artifactBase(name, harness) {
   const base = artifactRegistry[name]?.harnesses?.[harness]?.base;
   if (base === "codex-home") {
     return configuredPath(process.env.CODEX_HOME || undefined, join(userHome, ".codex"), "CODEX_HOME");
   }
-  return dirname(targets[harness]);
+  return dirname(name === "agents" ? nativeTargets[harness] : targets[harness]);
 }
 
 const environment = readEnvironment(environmentName, harnesses);
@@ -118,23 +107,11 @@ if (environment.transport === "ssh") {
 }
 const environmentTargets = environment.targets;
 const environmentArtifacts = environment.artifacts;
-function harnessTarget(harness) {
-  const config = harnessRegistry[harness];
-  if (environmentTargets[harness]) {
-    return configuredPath(environmentTargets[harness], "", `${environmentName}.${harness}`);
-  }
-  const directory = process.env[config.directoryVariable];
-  if (directory) return configuredPath(directory, "", config.directoryVariable);
-
-  if (config.fallback) return pathFromParts(config.fallback);
-
-  const configRoot = process.env[config.configVariable]
-    ? configuredPath(process.env[config.configVariable], "", config.configVariable)
-    : pathFromParts([config.configFallback]);
-  return join(configRoot, ...(config.prefix ?? []), ...(config.suffix ?? []));
-}
-
-const targets = Object.fromEntries(validHarnesses.map((harness) => [harness, harnessTarget(harness)]));
+const { skills: targets, native: nativeTargets, legacy: legacyTargets, sharedRoot, externalClaudeRoot } =
+  resolveHarnessRoots(harnessRegistry, { home: userHome, environmentTargets, environmentName });
+const discoveryRoots = [...new Set([
+  ...Object.values(targets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
+].map(physicalPathKey))];
 
 function artifactEnvironmentPath(name, harness) {
   const byArtifact = environmentArtifacts[name];
@@ -177,7 +154,7 @@ function artifactTarget(name, harness) {
   return target;
 }
 
-const targetKeys = harnesses.map((harness) => localPathKey(targets[harness]));
+const targetKeys = [...new Set(harnesses.map((harness) => physicalPathKey(targets[harness])))];
 
 const adapters = Object.fromEntries(
   validHarnesses.map((harness) => [
@@ -220,7 +197,11 @@ function parseFrontmatter(content, path) {
 }
 
 function applyAdapter(skillPath, harness, skill) {
-  const removedFields = adapters[harness].removeFrontmatter?.[skill] ?? [];
+  // Claude falls back to the directory name; OpenCode requires an explicit name.
+  const removedFields = [
+    ...(adapters[harness].directoryName ? ["name"] : []),
+    ...(adapters[harness].removeFrontmatter?.[skill] ?? []),
+  ];
   const fields = adapters[harness].frontmatter?.[skill];
   if (!fields && !removedFields.length) return;
 
@@ -233,12 +214,14 @@ function applyAdapter(skillPath, harness, skill) {
   writeFileSync(path, content.replace(match[0], `---\n${adaptedFrontmatter}\n---\n`), "utf8");
 }
 
-function validateAdaptedSkill(skillPath, expectedName) {
+function validateAdaptedSkill(skillPath, expectedName, harness) {
   const path = join(skillPath, "SKILL.md");
   const frontmatter = parseFrontmatter(readFileSync(path, "utf8"), path)[1];
   const keys = [...frontmatter.matchAll(/^([A-Za-z][A-Za-z0-9_-]*):/gm)].map((match) => match[1]);
   if (new Set(keys).size !== keys.length) throw new Error(`${path} has duplicate frontmatter keys`);
-  if (!frontmatter.includes(`name: ${expectedName}`)) throw new Error(`${path} lost its name`);
+  if (adapters[harness].directoryName) {
+    if (keys.includes("name")) throw new Error(`${path} must use its directory name`);
+  } else if (!frontmatter.includes(`name: ${expectedName}`)) throw new Error(`${path} lost its name`);
   if (!/^description:\s*.+$/m.test(frontmatter)) throw new Error(`${path} lost its description`);
 }
 
@@ -376,7 +359,7 @@ const rawArtifactPlan = harnesses.flatMap((harness) =>
 const artifactPlan = [];
 const artifactTargetsByPath = new Map();
 for (const item of rawArtifactPlan) {
-  const key = localPathKey(item.target);
+  const key = physicalPathKey(item.target);
   const existing = artifactTargetsByPath.get(key);
   if (existing) {
     if (existing.name === item.name && existing.source === item.source) {
@@ -392,14 +375,15 @@ for (const item of rawArtifactPlan) {
 }
 const allTargetKeys = [
   ...targetKeys,
-  ...artifactPlan.map(({ target }) => localPathKey(target)),
+  ...artifactPlan.map(({ target }) => physicalPathKey(target)),
 ];
 if (new Set(allTargetKeys).size !== allTargetKeys.length) {
   throw new Error("Selected skills and artifacts resolve to the same target directory");
 }
 
-const plan = [
-  ...harnesses.flatMap((harness) =>
+const skillPlan = [];
+const skillsByTarget = new Map();
+for (const item of harnesses.flatMap((harness) =>
     skills.map((skill) => ({
       kind: "skill",
       harness,
@@ -408,10 +392,37 @@ const plan = [
       source: join(sourceRoot, skill),
       target: join(targets[harness], skill),
     })),
-  ),
-  ...artifactPlan,
-];
+  )) {
+  const key = physicalPathKey(item.target);
+  const signature = (harness) => JSON.stringify({
+    directoryName: adapters[harness].directoryName ?? false,
+    remove: adapters[harness].removeFrontmatter?.[item.skill] ?? [],
+    fields: adapters[harness].frontmatter?.[item.skill] ?? {},
+  });
+  const previous = skillsByTarget.get(key);
+  if (previous) {
+    if (signature(previous.harness) !== signature(item.harness)) {
+      throw new Error(`Selected skills resolve to the same target directory with incompatible adapters: ${item.target}`);
+    }
+    previous.consumers.push(item.harness);
+  } else {
+    item.consumers = [item.harness];
+    skillsByTarget.set(key, item);
+    skillPlan.push(item);
+  }
+}
+const migrationEnabled = skills.length > 0 && !hasEnvironment && skillPlan.some((item) =>
+  item.harness !== "claude" && localPathKey(dirname(item.target)) === localPathKey(sharedRoot));
+if (migrate && !migrationEnabled) {
+  throw new Error("--migrate requires a local default shared skill target; run the installer on the target machine without --environment");
+}
+const migration = planSkillMigration({
+  repoRoot, skills, targets: skillPlan, nativeTargets: legacyTargets, sharedRoot,
+  claudeRoot: legacyTargets.claude, externalClaudeRoot, migrate, replace, enabled: migrationEnabled,
+});
+const plan = [...skillPlan, ...migration.adaptations, ...artifactPlan, ...migration.retirements];
 if (plan.length === 0) throw new Error("Nothing selected: choose skills or --artifact");
+const physicalTargets = plan.map((item) => physicalPathKey(item.target));
 for (const item of plan) {
   if (dirname(item.target) === item.target) {
     throw new Error(`Install target cannot be a filesystem root: ${item.target}`);
@@ -419,24 +430,34 @@ for (const item of plan) {
 }
 for (let left = 0; left < plan.length; left += 1) {
   for (let right = left + 1; right < plan.length; right += 1) {
-    if (targetPathsOverlap(plan[left].target, plan[right].target)) {
+    if (targetPathsOverlap(physicalTargets[left], physicalTargets[right])) {
       throw new Error(
         `Selected install targets overlap: ${plan[left].target} and ${plan[right].target}`,
       );
     }
   }
 }
-for (const source of new Set(plan.map((item) => item.source))) validateSourceTree(source);
+for (const source of new Set(plan.map((item) => item.source).filter(Boolean))) validateSourceTree(source);
 const conflicts = plan.filter(({ target }) => existsSync(target));
+const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
+const transactionId = `${stamp}-${process.pid}`;
+for (const item of plan) {
+  for (const category of ["backups", "failed", "stage"]) transactionPath(item, category);
+}
 
 for (const harness of harnesses) console.log(`${harness}: ${targets[harness]}`);
+for (const item of skillPlan.filter((item) => item.consumers.length > 1)) {
+  console.log(`  shared ${item.name}: ${item.target} (${item.consumers.join(", ")})`);
+}
 for (const item of plan.filter(({ kind }) => kind === "artifact")) {
   console.log(`  artifact ${item.name}: ${item.target}`);
 }
 if (dryRun) {
   for (const item of plan) {
-    const action = existsSync(item.target) ? (replace ? "replace with backup" : "conflict") : "install";
-    console.log(`  ${action}: ${item.kind === "skill" ? item.skill : `artifact/${item.name}`}`);
+    const action = item.kind === "retired" ? "migrate to backup outside skills" :
+      existsSync(item.target) ? (replace ? "replace with backup" : "conflict") : "install";
+    console.log(`  ${action}: ${item.kind === "skill" ? item.skill : `${item.kind}/${item.name}`} -> ${item.target}`);
+    if (replace && existsSync(item.target)) console.log(`    backup -> ${transactionPath(item, "backups")}`);
   }
   if (conflicts.length && !replace) process.exitCode = 2;
   else console.log("Dry run complete.");
@@ -450,12 +471,24 @@ if (conflicts.length && !replace) {
   );
 }
 
-const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
-const transactionId = `${stamp}-${process.pid}`;
 const lockOwner = `${process.pid} ${transactionId}`;
 const locks = [];
 const stagedPaths = [];
 const committed = [];
+
+function transactionPath(item, category) {
+  const parent = dirname(item.target);
+  // Recursive discovery includes dot-directories, so no skill transaction data may live under skills/.
+  const root = item.kind === "artifact" ? parent : dirname(parent);
+  const path = join(root, `.harness-skills-${category}`, basename(parent), transactionId, item.name);
+  const physical = physicalPathKey(path);
+  for (const skillsRoot of discoveryRoots) {
+    if (pathIsWithin(skillsRoot, physical)) {
+      throw new Error(`Transaction storage would be discoverable as skills: ${path}; choose non-nested skill targets`);
+    }
+  }
+  return path;
+}
 
 function processIsAlive(pid) {
   try {
@@ -548,8 +581,7 @@ function rollbackCommitted() {
     let failed;
     try {
       if (existsSync(item.target)) {
-        const failedName = item.kind === "skill" ? item.name : `artifact-${item.harness}-${item.name}`;
-        failed = join(dirname(item.target), ".harness-skills-failed", stamp, failedName);
+        failed = transactionPath(item, "failed");
         mkdirSync(dirname(failed), { recursive: true, mode: 0o700 });
         renameSync(item.target, failed);
       }
@@ -577,7 +609,7 @@ try {
   const lockRootsByPath = new Map();
   for (const item of plan) {
     const lockRoot = dirname(item.target);
-    const key = localPathKey(lockRoot);
+    const key = physicalPathKey(lockRoot);
     if (!lockRootsByPath.has(key)) lockRootsByPath.set(key, lockRoot);
   }
   const lockRoots = [...lockRootsByPath.values()].sort((left, right) => left.localeCompare(right));
@@ -589,14 +621,19 @@ try {
   }
 
   for (const [index, item] of plan.entries()) {
+    if (item.kind === "retired") continue;
     mkdirSync(dirname(item.target), { recursive: true });
-    const staged = stagingPath(item.target, transactionId, index);
+    const staged = item.kind === "artifact" ? stagingPath(item.target, transactionId, index) : transactionPath(item, "stage");
+    mkdirSync(dirname(staged), { recursive: true });
     stagedPaths.push(staged);
     copyDirectoryContents(item.source, staged);
     if (item.kind === "artifact") applyArtifactAdapter(staged, item);
     if (item.kind === "skill") {
       applyAdapter(staged, item.harness, item.skill);
-      validateAdaptedSkill(staged, item.skill);
+      validateAdaptedSkill(staged, item.skill, item.harness);
+      writeFileSync(join(staged, ".mstack-install.json"), JSON.stringify({
+        package: "@3metajun/mstack", schemaVersion: 1,
+      }) + "\n", "utf8");
     }
     item.staged = staged;
   }
@@ -609,14 +646,15 @@ try {
 
     let backup;
     if (existsSync(target)) {
-      const backupName = item.kind === "skill" ? item.name : `artifact-${item.harness}-${item.name}`;
-      backup = join(dirname(target), ".harness-skills-backups", stamp, backupName);
+      backup = transactionPath(item, "backups");
       mkdirSync(dirname(backup), { recursive: true, mode: 0o700 });
       renameSync(target, backup);
     }
 
     const entry = { ...item, harness, target, backup };
     committed.push(entry);
+    if (backup) console.log(`  backup: ${target} -> ${backup}`);
+    if (item.kind === "retired") continue;
     mkdirSync(dirname(target), { recursive: true });
     renameSync(item.staged, target);
   }
@@ -637,5 +675,5 @@ try {
 }
 
 const skillCount = plan.filter(({ kind }) => kind === "skill").length;
-const artifactCount = plan.length - skillCount;
-console.log(`Installed ${skillCount} skill copies and ${artifactCount} artifact copies; replaced ${conflicts.length}.`);
+const artifactCount = artifactPlan.length;
+console.log(`Installed ${skillCount} skill copies and ${artifactCount} artifact copies; replaced ${conflicts.length}; retired ${migration.retirements.length} legacy entries.`);

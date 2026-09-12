@@ -9,8 +9,8 @@ to the official documentation used for each entry.
 | --- | --- | --- | --- |
 | Codex | `~/.agents/skills/` | `.agents/skills/` | Agent Skills fields; Codex-specific `agents/openai.yaml` lives beside each skill |
 | Claude Code | `~/.claude/skills/` | `.claude/skills/` | `name`, `description`, `license`, `compatibility`, `metadata`, and Claude invocation fields |
-| OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/` | `license`, `compatibility`, and `metadata` |
-| pi | `~/.pi/agent/skills/` | `.pi/skills/` | `license`, `compatibility`, `metadata`, `allowed-tools`, and `disable-model-invocation` |
+| OpenCode | `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.claude/skills/` | `.opencode/skills/` | `license`, `compatibility`, and `metadata` |
+| pi | `~/.agents/skills/`, `~/.pi/agent/skills/` | `.pi/skills/` | `license`, `compatibility`, `metadata`, `allowed-tools`, and `disable-model-invocation` |
 
 Sources:
 
@@ -24,6 +24,24 @@ can read. Claude Code accepts `metadata` but does not act on its contents, so
 `adapters/claude.json` removes that map and surfaces the logger requirement in
 the `compatibility` field instead. OpenCode and pi retain `metadata` because
 their official references support it.
+
+mstack installs one canonical copy in `~/.agents/skills/` for Codex, OpenCode
+and pi. Claude output omits frontmatter `name`; Claude's documented fallback
+uses the directory name, so `/meta-mode` keeps its name. OpenCode requires an
+explicit name before registration and skips the Claude copy. This behavior
+was checked with OpenCode 1.18.30 using a named Claude control skill and an
+unnamed Claude copy alongside the canonical shared skill. Claude Code 2.1.267
+also returned the directory-derived command name during an isolated
+stream-JSON initialization without a user prompt or model request. Recheck this adapter
+if OpenCode adds a directory-name fallback for external skills.
+
+pi 0.85.1 keeps the first same-name skill and reports a collision for later
+independent copies. A stale native pi copy can therefore hide a shared update.
+The installer migration removes recognized redundant copies from discovery;
+see [migration instructions](../README.md#migrate-an-existing-installation).
+It also keeps backups outside skill roots so recursive scanners do not load
+archived versions. Project wrappers use their separate generator and are not
+migrated by the user-level installer.
 
 ## Shared project verification wrappers
 

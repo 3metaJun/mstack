@@ -1,35 +1,18 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { processInvocation } from "./runtime-lib.mjs";
 import { parseCliArgs } from "./cli-args.mjs";
+import { resolveHarnessRoots } from "./harness-targets.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const registry = JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8"));
 const options = parseCliArgs(process.argv.slice(2), [
   "--harness", "--skill", "--file", "--model", "--parent-model",
 ], ["--execute", "--require-installed", "--json"]);
-
-function expandHome(path) {
-  if (path === "~") return homedir();
-  return path?.startsWith("~/") || path?.startsWith("~\\") ? join(homedir(), path.slice(2)) : path;
-}
-
-function targetFor(harness) {
-  const config = registry[harness];
-  const override = process.env[config.directoryVariable];
-  if (override) return resolve(expandHome(override));
-  if (config.fallback) return config.fallback.reduce((path, part) => join(path, part), homedir());
-  const configuredRoot = process.env[config.configVariable];
-  const configRoot = configuredRoot
-    ? resolve(expandHome(configuredRoot))
-    : join(homedir(), config.configFallback);
-  return join(configRoot, ...(config.prefix ?? []), ...(config.suffix ?? []));
-}
 
 function run(command, commandArgs) {
   const invocation = processInvocation(command, commandArgs);
@@ -64,10 +47,11 @@ if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(skill)) throw new Error(`Invalid skill 
 const execute = options["--execute"];
 const requireInstalled = options["--require-installed"];
 const results = [];
+const { skills: targets } = resolveHarnessRoots(registry);
 
 for (const harness of harnesses) {
   const config = registry[harness];
-  const target = targetFor(harness);
+  const target = targets[harness];
   const skillPath = join(target, skill, "SKILL.md");
   const version = run(config.runtime.command, ["--version"]);
   const entry = {

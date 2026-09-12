@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.1 - 2026-09-12
+
+### Upgrade notes
+
+Run `npx @3metajun/mstack@0.4.1 --harness all --migrate --replace --dry-run`
+to inspect the migration, then repeat without `--dry-run`. Recognized legacy
+copies are backed up outside skill discovery roots. Unrecognized local
+copies stop migration before writes. SSH migration must run locally on the
+target machine.
+
+### Fixes
+
+- Share one canonical skill copy across Codex, OpenCode and pi. Claude keeps
+  its adapter and derives skill names from directories, so OpenCode skips its
+  duplicate copy without changing global settings.
+- Migrate legacy copies, archived backups and interrupted stages with retained
+  originals and rollback. Validate physical path aliases before writing.
+- Keep agent definitions in native directories and shared tools beside their
+  skills. Deduplicate compatible explicit and remote targets.
+- Reuse target resolution in the installer and smoke checks so OpenCode and pi
+  checks inspect the shared installation.
+
 ## 0.4.0 - 2026-09-12
 
 This release adds a shared project workflow for teams using pstack and mstack

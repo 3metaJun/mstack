@@ -41,10 +41,10 @@ npx @3metajun/mstack --harness all \
 
 The installer preserves an existing skill directory. Use `--dry-run` to inspect
 the plan. Use `--replace` to move existing directories into a timestamped
-`.harness-skills-backups/` directory under the replaced target's parent. Skill
-backups therefore stay inside that Harness's `skills/` directory, and custom
-artifact backups stay beside the artifact target. mstack retains backups until
-you inspect and remove them.
+`.harness-skills-backups/` directory outside the skill root. Backups, staged
+skills and failed replacements must stay outside discovery roots because
+OpenCode also scans hidden subdirectories. Artifact backups stay beside the
+artifact target. The installer prints each backup path and retains its contents.
 
 ## Install optional artifacts
 
@@ -61,9 +61,9 @@ The available installable artifacts are:
 
 | Artifact | Default destination |
 | --- | --- |
-| `agents` | Codex: `$CODEX_HOME/agents/` as TOML; other harnesses: `agents/` beside `skills/` as Markdown |
-| `meta-mode-tools` | `tools/meta-mode/` beside `skills/` |
-| `guide` | `docs/guide/` beside `skills/` |
+| `agents` | Codex: `$CODEX_HOME/agents/` as TOML; other harnesses: their native `agents/` directory as Markdown |
+| `meta-mode-tools` | `tools/meta-mode/` beside the resolved skill root; shared consumers use `~/.agents/tools/meta-mode/` |
+| `guide` | `docs/guide/` beside the resolved skill root |
 
 Codex skills default to `~/.agents/skills/`, while Codex agents default to
 `~/.codex/agents/`. An unset or empty `CODEX_HOME` uses `~/.codex`.
@@ -115,11 +115,56 @@ The default directories are defined in
 | --- | --- | --- |
 | Codex | `~/.agents/skills/` | `HARNESS_SKILLS_CODEX_DIR` |
 | Claude Code | `~/.claude/skills/` | `HARNESS_SKILLS_CLAUDE_DIR` |
-| OpenCode | `~/.config/opencode/skills/` | `HARNESS_SKILLS_OPENCODE_DIR` |
-| pi | `~/.pi/agent/skills/` | `HARNESS_SKILLS_PI_DIR` |
+| OpenCode | `~/.agents/skills/` | `HARNESS_SKILLS_OPENCODE_DIR` |
+| pi | `~/.agents/skills/` | `HARNESS_SKILLS_PI_DIR` |
+
+Codex, OpenCode and pi share one physical copy per skill by default. Updating
+through any of these Harnesses updates that shared copy. Claude gets its own
+adapter output without a frontmatter `name`: Claude uses the directory name,
+while OpenCode skips that copy. No global Harness settings are changed.
+
+OpenCode and pi agent artifacts retain their native configuration roots.
+`CLAUDE_CONFIG_DIR`, `XDG_CONFIG_HOME` and `PI_CODING_AGENT_DIR` still resolve
+native roots and legacy migration locations; the latter two no longer move
+the default shared skills. Use `HARNESS_SKILLS_*_DIR` for explicit skill paths.
 
 Set an override to install into a mounted Fleet directory or another local
-path. The path must be absolute or start with `~/`.
+path. The path must be absolute or start with `~/`. Explicit overrides and
+named environment targets are not rewritten. Equal targets are combined only
+when their selected skill adapters agree; Claude and canonical output cannot
+share a target. Keep explicit copies out of overlapping discovery paths.
+
+### Migrate an existing installation
+
+Run the new installer locally on the machine that owns the skills:
+
+```bash
+npx @3metajun/mstack --harness all --migrate --replace --dry-run
+npx @3metajun/mstack --harness all --migrate --replace
+```
+
+Migration moves recognized legacy OpenCode and pi copies into backups outside
+skill discovery. It also moves old installer backup trees and recognized
+staging leftovers out of discovery.
+A partial shared update checks the same selected names in all native roots,
+including Harnesses not named on the command line. Existing Claude copies
+that need only directory-based identity are adapted from their installed
+contents, preserving supporting files and body edits. Directly selected skills
+are replaced from the package, with their original contents backed up.
+
+Ownership comes from an mstack install receipt or known released `SKILL.md`
+content from versions 0.2.0 through 0.4.0. An unrecognized same-name legacy copy
+stops migration before writes; inspect and relocate that copy before retrying.
+Unselected active skills and unrelated skill names remain in place. Re-running
+the migration is safe, and a later failed write rolls back earlier migrations.
+
+Without `--migrate`, the installer reports legacy copies that would remain
+active. Automatic migration requires a default shared local target. For SSH or
+mounted custom layouts, run migration on the target machine with its native
+paths; SSH `--migrate` is rejected before connecting. SSH dry-run validates
+configured destinations but does not inspect the remote filesystem.
+
+### Custom and remote targets
 
 ```powershell
 $env:HARNESS_SKILLS_OPENCODE_DIR = 'C:\path\to\fleet\opencode\skills'
