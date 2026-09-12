@@ -5,20 +5,21 @@ mstack in Codex, Claude Code, OpenCode, or pi. Cursor and Grok Bot can also use
 mstack when installed. Keep each person's workflow installation separate while
 the repository owns one verification contract per app.
 
-The commands below use `mstack-policy`. This checkout adds the command; older
-npm releases do not contain it. During development, replace `mstack-policy` with
-`node <mstack-checkout>/scripts/check-harness-policy.mjs`. After a release that
-contains this command, invoke the team's exact package version with:
+The commands below use `mstack-policy`, available in mstack 0.4.0 and later.
+Invoke the team's exact package version with:
 
 ```bash
-npx --package @3metajun/mstack@<version> mstack-policy --help
+npx --package @3metajun/mstack@0.4.0 mstack-policy --help
 ```
 
+For the remaining examples, replace `mstack-policy` with
+`npx --package @3metajun/mstack@0.4.0 mstack-policy`. During development, use
+`node <mstack-checkout>/scripts/check-harness-policy.mjs` instead.
+
 Initialization exports a structural checker that CI runs from the business
-repository. CI does not need to download this unreleased package. The full CLI
-still comes from the reviewed development checkout or, after release, an exact
-package version. Replace every example version, commit, command, app ID, and
-repository path with the team's actual value.
+repository without downloading mstack. The full CLI comes from the team's
+exact package version or reviewed development checkout. Replace every example
+version, commit, command, app ID, and repository path with the team's actual value.
 
 ## Initialize the shared project workflow
 
