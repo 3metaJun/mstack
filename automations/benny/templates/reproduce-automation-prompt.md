@@ -22,6 +22,11 @@ Trigger:
 
 The creation intent should describe this as a new top-level report in the configured source Slack channel. It should include the configured repository, default branch, issue tracker, control adapter, feature map, and draft pull request capability.
 
+When the repository has `.harness/policy.json`, include the instruction to read
+`.harness/workflow.md` and use its canonical app contract. The configured
+feature-map path must be that app's `features/README.md`; load its linked files
+before driving. Keep the prompt as an entry pointer rather than a copied map.
+
 Treat the source channel and root thread timestamp as immutable. If either is missing or does not match configuration, stop without posting.
 
 Wait for a configured triage marker from the configured triage identity in this exact thread. Proceed only for `[benny:bug]` or `[benny:performance]`.

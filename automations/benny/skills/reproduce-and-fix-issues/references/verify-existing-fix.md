@@ -31,6 +31,12 @@ Use regular `github.com` pull request links.
 
 ## Measure the baseline
 
+Load the shared project workflow and canonical contract when present. Resolve
+the configured feature index to the matching feature file. Give baseline and
+patched builds separate instance state as the contract requires, and identify
+each tested commit in the evidence. If an older revision lacks the mapped path,
+report that limitation rather than applying the current map without checking.
+
 For an open pull request, use its base branch as the baseline.
 
 For a merged fix, use the revision immediately before the fix when that revision builds and represents the old behavior.

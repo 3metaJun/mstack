@@ -18,6 +18,6 @@ the files in this directory are dormant setup and automation sources. they do no
 }
 ```
 
-4. keep user-owned configuration outside the copied pack, for example in `.cursor/benny/`. adapt [`configuration.example.yaml`](./templates/configuration.example.yaml) and [`feature-map.example.md`](./skills/reproduce-and-fix-issues/references/feature-map.example.md).
+4. keep user-owned configuration outside the copied pack, for example in `.cursor/benny/`. adapt [`configuration.example.yaml`](./templates/configuration.example.yaml). point `control.feature_map_path` at `.harness/verify/<app>/features/README.md` when the project has a shared verification contract. benny reads the linked feature files and the same contract as other Harnesses. use the [map example](./skills/reproduce-and-fix-issues/references/feature-map.example.md) for required content, not a second copy of project facts.
 5. commit `.cursor/settings.json`, `.cursor/automations/benny/`, and any secret-free configuration before enabling either automation.
 6. review each new automation draft or update existing automations in their editors. then send a harmless test report and verify every source-channel post stays in the original thread.

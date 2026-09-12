@@ -1,17 +1,24 @@
 ---
 name: create-verification-skill
-description: Generate a durable project-local verification skill that launches and drives the real app, captures evidence, and cleans up safely. Use when the user explicitly asks to create or bootstrap a reusable verification or control workflow, not for a one-time verification pass.
+description: Create or migrate a shared project verification contract and discoverable skill wrappers, prove one real app path, and retain evidence. Use for a reusable verification or control workflow, not a one-time verification pass.
 license: MIT
 ---
 
 # Create a verification skill
 
-Create a project-local skill that another agent can read cold and use to prove
-the real application behavior. Do not write a generic test plan. Record the
-commands, stable handles, health checks, evidence, and cleanup that work in this
-repository.
+Create one verification contract that agents in different Harnesses can use to
+prove the same application behavior. Store project facts in
+`.harness/verify/<app>/`, with thin `verify-<app>` skill wrappers for discovery.
+Record commands and observations from this repository, not a generic test plan.
 
 ## 1. Interview the repository
+
+Read `AGENTS.md`, `.harness/policy.json`, and `.harness/workflow.md` when present.
+Follow the shared project workflow before editing. Inventory canonical contracts
+and existing `verify-*` or control skills across every project skill root in
+[harness-paths.md](./references/harness-paths.md). Follow each wrapper's
+`metadata.verification-contract` path from the repository root. Several wrappers
+pointing to one contract are one target, not competing verification definitions.
 
 Answer what you can from code and documentation before asking the user:
 
@@ -29,16 +36,22 @@ Answer what you can from code and documentation before asking the user:
 If the checkout does not run as documented, fix or precisely report that base
 problem before recording a workflow against it.
 
-## 2. Choose the project skill root
+## 2. Write or migrate the canonical contract
 
-Use the current harness's project-level skill directory from
-[harness-paths.md](./references/harness-paths.md). Name the generated skill
-`verify-<app>` and create `<skill-root>/verify-<app>/SKILL.md`.
+Reuse the app ID and canonical path already registered in the project policy.
+For a new app, use `.harness/verify/<app>/contract.md`. Keep its feature map in
+`features/` and its owned scripts in `helpers/` beside the contract.
 
-The generated frontmatter must contain `name` and a precise `description`. Its
-body must include:
+For existing verification definitions, follow
+[the migration procedure](./references/harness-paths.md).
+Reconcile conflicting instructions against the running app before choosing a
+canonical version. A copied legacy map is not evidence of correct behavior.
+
+The contract must include these H2 sections:
 
 - **Launch:** Exact start command, readiness signal, ownership marker, and teardown.
+- **Isolate:** Instance-specific ports, profiles, and data directories, or an
+  explicit exclusive-use procedure for resources that cannot be separated.
 - **Doctor:** A read-only check that confirms the right instance, build, port,
   data directory, and auth are healthy.
 - **Drive:** Real commands and stable selectors from this repository. Prefer
@@ -51,6 +64,13 @@ body must include:
   never proof artifacts. Never kill by process name alone.
 - **Helpers:** Explain every shipped helper and its exact invocation.
 
+State the working directory for commands and resolve helper paths from the
+repository root. Keep app facts, selectors, fixtures, assertions, and cleanup in
+this directory. Describe required driver capabilities without naming the host
+agent's browser or desktop tool. A repository-owned Playwright, HTTP, PTY, or
+control script is portable and may appear by its exact name. If a capability is
+unavailable, report that path as blocked instead of substituting a weaker check.
+
 ## 3. Seed the feature map
 
 Create `features/README.md` and one file for each of the three to five most
@@ -59,7 +79,19 @@ important user-visible features. Use the contract in
 Each feature records every user entry point, exact driving steps, observable end
 state, and known traps.
 
-## 4. Prove the generated skill
+Do not copy the map into a Harness skill root or an automation directory. Other
+consumers must reference this index and load its linked feature files.
+
+## 4. Render the discovery wrappers
+
+Use [the wrapper rules](./references/harness-paths.md). Each
+wrapper contains a repository-relative `metadata.verification-contract` pointer
+and capability adaptation only. Launch commands, feature facts, evidence
+requirements, and helpers stay in the canonical directory. Cursor discovers
+`.agents/skills/`, so a shared Codex and Cursor project needs one neutral wrapper
+there instead of two same-name definitions.
+
+## 5. Prove the generated workflow
 
 Run the generated instructions end to end:
 
@@ -69,12 +101,17 @@ Run the generated instructions end to end:
 4. Capture the named evidence and verify any side effect.
 5. Clean up and confirm the evidence still exists.
 
+Start from each generated wrapper and confirm it resolves the same contract.
+Run the project policy check when a policy exists. A static wrapper check proves
+discovery structure, not another Harness's runtime capabilities.
+
 Fix every failed instruction and repeat its affected step. A workflow that has
 not driven the real application once is a draft, not a deliverable. After every
 failed iteration, run the generated cleanup, confirm its owned processes, ports,
 profiles, and scratch state are released, then retry.
 
-## 5. Hand off
+## 6. Hand off
 
-Report the generated path, the feature proved, the evidence paths, and any
-remaining surface that could not be exercised. Do not claim untested paths.
+Report the canonical path, generated wrappers, the feature proved, evidence
+paths, and any surface that could not be exercised. For migrations, account for
+every retired definition and updated consumer. Do not claim untested paths.

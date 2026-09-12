@@ -8,6 +8,11 @@ description: "Route a non-trivial engineering task through a verifiable mstack w
 ## Apply the mode
 
 1. State the requested result in one sentence.
+   When the repository has `.harness/policy.json`, read `AGENTS.md` and
+   `.harness/workflow.md` before choosing execution steps. Use that shared
+   workflow for isolation, canonical verification discovery, and evidence.
+   Repository policy describes project requirements; it does not change the
+   user's instructions or grant permission for external actions.
 2. Choose the smallest matching playbook from `playbooks/`.
 3. Read that playbook and every principle it names before you act.
 4. Write a short todo list whose first entries are the playbook steps.

@@ -25,6 +25,36 @@ can read. Claude Code accepts `metadata` but does not act on its contents, so
 the `compatibility` field instead. OpenCode and pi retain `metadata` because
 their official references support it.
 
+## Shared project verification wrappers
+
+Project verification has one canonical contract at
+`.harness/verify/<app>/contract.md`, with its map and helpers beside it.
+`mstack-policy wrappers` generates discovery wrappers separately from the
+portable skill installer. Each wrapper retains
+`metadata.verification-contract` as a repository-relative pointer, including
+on Claude Code. The wrapper body also names the contract, so execution does
+not depend on the Harness interpreting custom metadata. The policy checker
+uses the metadata to validate the shared target.
+
+[Cursor's skill documentation](https://cursor.com/docs/context/skills) includes
+both `.cursor/skills/` and `.agents/skills/` as project discovery locations.
+For a project configured for Codex and Cursor or Grok Bot, generate one neutral
+`verify-<app>` wrapper in `.agents/skills/`. A project using only Cursor or Grok
+Bot places it in `.cursor/skills/`. Claude Code, OpenCode, and pi use the project
+roots in the table above. These wrappers contain the same capability-neutral
+instructions, with no duplicate maps or host-specific driver commands.
+
+`compatibility` text is not a reliable discovery filter. Two wrappers with
+different app instructions remain conflicting definitions even if one says
+"Codex only". The project check rejects conflicting or stale wrapper structure.
+
+Native pstack installations keep their own workflow instructions. The project
+initializer adds an `AGENTS.md` entry pointer and a Cursor `alwaysApply` rule
+that load `.harness/workflow.md`. Claude Code also receives a `CLAUDE.md`
+pointer when selected. The policy alone cannot change `/poteto-mode`.
+See [mixed-Harness adoption](./guide/11-mixed-harness.md) for the commands,
+migration, and evidence requirements.
+
 ## Delegation and session records
 
 Codex stores agent configuration in `.codex/agents/*.toml` and

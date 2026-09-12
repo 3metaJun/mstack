@@ -78,16 +78,35 @@ Open these copied examples:
 Create user-owned copies outside `.cursor/automations/benny/`. These are configuration files, not pack files. Example locations:
 
 - Project config, such as `.cursor/benny/configuration.yaml`
-- Project feature map, such as `.cursor/benny/feature-map.md`
+- Canonical feature index, such as `.harness/verify/web/features/README.md`
 - Project routing map, such as `.cursor/benny/routing.md`
 - User config, such as `~/.config/benny/configuration.yaml`
-- User feature map, such as `~/.config/benny/feature-map.md`
+- Legacy user feature map, when the project has no shared contract
 
-Fill one feature-map section for every user-facing feature the automation may reproduce. Keep it at the user point of view. Do not freeze implementation details or current code paths in the map.
+When the project has `.harness/policy.json`, read `.harness/workflow.md` and
+select its canonical app. Set `control.feature_map_path` to that app's
+`features/README.md`. Read the linked feature files and the adjacent
+`contract.md`. Reuse them instead of making a Benny-only copy. The configured
+control skill supplies the available driver and follows that contract.
+
+When canonical verification does not exist, use `/create-verification-skill` to
+create or migrate it as part of authorized verification setup. A legacy project
+without a shared policy may keep an existing completed external map until it
+migrates. Never keep both definitions active after adoption.
+
+Map every user-facing feature the automation may reproduce. Keep user paths and
+expected observations in the canonical feature files. Discover implementation
+paths from source when investigating a report.
 
 Do not edit the copied examples. Pack refreshes may update source-managed files after conflict review, but they must never touch the user-owned copies.
 
-Prefer committed, secret-free files in the target repository when a fresh automation checkout must read them. Otherwise paraphrase the required values into the live prompt. Reference a repository file only after the built-in `/automate` skill confirms that the file is committed in the repository where the automation runs.
+Require the shared project workflow, canonical contract, and feature files to
+be committed before enabling an automation that uses them. Reference their
+repository paths instead of paraphrasing project facts into the prompt. For
+configuration unrelated to verification, prefer committed, secret-free files
+when a fresh automation checkout must read them. Otherwise paraphrase the
+required values. Reference a repository file only after the built-in
+`/automate` skill confirms that it is committed in the automation repository.
 
 Use stable repository-relative paths for committed pack and configuration files. Never reference the plugin source directory or a plugin cache path from a live automation.
 
@@ -150,7 +169,10 @@ If no routing map is configured, triage may classify a report but must not guess
 
 ## 6. Verify the control adapter
 
-Read `../reproduce-and-fix-issues/references/control-adapter.md` and the user's completed feature map.
+Read `../reproduce-and-fix-issues/references/control-adapter.md` and the user's
+completed feature map. For a canonical index, load every linked feature file
+and its adjacent app contract. Verify that the configured map agrees with the
+project policy. Run the policy check when present.
 
 Confirm that the named skill can:
 
@@ -204,7 +226,10 @@ After the triage editor handoff is complete, give `automate` this complete repro
 - Trigger on the same new top-level reports in the configured source Slack channel.
 - Use the configured repository and default branch.
 - Read the source thread and reply only inside it.
-- Include pull request creation and the configured tracker, control-adapter, and feature-map requirements. Paraphrase mapped user paths and states unless `automate` confirms an eligible committed file in the same repository.
+- Include pull request creation and the configured tracker, control-adapter,
+  and feature-map requirements. For a shared project contract, require its
+  committed canonical paths. For a legacy project, paraphrase mapped user paths
+  only when `automate` cannot reference an eligible committed map.
 - Wait for a trusted triage marker before acting.
 - Reproduce the exact symptom twice through the mapped real UI and capture evidence.
 - Verify an existing fix without authoring over it.

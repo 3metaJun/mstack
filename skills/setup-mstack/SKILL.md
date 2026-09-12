@@ -76,3 +76,22 @@ its target Harness or is `inherit-parent` or `auto`. Preserve choices for other
 Harnesses when their model catalogs are unavailable. When working in the mstack
 repository, run `node scripts/model-config.mjs --file <path>` to check the shape.
 Report the roles and selected values to the user.
+
+## Discover project verification
+
+Read `AGENTS.md` and `.harness/workflow.md` when present. Inspect the apps in
+`.harness/policy.json`, canonical `.harness/verify/` contracts, and project
+`verify-*` wrappers. Resolve `metadata.verification-contract` from the repository
+root. Multiple wrappers targeting one contract are one verification workflow.
+
+If canonical verification exists, report its path and follow the project's
+workflow. If legacy maps disagree or duplicate canonical facts, report the
+conflict and use `/create-verification-skill`'s migration procedure when the
+user requested verification setup. Do not generate another copy for this
+Harness.
+
+If neither a reusable verification contract nor an existing repository driver
+exists, offer once to run `/create-verification-skill`. Create it when the user
+has already requested that work or accepts the offer. Model configuration alone
+does not require launching the app or adopting a team policy. Mixed-Harness
+adoption is a separate project change described in the mstack guide.

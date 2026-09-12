@@ -4,7 +4,20 @@ Benny does not know how to start or drive every app. The user must configure one
 
 Set its skill name in `control.skill_name`.
 
-Set the completed user-facing feature map path in `control.feature_map_path`. Copy and fill [`feature-map.example.md`](./feature-map.example.md) outside `.cursor/automations/benny/` instead of editing the copied example.
+Set `control.feature_map_path` to the app's canonical feature index, such as
+`.harness/verify/web/features/README.md`, when the repository uses a shared
+project contract. Load its linked feature files and adjacent `contract.md`.
+The control skill may be a neutral `verify-<app>` wrapper that resolves
+`metadata.verification-contract` from the repository root.
+
+Keep driver-specific capability adaptation in the installed control skill.
+Launch commands, fixtures, user paths, expected results, and cleanup belong to
+the canonical contract. Do not copy them into Benny configuration.
+
+For a legacy project without a shared policy, an existing completed external
+map can remain until migration. The [map example](./feature-map.example.md)
+describes the required content. Keep any user-owned map outside the copied
+pack, and replace it with the canonical index during mixed-Harness adoption.
 
 If the skill, feature map, or a required capability is absent, ambiguous, or incomplete, repro and fix work must fail closed.
 
@@ -52,7 +65,8 @@ Do not set internal state, call hidden app methods, write directly to storage, o
 
 ### Drive mapped features and states
 
-Read the relevant feature-map section before driving the app.
+Read the relevant feature file or legacy map section before driving the app.
+An index is a list of links, not the complete feature definition.
 
 The adapter must expose ways to:
 
@@ -134,7 +148,8 @@ The adapter must:
 - Surface startup failures as failures.
 - Bound retries.
 - Keep secrets out of logs and artifacts.
-- Keep captures outside the repository.
+- Keep captures outside tracked source. A shared project's ignored artifact
+  location can hold files referenced by its run receipt.
 - Support a fresh or reset state between the two repro attempts.
 - Avoid production changes unless the user explicitly configured a safe test action.
 
