@@ -6,6 +6,7 @@ import {
   existsSync,
   mkdirSync,
   lstatSync,
+  mkdtempSync,
   openSync,
   readFileSync,
   realpathSync,
@@ -15,12 +16,18 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
 import { convertAgentMarkdown } from "./agent-format.mjs";
+import {
+  configuredPath,
+  legacySkillsDir,
+  ownConfigRoot,
+  skillsTarget,
+} from "./harness-targets.mjs";
 import {
   artifactPathParts,
   localPathKey,
@@ -53,11 +60,15 @@ function valueAfter(flag) {
 }
 
 if (args.includes("--help") || !args.includes("--harness")) {
-  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|all> [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace]
+  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|all> [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace] [--migrate]
 
 Installs canonical skills and optional artifacts into user-level harness directories.
+Skills shared across harnesses are installed once per discovery directory; OpenCode
+and pi install into the shared ~/.agents/skills directory they already discover.
 Artifacts: ${validArtifacts.join(", ")} (use --artifact all for installable artifacts).
-Existing directories are preserved unless --replace is supplied.`);
+Existing directories are preserved unless --replace is supplied.
+--migrate removes legacy 0.4.0 skill copies from the harness-owned directories that
+are no longer install targets, keeping copies that differ from the current source.`);
   process.exit(args.includes("--help") ? 0 : 1);
 }
 
@@ -73,6 +84,7 @@ if (new Set(requestedHarnesses).size !== requestedHarnesses.length) {
 const harnesses = [...requestedHarnesses];
 const dryRun = args.includes("--dry-run");
 const replace = args.includes("--replace");
+const migrate = args.includes("--migrate");
 const userHome = homedir();
 const hasEnvironment = args.includes("--environment");
 const environmentName = valueAfter("--environment");
@@ -80,28 +92,22 @@ if (hasEnvironment && (!environmentName || environmentName.startsWith("--"))) {
   throw new Error("--environment requires a name");
 }
 
-function expandHome(path) {
-  if (path === "~") return userHome;
-  if (/^~[\\/]/.test(path)) return join(userHome, path.slice(2));
-  return path;
-}
-
-function configuredPath(value, fallback, label) {
-  const expanded = expandHome(value ?? fallback);
-  if (value && !isAbsolute(expanded)) {
-    throw new Error(`${label} must be an absolute path or start with ~/`);
-  }
-  return resolve(expanded);
-}
-
-function pathFromParts(parts) {
-  return parts.reduce((current, part) => join(current, part), userHome);
+function pinnedSkillsRoot(harness) {
+  if (environmentTargets[harness]) return targets[harness];
+  if (process.env[harnessRegistry[harness].directoryVariable]) return targets[harness];
+  return undefined;
 }
 
 function artifactBase(name, harness) {
   const base = artifactRegistry[name]?.harnesses?.[harness]?.base;
   if (base === "codex-home") {
-    return configuredPath(process.env.CODEX_HOME || undefined, join(userHome, ".codex"), "CODEX_HOME");
+    return configuredPath(process.env.CODEX_HOME || undefined, join(userHome, ".codex"), "CODEX_HOME", userHome);
+  }
+  const pinned = pinnedSkillsRoot(harness);
+  if (pinned) return dirname(pinned);
+  const skills = harnessRegistry[harness].skills ?? {};
+  if (skills.install && skills.install !== "own") {
+    return ownConfigRoot(harnessRegistry, harness, process.env, userHome);
   }
   return dirname(targets[harness]);
 }
@@ -118,23 +124,20 @@ if (environment.transport === "ssh") {
 }
 const environmentTargets = environment.targets;
 const environmentArtifacts = environment.artifacts;
-function harnessTarget(harness) {
-  const config = harnessRegistry[harness];
-  if (environmentTargets[harness]) {
-    return configuredPath(environmentTargets[harness], "", `${environmentName}.${harness}`);
-  }
-  const directory = process.env[config.directoryVariable];
-  if (directory) return configuredPath(directory, "", config.directoryVariable);
 
-  if (config.fallback) return pathFromParts(config.fallback);
-
-  const configRoot = process.env[config.configVariable]
-    ? configuredPath(process.env[config.configVariable], "", config.configVariable)
-    : pathFromParts([config.configFallback]);
-  return join(configRoot, ...(config.prefix ?? []), ...(config.suffix ?? []));
-}
-
-const targets = Object.fromEntries(validHarnesses.map((harness) => [harness, harnessTarget(harness)]));
+const targets = Object.fromEntries(
+  validHarnesses.map((harness) =>
+    [
+      harness,
+      skillsTarget(harnessRegistry, harness, {
+        env: process.env,
+        home: userHome,
+        environmentTarget: environmentTargets[harness],
+        environmentName,
+      }),
+    ],
+  ),
+);
 
 function artifactEnvironmentPath(name, harness) {
   const byArtifact = environmentArtifacts[name];
@@ -176,8 +179,6 @@ function artifactTarget(name, harness) {
   }
   return target;
 }
-
-const targetKeys = harnesses.map((harness) => localPathKey(targets[harness]));
 
 const adapters = Object.fromEntries(
   validHarnesses.map((harness) => [
@@ -325,6 +326,9 @@ if (args.includes("--no-skills") && hasSkillFilter) {
   throw new Error("--no-skills cannot be combined with --skill");
 }
 const skills = args.includes("--no-skills") ? [] : requestedSkills ?? availableSkills;
+if (migrate && args.includes("--no-skills")) {
+  throw new Error("--migrate requires skills to be installed");
+}
 
 const hasArtifactFilter = args.includes("--artifact");
 const artifactFilter = valueAfter("--artifact");
@@ -390,25 +394,45 @@ for (const item of rawArtifactPlan) {
   artifactTargetsByPath.set(key, item);
   artifactPlan.push(item);
 }
-const allTargetKeys = [
-  ...targetKeys,
-  ...artifactPlan.map(({ target }) => localPathKey(target)),
-];
-if (new Set(allTargetKeys).size !== allTargetKeys.length) {
-  throw new Error("Selected skills and artifacts resolve to the same target directory");
+
+function adapterSignature(harness, skill) {
+  const adapter = adapters[harness];
+  return JSON.stringify([
+    adapter.removeFrontmatter?.[skill] ?? [],
+    adapter.frontmatter?.[skill] ?? null,
+  ]);
+}
+
+const skillPlan = [];
+const skillTargetsByPath = new Map();
+for (const harness of harnesses) {
+  for (const skill of skills) {
+    const key = localPathKey(join(targets[harness], skill));
+    const existing = skillTargetsByPath.get(key);
+    if (existing) {
+      if (adapterSignature(existing.harness, skill) !== adapterSignature(harness, skill)) {
+        throw new Error(
+          `Skill ${skill} resolves to the same target directory for ${existing.harness} and ${harness} ` +
+            "with different harness adapters; configure separate skill directories",
+        );
+      }
+      continue;
+    }
+    const entry = { harness, skill, target: join(targets[harness], skill) };
+    skillTargetsByPath.set(key, entry);
+    skillPlan.push(entry);
+  }
 }
 
 const plan = [
-  ...harnesses.flatMap((harness) =>
-    skills.map((skill) => ({
-      kind: "skill",
-      harness,
-      name: skill,
-      skill,
-      source: join(sourceRoot, skill),
-      target: join(targets[harness], skill),
-    })),
-  ),
+  ...skillPlan.map(({ harness, skill, target }) => ({
+    kind: "skill",
+    harness,
+    name: skill,
+    skill,
+    source: join(sourceRoot, skill),
+    target,
+  })),
   ...artifactPlan,
 ];
 if (plan.length === 0) throw new Error("Nothing selected: choose skills or --artifact");
@@ -427,9 +451,124 @@ for (let left = 0; left < plan.length; left += 1) {
   }
 }
 for (const source of new Set(plan.map((item) => item.source))) validateSourceTree(source);
+const allTargetKeys = plan.map(({ target }) => localPathKey(target));
+if (new Set(allTargetKeys).size !== allTargetKeys.length) {
+  throw new Error("Selected skills and artifacts resolve to the same target directory");
+}
 const conflicts = plan.filter(({ target }) => existsSync(target));
 
-for (const harness of harnesses) console.log(`${harness}: ${targets[harness]}`);
+function legacySkillCandidates(harness) {
+  const legacy = legacySkillsDir(harnessRegistry, harness, process.env, userHome);
+  if (!legacy || localPathKey(legacy) === localPathKey(targets[harness]) || !existsSync(legacy)) {
+    return { legacy, entries: [] };
+  }
+  const selected = new Set(skills);
+  const entries = readdirSync(legacy, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+    .map((entry) => entry.name)
+    .sort()
+    .filter((name) => availableSkills.includes(name))
+    .map((name) => ({ name, path: join(legacy, name), selected: selected.has(name) }));
+  return { legacy, entries };
+}
+
+function treesMatch(left, right) {
+  const leftEntries = readdirSync(left, { withFileTypes: true }).filter((entry) => entry.name !== "node_modules");
+  const rightEntries = readdirSync(right, { withFileTypes: true }).filter((entry) => entry.name !== "node_modules");
+  if (leftEntries.length !== rightEntries.length) return false;
+  for (const entry of leftEntries) {
+    const other = rightEntries.find((candidate) => candidate.name === entry.name);
+    if (!other) return false;
+    const leftPath = join(left, entry.name);
+    const rightPath = join(right, entry.name);
+    if (entry.isSymbolicLink() || other.isSymbolicLink()) return false;
+    if (entry.isDirectory() !== other.isDirectory()) return false;
+    if (entry.isDirectory()) {
+      if (!treesMatch(leftPath, rightPath)) return false;
+    } else if (entry.isFile() && other.isFile()) {
+      if (!readFileSync(leftPath).equals(readFileSync(rightPath))) return false;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+function legacyMatchesSource(harness, skill, legacyPath) {
+  const expectedRoot = mkdtempSync(join(tmpdir(), "mstack-migrate-"));
+  try {
+    const expected = join(expectedRoot, skill);
+    copyDirectoryContents(join(sourceRoot, skill), expected);
+    applyAdapter(expected, harness, skill);
+    return treesMatch(legacyPath, expected);
+  } catch {
+    return false;
+  } finally {
+    rmSync(expectedRoot, { recursive: true, force: true });
+  }
+}
+
+function migrationPlanLines() {
+  const lines = [];
+  for (const harness of harnesses) {
+    const { legacy, entries } = legacySkillCandidates(harness);
+    if (!legacy || !entries.length) continue;
+    for (const entry of entries) {
+      if (!entry.selected) lines.push(`  migrate: keep ${entry.path} (not selected by this install)`);
+      else if (legacyMatchesSource(harness, entry.name, entry.path)) {
+        lines.push(`  migrate: remove ${entry.path} (matches the current mstack source)`);
+      } else {
+        lines.push(`  migrate: keep ${entry.path} (differs from the current mstack source)`);
+      }
+    }
+  }
+  return lines;
+}
+
+function migrationHints() {
+  const lines = [];
+  for (const harness of harnesses) {
+    const { legacy, entries } = legacySkillCandidates(harness);
+    if (legacy && entries.length) {
+      lines.push(`hint: ${harness} also discovers ${legacy}; run with --migrate to remove redundant legacy copies there`);
+    }
+  }
+  return lines;
+}
+
+function crossDiscoveryNotes() {
+  const notes = [];
+  for (const harness of harnesses) {
+    for (const discovered of harnessRegistry[harness].skills?.discovers ?? []) {
+      if (discovered === "own" || !harnessRegistry[discovered]) continue;
+      const discoveredTarget = targets[discovered];
+      if (localPathKey(discoveredTarget) === localPathKey(targets[harness])) continue;
+      if (!harnesses.includes(discovered) && !existsSync(discoveredTarget)) continue;
+      notes.push(
+        `note: ${harness} also discovers ${discoveredTarget} (${discovered}); ` +
+          "same-named skills in both directories may be reported as duplicate definitions",
+      );
+    }
+  }
+  return [...new Set(notes)];
+}
+
+const targetGroups = [];
+const groupByTarget = new Map();
+for (const harness of harnesses) {
+  const key = localPathKey(targets[harness]);
+  let group = groupByTarget.get(key);
+  if (!group) {
+    group = { harnesses: [], target: targets[harness] };
+    groupByTarget.set(key, group);
+    targetGroups.push(group);
+  }
+  group.harnesses.push(harness);
+}
+for (const group of targetGroups) {
+  const shared = group.harnesses.length > 1 ? " (shared)" : "";
+  console.log(`${group.harnesses.join(", ")}: ${group.target}${shared}`);
+}
 for (const item of plan.filter(({ kind }) => kind === "artifact")) {
   console.log(`  artifact ${item.name}: ${item.target}`);
 }
@@ -437,6 +576,12 @@ if (dryRun) {
   for (const item of plan) {
     const action = existsSync(item.target) ? (replace ? "replace with backup" : "conflict") : "install";
     console.log(`  ${action}: ${item.kind === "skill" ? item.skill : `artifact/${item.name}`}`);
+  }
+  for (const note of crossDiscoveryNotes()) console.log(note);
+  if (migrate) {
+    for (const line of migrationPlanLines()) console.log(line);
+  } else {
+    for (const line of migrationHints()) console.log(line);
   }
   if (conflicts.length && !replace) process.exitCode = 2;
   else console.log("Dry run complete.");
@@ -639,3 +784,63 @@ try {
 const skillCount = plan.filter(({ kind }) => kind === "skill").length;
 const artifactCount = plan.length - skillCount;
 console.log(`Installed ${skillCount} skill copies and ${artifactCount} artifact copies; replaced ${conflicts.length}.`);
+
+function runMigration() {
+  const failures = [];
+  const migrationLocks = [];
+  const legacyDirs = harnesses
+    .map((harness) => legacySkillCandidates(harness).legacy)
+    .filter((legacy) => legacy && existsSync(legacy))
+    .sort((left, right) => left.localeCompare(right));
+  try {
+    for (const legacy of legacyDirs) {
+      const lockPath = join(legacy, ".harness-skills-install.lock");
+      const descriptor = openInstallLock(lockPath, lockOwner);
+      migrationLocks.push({ descriptor, lockPath, owner: lockOwner });
+    }
+    for (const harness of harnesses) {
+      const { legacy, entries } = legacySkillCandidates(harness);
+      if (!legacy || !entries.length) continue;
+      for (const entry of entries) {
+        if (!entry.selected) {
+          console.log(`migrate: kept ${entry.path} (not selected by this install)`);
+          continue;
+        }
+        if (!legacyMatchesSource(harness, entry.name, entry.path)) {
+          console.log(`migrate: kept ${entry.path} (differs from the current mstack source)`);
+          continue;
+        }
+        const backup = join(legacy, ".harness-skills-backups", stamp, entry.name);
+        try {
+          mkdirSync(dirname(backup), { recursive: true, mode: 0o700 });
+          renameSync(entry.path, backup);
+          console.log(`migrate: removed ${entry.path} (backup: ${backup})`);
+        } catch (error) {
+          failures.push(`${entry.path}: ${error.message}`);
+        }
+      }
+    }
+  } catch (error) {
+    failures.push(error.message);
+  } finally {
+    for (const { descriptor, lockPath, owner } of migrationLocks.reverse()) {
+      closeSync(descriptor);
+      try {
+        if (readFileSync(lockPath, "utf8").trim() === owner) unlinkSync(lockPath);
+      } catch {
+        // A missing lock is already released; leave a changed lock to its owner.
+      }
+    }
+  }
+  return failures;
+}
+
+if (!migrate) {
+  for (const line of migrationHints()) console.log(line);
+} else {
+  const failures = runMigration();
+  if (failures.length) {
+    console.error(`Migration completed with failures:\n${failures.map((line) => `  ${line}`).join("\n")}`);
+    process.exitCode = 1;
+  }
+}

@@ -33,6 +33,24 @@ function fixture() {
   };
 }
 
+function defaultHomeFixture() {
+  const root = mkdtempSync(join(tmpdir(), "mstack 默认目录测试-"));
+  const env = { ...process.env, HOME: join(root, "home"), USERPROFILE: join(root, "home") };
+  for (const key of [
+    "HARNESS_SKILLS_CODEX_DIR",
+    "HARNESS_SKILLS_CLAUDE_DIR",
+    "HARNESS_SKILLS_OPENCODE_DIR",
+    "HARNESS_SKILLS_PI_DIR",
+    "CLAUDE_CONFIG_DIR",
+    "XDG_CONFIG_HOME",
+    "PI_CODING_AGENT_DIR",
+    "MSTACK_ENVIRONMENTS_FILE",
+  ]) {
+    delete env[key];
+  }
+  return { root, home: env.HOME, env };
+}
+
 function run(arguments_, env) {
   return spawnSync(process.execPath, [installer, ...arguments_], {
     cwd: resolve("."),
@@ -132,15 +150,30 @@ test("recovers a dead installer lock but preserves a live lock", () => {
   }
 });
 
-test("uses pi's agent directory for the default skill target", () => {
-  const { env } = fixture();
-  env.USERPROFILE = join(env.TEMP ?? tmpdir(), "mstack-pi-home");
-  env.HOME = env.USERPROFILE;
-  delete env.HARNESS_SKILLS_PI_DIR;
+test("installs shared skills once per discovery directory by default", () => {
+  const { root, home, env } = defaultHomeFixture();
+  try {
+    const result = run(["--harness", "all", "--skill", "meta-mode,show-me-your-work"], env);
+    assert.equal(result.status, 0, result.stderr);
 
-  const result = run(["--harness", "pi", "--skill", "meta-mode", "--dry-run"], env);
-  assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.stdout.includes(join(env.USERPROFILE, ".pi", "agent", "skills")));
+    const shared = join(home, ".agents", "skills");
+    const claude = join(home, ".claude", "skills");
+    assert.deepEqual(readdirSync(shared).sort(), ["meta-mode", "show-me-your-work"]);
+    assert.deepEqual(readdirSync(claude).sort(), ["meta-mode", "show-me-your-work"]);
+    assert.equal(existsSync(join(home, ".config", "opencode", "skills")), false);
+    assert.equal(existsSync(join(home, ".pi", "agent", "skills")), false);
+
+    const sharedFrontmatter = readFileSync(join(shared, "show-me-your-work", "SKILL.md"), "utf8");
+    assert.match(sharedFrontmatter, /^metadata:/m);
+    const claudeFrontmatter = readFileSync(join(claude, "show-me-your-work", "SKILL.md"), "utf8");
+    assert.match(claudeFrontmatter, /^compatibility:/m);
+
+    assert.match(result.stdout, /^codex, opencode, pi: .+ \(shared\)$/m);
+    assert.match(result.stdout, /^claude: .+$/m);
+    assert.match(result.stdout, /Installed 4 skill copies and 0 artifact copies/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("installs harness-specific frontmatter and preserves conflicts", () => {
@@ -699,6 +732,103 @@ test("rejects artifact sources outside the repository", () => {
     assert.match(result.stderr, /source must stay within the repository/);
   } finally {
     rmSync(fixture_.root, { recursive: true, force: true });
+  }
+});
+
+test("deduplicates aliased skill directories when harness adapters agree", () => {
+  const { root, env } = fixture();
+  env.HARNESS_SKILLS_CLAUDE_DIR = env.HARNESS_SKILLS_CODEX_DIR;
+  try {
+    const result = run(["--harness", "codex,claude", "--skill", "meta-mode"], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(join(env.HARNESS_SKILLS_CODEX_DIR, "meta-mode", "SKILL.md")), true);
+    assert.match(result.stdout, /^codex, claude: .+ \(shared\)$/m);
+    assert.match(result.stdout, /Installed 1 skill copies and 0 artifact copies/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("dry-run reports cross-discovery notes and legacy migration hints", () => {
+  const { root, home, env } = defaultHomeFixture();
+  try {
+    const legacyPi = join(home, ".pi", "agent", "skills", "meta-mode");
+    mkdirSync(legacyPi, { recursive: true });
+    writeFileSync(join(legacyPi, "marker.txt"), "old", "utf8");
+    const legacyOpencode = join(home, ".config", "opencode", "skills", "unrelated-skill");
+    mkdirSync(legacyOpencode, { recursive: true });
+    writeFileSync(join(legacyOpencode, "marker.txt"), "user", "utf8");
+
+    const result = run(["--harness", "all", "--skill", "meta-mode", "--dry-run"], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /note: opencode also discovers .+ \(claude\); same-named skills/);
+    assert.match(result.stdout, /hint: pi also discovers .+\.pi.+agent.+skills/);
+    assert.doesNotMatch(result.stdout, /hint: opencode also discovers/);
+    assert.equal(existsSync(legacyPi), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("dry-run with --migrate plans removals without touching the file system", () => {
+  const { root, home, env } = defaultHomeFixture();
+  try {
+    const legacyPi = join(home, ".pi", "agent", "skills");
+    cpSync(resolve("skills", "meta-mode"), join(legacyPi, "meta-mode"), { recursive: true });
+    writeFileSync(join(legacyPi, "meta-mode", "user-note.txt"), "keep", "utf8");
+    const legacyOpencode = join(home, ".config", "opencode", "skills");
+    cpSync(resolve("skills", "meta-mode"), join(legacyOpencode, "meta-mode"), { recursive: true });
+
+    const result = run(["--harness", "pi,opencode", "--skill", "meta-mode", "--migrate", "--dry-run"], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /migrate: remove .+meta-mode \(matches the current mstack source\)/);
+    assert.match(result.stdout, /migrate: keep .+meta-mode \(differs from the current mstack source\)/);
+    assert.equal(existsSync(join(legacyPi, "meta-mode", "user-note.txt")), true);
+    assert.equal(existsSync(join(legacyOpencode, "meta-mode", "SKILL.md")), true);
+    assert.equal(existsSync(join(home, ".agents", "skills")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("migrate removes matching legacy copies and preserves modified or unrelated skills", () => {
+  const { root, home, env } = defaultHomeFixture();
+  try {
+    const legacyPi = join(home, ".pi", "agent", "skills");
+    const legacyOpencode = join(home, ".config", "opencode", "skills");
+    cpSync(resolve("skills", "meta-mode"), join(legacyPi, "meta-mode"), { recursive: true });
+    cpSync(resolve("skills", "show-me-your-work"), join(legacyPi, "show-me-your-work"), { recursive: true });
+    writeFileSync(join(legacyPi, "show-me-your-work", "user-note.txt"), "keep me", "utf8");
+    cpSync(resolve("skills", "bro"), join(legacyPi, "bro"), { recursive: true });
+    mkdirSync(join(legacyPi, "user-own-tool"), { recursive: true });
+    writeFileSync(join(legacyPi, "user-own-tool", "SKILL.md"), "---\nname: user-own-tool\ndescription: mine\n---\n", "utf8");
+    cpSync(resolve("skills", "meta-mode"), join(legacyOpencode, "meta-mode"), { recursive: true });
+
+    const result = run(
+      ["--harness", "pi,opencode", "--skill", "meta-mode,show-me-your-work", "--migrate"],
+      env,
+    );
+    assert.equal(result.status, 0, result.stderr);
+
+    const shared = join(home, ".agents", "skills");
+    assert.equal(existsSync(join(shared, "meta-mode", "SKILL.md")), true);
+    assert.equal(existsSync(join(shared, "show-me-your-work", "SKILL.md")), true);
+
+    assert.equal(existsSync(join(legacyPi, "meta-mode")), false);
+    assert.equal(existsSync(join(legacyOpencode, "meta-mode")), false);
+    assert.ok(findFile(join(legacyPi, ".harness-skills-backups"), "SKILL.md"), "expected a backup of the removed legacy copy");
+    assert.ok(findFile(join(legacyOpencode, ".harness-skills-backups"), "SKILL.md"), "expected a backup beside the opencode legacy copy");
+
+    assert.equal(readFileSync(join(legacyPi, "show-me-your-work", "user-note.txt"), "utf8"), "keep me");
+    assert.equal(existsSync(join(legacyPi, "bro", "SKILL.md")), true);
+    assert.equal(existsSync(join(legacyPi, "user-own-tool", "SKILL.md")), true);
+
+    assert.match(result.stdout, /migrate: removed .+meta-mode \(backup: .+\)/);
+    assert.match(result.stdout, /migrate: kept .+show-me-your-work \(differs from the current mstack source\)/);
+    assert.match(result.stdout, /migrate: kept .+bro \(not selected by this install\)/);
+    assert.doesNotMatch(result.stdout, /hint: /);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

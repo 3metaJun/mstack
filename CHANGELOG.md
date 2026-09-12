@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+This change aligns the installer with the harness skill discovery rules so
+that shared skills are discovered exactly once.
+
+### Changes
+
+- Install Codex, OpenCode, and pi skills into the shared `~/.agents/skills/`
+  directory they all discover, instead of duplicating a copy into
+  `~/.config/opencode/skills/` and `~/.pi/agent/skills/`. Claude Code keeps
+  `~/.claude/skills/`. Duplicate definitions, same-name override warnings, and
+  stale copies that shadowed updated shared skills are gone.
+- Keep artifacts in their harness-specific destinations, and keep the Claude
+  frontmatter adaptation for the Claude copy.
+- Add `--migrate` to remove legacy 0.4.0 copies from
+  `~/.config/opencode/skills/` and `~/.pi/agent/skills/` after installing.
+  Only copies that match the current mstack source byte for byte are removed;
+  modified copies and unrelated skills are kept and reported, with backups
+  under the legacy directory. `--dry-run` previews the migration and reports
+  legacy copies left behind without `--migrate`.
+- Group shared targets in installer output, note OpenCode's residual scan of
+  `~/.claude/skills/`, and document the discovery model in the README and the
+  harness adapter reference.
+
 ## 0.4.0 - 2026-09-12
 
 This release adds a shared project workflow for teams using pstack and mstack

@@ -2,6 +2,10 @@
   "codex": {
     "directoryVariable": "HARNESS_SKILLS_CODEX_DIR",
     "fallback": [".agents", "skills"],
+    "skills": {
+      "install": "own",
+      "discovers": ["own"]
+    },
     "runtime": {
       "command": "codex",
       "headlessArgs": ["exec", "--sandbox", "read-only"],
@@ -14,6 +18,10 @@
     "configVariable": "CLAUDE_CONFIG_DIR",
     "configFallback": ".claude",
     "suffix": ["skills"],
+    "skills": {
+      "install": "own",
+      "discovers": ["own"]
+    },
     "runtime": {
       "command": "claude",
       "headlessArgs": ["--print", "--no-session-persistence", "--output-format", "text"],
@@ -27,6 +35,11 @@
     "configFallback": ".config",
     "prefix": ["opencode"],
     "suffix": ["skills"],
+    "skills": {
+      "install": "codex",
+      "discovers": ["own", "codex", "claude"],
+      "legacy": "own"
+    },
     "runtime": {
       "command": "opencode",
       "headlessArgs": ["run", "--pure"],
@@ -39,6 +52,11 @@
     "configVariable": "PI_CODING_AGENT_DIR",
     "configFallback": ".pi/agent",
     "suffix": ["skills"],
+    "skills": {
+      "install": "codex",
+      "discovers": ["own", "codex"],
+      "legacy": "own"
+    },
     "runtime": {
       "command": "pi",
       "headlessArgs": ["-p", "--no-session"],

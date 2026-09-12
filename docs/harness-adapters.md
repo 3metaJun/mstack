@@ -19,6 +19,18 @@ Sources:
 - [OpenCode skills](https://opencode.ai/docs/skills)
 - [pi skills](https://pi.dev/docs/latest/skills)
 
+User-level discovery crosses these roots. OpenCode reads its own root plus
+`~/.agents/skills/` and `~/.claude/skills/`, and pi reads its own root plus
+`~/.agents/skills/`. The installer therefore plans one copy per discovery
+directory instead of one copy per harness: Codex, OpenCode, and pi share
+`~/.agents/skills/`, and Claude Code keeps `~/.claude/skills/`. OpenCode sees
+the shared copy and the Claude copy and reports same-named skills as
+duplicates; the installer refreshes both on every install, so either loads the
+same instructions apart from the Claude frontmatter adaptation. Legacy mstack
+0.4.0 copies under `~/.config/opencode/skills/` and `~/.pi/agent/skills/` are
+removed by installing with `--migrate`, which keeps copies that differ from
+the current source and preserves unrelated skills.
+
 The canonical tree keeps the Agent Skills fields that all supported Harnesses
 can read. Claude Code accepts `metadata` but does not act on its contents, so
 `adapters/claude.json` removes that map and surfaces the logger requirement in

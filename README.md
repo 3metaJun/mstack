@@ -46,6 +46,33 @@ backups therefore stay inside that Harness's `skills/` directory, and custom
 artifact backups stay beside the artifact target. mstack retains backups until
 you inspect and remove them.
 
+Codex, OpenCode, and pi share one install directory. OpenCode and pi also
+discover `~/.agents/skills/`, so installing a separate copy for them would make
+every Harness report duplicate definitions and keep serving stale copies after
+an update. The installer therefore plans skills per discovery directory: Codex,
+OpenCode, and pi share `~/.agents/skills/`, while Claude Code keeps
+`~/.claude/skills/`. Installing with `--harness all` reports the shared target
+as `codex, opencode, pi (shared)` in `--dry-run` output.
+
+OpenCode also scans `~/.claude/skills/`, so the shared copy and the Claude copy
+are both discoverable there; upstream OpenCode reports same-named skills as
+duplicates and applies one of them. mstack keeps both copies current on every
+install, so either choice loads the same instructions. Use `HARNESS_SKILLS_OPENCODE_DIR`
+to pin OpenCode to a directory only it discovers when that matters.
+
+Installations made by mstack 0.4.0 placed OpenCode and pi copies in their own
+config directories. After installing, run once with `--migrate` to remove the
+redundant copies from those legacy directories:
+
+```bash
+npx @3metajun/mstack --harness all --replace --migrate
+```
+
+`--migrate` only removes legacy copies that match the current mstack source
+byte for byte, and only for skills selected by that install. Modified copies
+and unrelated skills are kept and reported. Use `--dry-run` to preview which
+copies would be removed or kept.
+
 ## Install optional artifacts
 
 The same installer can copy the portable artifacts that accompany the skills.
@@ -61,9 +88,14 @@ The available installable artifacts are:
 
 | Artifact | Default destination |
 | --- | --- |
-| `agents` | Codex: `$CODEX_HOME/agents/` as TOML; other harnesses: `agents/` beside `skills/` as Markdown |
-| `meta-mode-tools` | `tools/meta-mode/` beside `skills/` |
-| `guide` | `docs/guide/` beside `skills/` |
+| `agents` | Codex: `$CODEX_HOME/agents/` as TOML; Claude Code: `~/.claude/agents/`; OpenCode: `~/.config/opencode/agents/`; pi: `~/.pi/agent/agents/`, as Markdown |
+| `meta-mode-tools` | `tools/meta-mode/` under the harness root: Codex `~/.agents/`, Claude Code `~/.claude/`, OpenCode `~/.config/opencode/`, pi `~/.pi/agent/` |
+| `guide` | `docs/guide/` under the same harness roots |
+
+Artifacts keep their Harness-specific destinations even though OpenCode and pi
+skills are shared with Codex. Relocating a harness's skills with
+`HARNESS_SKILLS_*_DIR` or an environment target also relocates that harness's
+artifact base beside the relocated skills directory.
 
 Codex skills default to `~/.agents/skills/`, while Codex agents default to
 `~/.codex/agents/`. An unset or empty `CODEX_HOME` uses `~/.codex`.
@@ -109,14 +141,22 @@ written or merged explicitly by the user.
 ## Choose installation directories
 
 The default directories are defined in
-[`profiles/harnesses.json`](./profiles/harnesses.json):
+[`profiles/harnesses.json`](./profiles/harnesses.json). They follow each
+harness's discovery rules: OpenCode and pi both discover the shared
+`~/.agents/skills/` directory, so they install there instead of keeping their
+own copies.
 
 | Harness | Default directory | Override |
 | --- | --- | --- |
 | Codex | `~/.agents/skills/` | `HARNESS_SKILLS_CODEX_DIR` |
 | Claude Code | `~/.claude/skills/` | `HARNESS_SKILLS_CLAUDE_DIR` |
-| OpenCode | `~/.config/opencode/skills/` | `HARNESS_SKILLS_OPENCODE_DIR` |
-| pi | `~/.pi/agent/skills/` | `HARNESS_SKILLS_PI_DIR` |
+| OpenCode | `~/.agents/skills/` (shared with Codex) | `HARNESS_SKILLS_OPENCODE_DIR` |
+| pi | `~/.agents/skills/` (shared with Codex) | `HARNESS_SKILLS_PI_DIR` |
+
+An override relocates only where mstack writes the files; the harness still
+scans its own discovery directories. OpenCode additionally reads
+`~/.claude/skills/`, which is why the Claude copy is installed there as well
+and kept identical apart from the Claude frontmatter adaptation.
 
 Set an override to install into a mounted Fleet directory or another local
 path. The path must be absolute or start with `~/`.
