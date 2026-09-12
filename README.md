@@ -323,20 +323,19 @@ uses the current harness's adapter instead of naming one vendor's commands.
 Run `node scripts/validate.mjs` to print the validated skill count.
 
 For a business repository that mixes pstack and mstack, initialize its shared
-project workflow from this checkout:
+project workflow with the CLI available in mstack 0.4.0 and later:
 
 ```bash
-node <mstack-checkout>/scripts/check-harness-policy.mjs init --root <project> --app web --check 'node --test' --pstack <exact-pstack-commit>
+npx --package @3metajun/mstack@0.4.0 mstack-policy init --root <project> --app web --check 'node --test' --pstack <exact-pstack-commit>
 ```
 
 Replace the app, check command, and pstack revision with the project's values.
 Initialization exports `.harness/check.mjs` and its library for committed CI
-checks, without requiring an unpublished npm version. It leaves the application
+checks that run without downloading mstack. It leaves the application
 contract for `/create-verification-skill` to create or migrate and prove. See
 [mixed-Harness adoption](./docs/guide/11-mixed-harness.md) for wrapper generation,
-receipts, repository protection, and reviewed checker upgrades. After a release
-includes this CLI, use its exact package version for initialization and run
-recording.
+receipts, repository protection, and reviewed checker upgrades. Pin the team's
+exact package version for initialization and run recording.
 
 To validate and print a user's model configuration, run:
 

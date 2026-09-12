@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.4.0 - 2026-09-12
+
+This release adds a shared project workflow for teams using pstack and mstack
+in the same business repository.
+
+### Upgrade notes
+
+- Use `npx --package @3metajun/mstack@0.4.0 mstack-policy --help` to run the new
+  CLI. Reinstall mstack skills to get the shared contract instructions.
+- Adoption is explicit. Initialize the project policy, reconcile existing
+  verification definitions into `.harness/verify/<app>/`, prove the contract
+  against the running app, and generate its wrappers. See the
+  [adoption guide](docs/guide/11-mixed-harness.md).
+- Initialization exports a standalone checker for business CI. Review its
+  updates with the project policy. Configure GitHub branch protection separately.
+
+### Changes
+
+- Add `mstack-policy init`, `wrappers`, `check`, `preflight`, and `record` for
+  project setup, structural checks, isolated Git work, and verification receipts.
+- Keep app contracts, feature maps, and helpers in one canonical directory.
+  Neutral wrappers support Cursor, Grok Bot, Codex, Claude Code, OpenCode, and pi.
+  Cursor and Codex share an `.agents/skills` wrapper to avoid duplicate discovery.
+- Route verification creation, maintenance, setup, and Benny to the shared map.
+  Project entry instructions also direct native pstack to the repository workflow.
+- Check the linked worktree, branch, and base before verification. Record command
+  results and evidence digests, and reject stale or modified receipts.
+- Track reviewed upstream adaptations with source and target digests.
+- Handle Windows path aliases and CRLF receipts, and run the CLI correctly
+  through npm launchers and linked package paths.
+
+### Verification
+
+The implementation passed the Node 18 and 22 CI matrix on Linux, macOS, and
+Windows, package checks, both pinned-source integrity checks, and the meta-mode
+Bun tests and typecheck. Installed tarballs passed CLI checks through npm
+launchers and Windows junctions.
+
+In the inkScroll pilot, Codex with mstack and Grok loading the pinned native
+pstack source completed book creation, reload, IndexedDB readback, and editor
+navigation. Both produced verification receipts and cleaned up their own
+browser and server. This pilot did not test marketplace discovery or audit
+every feature. Receipts check command results and evidence integrity; app
+behavior still needs review.
+
 ## 0.3.0 - 2026-09-11
 
 This release includes the workflow, installation, and model execution fixes
