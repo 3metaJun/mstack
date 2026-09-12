@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,8 +28,7 @@ function git(root, ...args) {
 }
 
 function fixture(t) {
-  const scratch = existsSync("G:/agents_temp") ? "G:/agents_temp" : tmpdir();
-  const temporary = mkdtempSync(join(scratch, "mstack-adaptation-"));
+  const temporary = mkdtempSync(join(tmpdir(), "mstack-adaptation-"));
   t.after(() => rmSync(temporary, { recursive: true, force: true }));
   const source = join(temporary, "source");
   const target = join(temporary, "target");

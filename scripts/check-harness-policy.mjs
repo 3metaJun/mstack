@@ -1,6 +1,6 @@
 #!/usr/bin/env node
+import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { initProject, installWrappers, readPolicy, preflight, recordVerification, checkReceipt } from "./harness-project.mjs";
 import { checkProject } from "./harness-policy-lib.mjs";
 
@@ -64,7 +64,7 @@ export function main(argv) {
   return result.status === "FAIL" ? 1 : 0;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync.native(process.argv[1]) === realpathSync.native(new URL(import.meta.url))) {
   try { process.exitCode = main(process.argv.slice(2)); }
   catch (error) { console.error("mstack-policy: " + error.message); process.exitCode = 1; }
 }

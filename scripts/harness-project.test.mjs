@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,8 +15,8 @@ function git(root, ...args) {
   return execFileSync("git", ["-C", root, ...args], { encoding: "utf8", windowsHide: true }).trim();
 }
 
-function fixture(t, scratch = existsSync("G:/agents_temp") ? "G:/agents_temp" : tmpdir()) {
-  const temporary = mkdtempSync(join(scratch, "mstack-project-"));
+function fixture(t) {
+  const temporary = mkdtempSync(join(tmpdir(), "mstack-project-"));
   t.after(() => rmSync(temporary, { recursive: true, force: true }));
   const root = join(temporary, "repo");
   mkdirSync(root);
@@ -105,7 +105,7 @@ test("init preserves user instructions, repeats safely, and leaves unfinished co
 });
 
 test("Windows path aliases identify the same repository and linked worktree", { skip: process.platform !== "win32" }, (t) => {
-  const { root, temporary } = fixture(t, tmpdir());
+  const { root, temporary } = fixture(t);
   const shortPath = (path) => execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
     "(New-Object -ComObject Scripting.FileSystemObject).GetFolder($env:MSTACK_TEST_ALIAS_PATH).ShortPath"], {
     encoding: "utf8", windowsHide: true, env: { ...process.env, MSTACK_TEST_ALIAS_PATH: path },
@@ -163,6 +163,48 @@ test("CLI rejects missing, duplicate, and unknown arguments without writes", (t)
     run(root, args, 1);
     assert.equal(existsSync(join(root, ".harness")), false);
   }
+});
+
+test("the policy CLI runs through a linked entry while module imports stay silent", (t) => {
+  const { root, temporary } = fixture(t);
+  let linkedEntry;
+  if (process.platform === "win32") {
+    const linkedDirectory = join(temporary, "linked-mstack");
+    symlinkSync(repo, linkedDirectory, "junction");
+    linkedEntry = join(linkedDirectory, "scripts/check-harness-policy.mjs");
+  } else {
+    linkedEntry = join(temporary, "mstack-policy");
+    symlinkSync(cli, linkedEntry, "file");
+  }
+  const invoke = (...args) => spawnSync(process.execPath, [linkedEntry, ...args], {
+    cwd: root, encoding: "utf8", windowsHide: true,
+  });
+  const help = invoke("--help");
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /Usage: mstack-policy/);
+  const rejected = invoke("init", "--app", "web", "--unknown", "value", "--root", root);
+  assert.equal(rejected.status, 1, rejected.stdout + rejected.stderr);
+  assert.match(rejected.stderr, /Unknown option: --unknown/);
+  assert.equal(existsSync(join(root, ".harness")), false);
+  const initialized = invoke("init", "--app", "web", "--check", "node verify.mjs", "--root", root);
+  assert.equal(initialized.status, 0, initialized.stderr);
+  assert.equal(JSON.parse(initialized.stdout).status, "needs-contract");
+  assert.deepEqual(JSON.parse(readFileSync(join(root, ".harness/policy.json"), "utf8")).verification.apps, ["web"]);
+  assert.ok(existsSync(join(root, ".harness/check.mjs")));
+  const importing = spawnSync(process.execPath, ["--input-type=module", "--eval",
+    `await import(${JSON.stringify(pathToFileURL(linkedEntry).href)})`], {
+    cwd: root, encoding: "utf8", windowsHide: true,
+  });
+  assert.equal(importing.status, 0, importing.stderr);
+  assert.equal(importing.stdout, "");
+  assert.equal(importing.stderr, "");
+  const stdinImport = spawnSync(process.execPath, ["--input-type=module", "-"], {
+    input: `await import(${JSON.stringify(pathToFileURL(linkedEntry).href)})`,
+    cwd: root, encoding: "utf8", windowsHide: true,
+  });
+  assert.equal(stdinImport.status, 0, stdinImport.stderr);
+  assert.equal(stdinImport.stdout, "");
+  assert.equal(stdinImport.stderr, "");
 });
 
 test("preflight accepts either workflow on one branch and rejects stale base, dirty source, and primary checkout", (t) => {

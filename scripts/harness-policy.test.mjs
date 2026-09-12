@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -90,8 +90,7 @@ function write(root, path, content) {
 }
 
 function fixture(t) {
-  const scratch = existsSync("G:/agents_temp") ? "G:/agents_temp" : tmpdir();
-  const directory = mkdtempSync(join(scratch, "mstack-policy-test-"));
+  const directory = mkdtempSync(join(tmpdir(), "mstack-policy-test-"));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const root = join(directory, "project");
   const config = policy();
