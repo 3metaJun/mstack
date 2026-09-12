@@ -44,7 +44,7 @@ function stringList(value, label, errors, valid = () => true) {
 function relativePath(value) {
   return typeof value === "string" && value.length > 0 && !isAbsolute(value) && !win32.isAbsolute(value)
     && !/[\\:\x00-\x1f\x7f<>"|?*]/.test(value)
-    && value.split("/").every((part) => part && part !== "." && part !== ".." && !/[. ]$/.test(part)
+    && value.split("/").every((part) => part && part !== "." && part !== ".." && part.toLowerCase() !== ".git" && !/[. ]$/.test(part)
       && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part));
 }
 
@@ -133,7 +133,7 @@ export function wrapperPaths(app, harnesses) {
 
 export function wrapperText(app, contractPath) {
   if (!appName(app) || !relativePath(contractPath)) throw new Error("Invalid verification wrapper path or app");
-  return `---\nname: verify-${app}\ndescription: Verify ${app} through the shared repository contract.\nmetadata:\n  verification-contract: ${contractPath}\n---\n\n# Verify ${app}\n\nResolve \`${contractPath}\` from the repository root, read it and its feature map,\nand follow the shared contract. Choose the available capability that can drive\nthe documented user path. Report an unavailable capability as a blocked step;\nnever replace required application evidence with a weaker check.\n\nKeep project facts in the canonical contract and feature map. This wrapper\ncontains no separate launch, driving, or evidence instructions.\n`;
+  return `---\nname: verify-${app}\ndescription: Verify ${app} through the shared repository contract.\nmetadata:\n  verification-contract: ${contractPath}\n---\n\n# Verify ${app}\n\nRead \`.harness/workflow.md\` from the repository root when present before the contract.\nResolve \`${contractPath}\` from the repository root, read it and its feature map,\nand follow the shared contract. Choose the available capability that can drive\nthe documented user path. Report an unavailable capability as a blocked step;\nnever replace required application evidence with a weaker check.\n\nKeep project facts in the canonical contract and feature map. This wrapper\ncontains no separate launch, driving, or evidence instructions.\n`;
 }
 
 function readProjectFile(root, relative, errors) {
@@ -274,6 +274,29 @@ export function checkProject(root, policy) {
   const errors = validateHarnessPolicy(policy);
   if (errors.length) return errors;
   const canonicalRoot = policy.verification.canonicalRoot;
+  const workflow = readProjectFile(root, ".harness/workflow.md", errors);
+  if (workflow !== undefined && !workflow.replace(/<!--[\s\S]*?-->/g, "").trim()) errors.push(".harness/workflow.md: shared workflow must be non-empty");
+  const pointers = ["AGENTS.md"];
+  if (policy.allowedHarnesses.includes("claude")) pointers.push("CLAUDE.md");
+  if (policy.allowedHarnesses.some((harness) => harness === "cursor" || harness === "grokbot")) pointers.push(".cursor/rules/shared-verification.mdc");
+  for (const path of pointers) {
+    const pointer = readProjectFile(root, path, errors);
+    if (pointer === undefined) continue;
+    if (!pointer.replace(/<!--[\s\S]*?-->/g, "").includes(".harness/workflow.md")) errors.push(`${path}: must reference .harness/workflow.md`);
+    if (path.endsWith(".mdc")) {
+      const frontmatter = /^\uFEFF?---\n([\s\S]*?)\n---(?:\n|$)/.exec(pointer);
+      const fields = [...(frontmatter?.[1] ?? "").matchAll(/^alwaysApply:\s*(.*)$/gm)];
+      if (fields.length !== 1 || !/^true\s*(?:#.*)?$/.test(fields[0][1])) errors.push(`${path}: frontmatter must set alwaysApply: true`);
+    }
+  }
+  try {
+    for (const entry of readdirSync(safeProjectPath(root, canonicalRoot), { withFileTypes: true })) {
+      if (entry.isSymbolicLink()) errors.push(`${canonicalRoot}/${entry.name}: symlinks are not allowed`);
+      else if (entry.isDirectory() && !policy.verification.apps.includes(entry.name)) errors.push(`${canonicalRoot}/${entry.name}: unconfigured canonical app directory`);
+    }
+  } catch (error) {
+    errors.push(`${canonicalRoot}: ${error.message}`);
+  }
   const expectedWrappers = new Map();
   for (const app of policy.verification.apps) {
     const contractPath = `${canonicalRoot}/${app}/contract.md`;

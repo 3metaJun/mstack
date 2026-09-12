@@ -14,6 +14,7 @@ metadata:
 
 # Verify web
 
+Read \`.harness/workflow.md\` from the repository root when present before the contract.
 Resolve \`.harness/verify/web/contract.md\` from the repository root, read it and its feature map,
 and follow the shared contract. Choose the available capability that can drive
 the documented user path. Report an unavailable capability as a blocked step;
@@ -94,6 +95,10 @@ function fixture(t) {
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const root = join(directory, "project");
   const config = policy();
+  write(root, ".harness/workflow.md", "# Shared workflow\n\nRead .harness/policy.json before development and verification.\n");
+  write(root, "AGENTS.md", "Read [.harness/workflow.md](.harness/workflow.md) before work.\n");
+  write(root, "CLAUDE.md", "Read .harness/workflow.md before work.\n");
+  write(root, ".cursor/rules/shared-verification.mdc", "---\nalwaysApply: true\n---\n\nRead .harness/workflow.md before work.\n");
   write(root, ".harness/verify/web/contract.md", CONTRACT);
   write(root, ".harness/verify/web/features/README.md", "# Feature map\n\n- [Create a note](create-note.md)\n");
   write(root, ".harness/verify/web/features/create-note.md", FEATURE);
@@ -163,7 +168,7 @@ test("schema rejects missing and unknown fields and unsafe collaboration modes",
 
 test("portable project paths reject Unix escapes, Windows drive paths, UNC and device names on every OS", (t) => {
   const f = fixture(t);
-  for (const path of ["../outside", "/tmp/verify", "C:/outside", "C:outside", "\\\\server\\share", "//server/share", ".harness/../outside", ".harness\\verify", "CON", ".harness/NUL.md", "verify.", "verify ", "a\u0000b"]) {
+  for (const path of ["../outside", "/tmp/verify", "C:/outside", "C:outside", "\\\\server\\share", "//server/share", ".harness/../outside", ".harness\\verify", "CON", ".harness/NUL.md", "verify.", "verify ", "a\u0000b", ".git/verify", ".Git/config", "vendor/.GIT/verify"]) {
     f.config.verification.canonicalRoot = path;
     assert.match(f.check().join("\n"), /canonicalRoot/, path);
     assert.throws(() => safeProjectPath(f.root, path), /Unsafe project path/, path);
@@ -288,7 +293,7 @@ test("symlinks cannot redirect canonical reads, discovery scans or future writes
   rmSync(canonical);
   renameSync(join(outside, "web"), canonical);
   mkdirSync(join(outside, "skills"));
-  mkdirSync(join(f.root, ".cursor"));
+  mkdirSync(join(f.root, ".cursor"), { recursive: true });
   symlinkSync(join(outside, "skills"), join(f.root, ".cursor/skills"), "junction");
   assert.match(f.check().join("\n"), /[Ss]ymlink/);
   assert.equal(readFileSync(join(f.root, ".harness/verify/web/contract.md"), "utf8"), CONTRACT);
@@ -296,4 +301,41 @@ test("symlinks cannot redirect canonical reads, discovery scans or future writes
 
 test("standalone checking a missing project reports filesystem diagnostics", () => {
   assert.match(checkProject(join(tmpdir(), "mstack-policy-no-such-project", "missing"), policy()).join("\n"), /ENOENT/);
+});
+
+test("shared workflow and each configured harness entry point are required", (t) => {
+  const f = fixture(t);
+  write(f.root, "AGENTS.md", "<!-- Read .harness/workflow.md -->\n");
+  rmSync(join(f.root, "CLAUDE.md"));
+  write(f.root, ".cursor/rules/shared-verification.mdc", "---\nalwaysApply: false\n---\n\nRead .harness/workflow.md\n");
+  write(f.root, ".harness/workflow.md", "<!-- shared workflow -->\n");
+  const errors = f.check().join("\n");
+  assert.match(errors, /AGENTS.md: must reference/);
+  assert.match(errors, /CLAUDE.md:.*ENOENT/);
+  assert.match(errors, /frontmatter must set alwaysApply: true/);
+  assert.match(errors, /shared workflow must be non-empty/);
+});
+
+test("entry pointers accept project prose and require only configured harnesses", (t) => {
+  const f = fixture(t);
+  f.config.allowedHarnesses = ["codex"];
+  rmSync(join(f.root, "CLAUDE.md"));
+  rmSync(join(f.root, ".cursor/rules/shared-verification.mdc"));
+  for (const root of [".claude", ".opencode", ".pi"]) rmSync(join(f.root, root), { recursive: true });
+  write(f.root, "AGENTS.md", "# Project rules\n\nOur workflow is in `.harness/workflow.md`. Read it first.\n");
+  assert.deepEqual(f.check(), []);
+});
+
+test("unconfigured canonical apps cannot retain a second feature map", (t) => {
+  const f = fixture(t);
+  write(f.root, ".harness/verify/old-web/features/create.md", FEATURE);
+  assert.match(f.check().join("\n"), /old-web: unconfigured canonical app directory/);
+});
+
+test("feature links cannot point at Git internals with any casing", (t) => {
+  const f = fixture(t);
+  for (const link of ["../../../../.git/config", "../../../../.Git/config"]) {
+    write(f.root, ".harness/verify/web/features/README.md", `# Map\n\n[Create](create-note.md)\n\n[Git](${link})\n`);
+    assert.match(f.check().join("\n"), /broken or unsafe link.*Unsafe project path/);
+  }
 });
