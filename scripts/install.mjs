@@ -20,6 +20,7 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
+import { configuredPath, resolveHarnessRoots } from "./harness-targets.mjs";
 import { planSkillMigration } from "./install-migration.mjs";
 import { convertAgentMarkdown } from "./agent-format.mjs";
 import {
@@ -86,24 +87,6 @@ if (hasEnvironment && (!environmentName || environmentName.startsWith("--"))) {
   throw new Error("--environment requires a name");
 }
 
-function expandHome(path) {
-  if (path === "~") return userHome;
-  if (/^~[\\/]/.test(path)) return join(userHome, path.slice(2));
-  return path;
-}
-
-function configuredPath(value, fallback, label) {
-  const expanded = expandHome(value ?? fallback);
-  if (value && !isAbsolute(expanded)) {
-    throw new Error(`${label} must be an absolute path or start with ~/`);
-  }
-  return resolve(expanded);
-}
-
-function pathFromParts(parts) {
-  return parts.reduce((current, part) => join(current, part), userHome);
-}
-
 function artifactBase(name, harness) {
   const base = artifactRegistry[name]?.harnesses?.[harness]?.base;
   if (base === "codex-home") {
@@ -124,30 +107,8 @@ if (environment.transport === "ssh") {
 }
 const environmentTargets = environment.targets;
 const environmentArtifacts = environment.artifacts;
-function harnessTarget(harness, useOverrides = true) {
-  const config = harnessRegistry[harness];
-  if (useOverrides && environmentTargets[harness]) {
-    return configuredPath(environmentTargets[harness], "", `${environmentName}.${harness}`);
-  }
-  const directory = process.env[config.directoryVariable];
-  if (useOverrides && directory) return configuredPath(directory, "", config.directoryVariable);
-
-  if (config.fallback) return pathFromParts(config.fallback);
-
-  const configRoot = process.env[config.configVariable]
-    ? configuredPath(process.env[config.configVariable], "", config.configVariable)
-    : pathFromParts([config.configFallback]);
-  return join(configRoot, ...(config.prefix ?? []), ...(config.suffix ?? []));
-}
-
-const nativeTargets = Object.fromEntries(validHarnesses.map((harness) => [harness, harnessTarget(harness)]));
-const legacyTargets = Object.fromEntries(validHarnesses.map((harness) => [harness, harnessTarget(harness, false)]));
-const sharedRoot = join(userHome, ".agents", "skills");
-const externalClaudeRoot = join(userHome, ".claude", "skills");
-const targets = Object.fromEntries(validHarnesses.map((harness) => [harness,
-  harnessRegistry[harness].sharedSkills && !environmentTargets[harness] && !process.env[harnessRegistry[harness].directoryVariable]
-    ? sharedRoot : nativeTargets[harness],
-]));
+const { skills: targets, native: nativeTargets, legacy: legacyTargets, sharedRoot, externalClaudeRoot } =
+  resolveHarnessRoots(harnessRegistry, { home: userHome, environmentTargets, environmentName });
 const discoveryRoots = [...new Set([
   ...Object.values(targets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
 ].map(physicalPathKey))];
