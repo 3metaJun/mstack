@@ -59,7 +59,6 @@ if (JSON.stringify(actual) !== JSON.stringify(EXPECTED_SKILLS)) {
 }
 
 const forbidden = [
-  /\.cursor[\\/]skills/i,
   /disable-model-invocation:/i,
   /\bTask tool\b/i,
   /\brun_in_background\b/i,
@@ -145,6 +144,10 @@ function walk(directory) {
 
 for (const file of walk(skillsRoot)) {
   const content = readFileSync(file, "utf8");
+  const compatibilityReference = file === join(skillsRoot, "create-verification-skill", "references", "harness-paths.md");
+  if (!compatibilityReference && /\.cursor[\\/]skills/i.test(content)) {
+    errors.push(`${relative(repoRoot, file)} contains a native skill path outside the compatibility reference`);
+  }
   if (file.endsWith(".md") && content.includes(String.fromCodePoint(0xfffd))) {
     errors.push(`${relative(repoRoot, file)} contains a replacement character`);
   }

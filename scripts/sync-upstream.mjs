@@ -457,6 +457,7 @@ const manifest = {
   source: pstack.repository,
   commit: pstack.commit,
   ...(previousManifest?.canonicalSkills ? { canonicalSkills: previousManifest.canonicalSkills } : {}),
+  ...(previousManifest?.adaptedArtifacts ? { adaptedArtifacts: previousManifest.adaptedArtifacts } : {}),
   artifacts: Object.fromEntries(
     [...grouped.keys()].map((name) => [
       name,

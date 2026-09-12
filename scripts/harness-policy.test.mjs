@@ -173,7 +173,7 @@ test("portable project paths reject Unix escapes, Windows drive paths, UNC and d
     assert.match(f.check().join("\n"), /canonicalRoot/, path);
     assert.throws(() => safeProjectPath(f.root, path), /Unsafe project path/, path);
   }
-  for (const path of [".agents/skills/verify", ".cursor/skills", ".claude", ".opencode/skills/verify", ".pi/skills"]) {
+  for (const path of [".agents/skills/verify", ".cursor/skills", ".claude", ".opencode/skills/verify", ".pi/skills", ".AGENTS/skills/verify", ".CURSOR/SKILLS", ".CLAUDE"]) {
     f.config.verification.canonicalRoot = path;
     assert.match(f.check().join("\n"), /outside harness skill roots/, path);
   }

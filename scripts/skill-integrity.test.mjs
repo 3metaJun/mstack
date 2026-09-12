@@ -52,11 +52,10 @@ test("meta-agent points to an existing complete entry skill", () => {
 test("portable skill files contain no broken replacement artifacts", () => {
   const forbidden = [
     /prethe current harness/i,
-    /(?:poteto-mode|setup-pstack|poteto-agent)/i,
+    /(?:setup-pstack|poteto-agent)/i,
     /worker type:\s*generalPurpose/i,
     /Comment Sicko/i,
     /Task subagent/i,
-    /cursor/i,
     /application support\/the current harness/i,
   ];
   const skillDirectories = readdirSync(skillsRoot, { withFileTypes: true })
@@ -73,6 +72,10 @@ test("portable skill files contain no broken replacement artifacts", () => {
   for (const path of files) {
     const content = readFileSync(path, "utf8");
     const normalized = content.replaceAll("`", "").replace(/\s+/g, " ");
+    const compatibilityReference = path === join(skillsRoot, "create-verification-skill", "references", "harness-paths.md");
+    const creator = path === join(skillsRoot, "create-verification-skill", "SKILL.md");
+    if (!compatibilityReference) assert.doesNotMatch(normalized, /poteto-mode/i, path);
+    if (!compatibilityReference && !creator) assert.doesNotMatch(normalized, /cursor/i, path);
     for (const pattern of forbidden) {
       assert.doesNotMatch(normalized, pattern, `${path} contains ${pattern}`);
     }

@@ -14,8 +14,11 @@ contains this command, invoke the team's exact package version with:
 npx --package @3metajun/mstack@<version> mstack-policy --help
 ```
 
-Do not use an unpinned latest version in CI. Replace every example version,
-commit, command, app ID, and repository path with the team's actual value.
+Initialization exports a structural checker that CI runs from the business
+repository. CI does not need to download this unreleased package. The full CLI
+still comes from the reviewed development checkout or, after release, an exact
+package version. Replace every example version, commit, command, app ID, and
+repository path with the team's actual value.
 
 ## Initialize the shared project workflow
 
@@ -34,11 +37,19 @@ branch or tag that can move. Initialize the project, for example:
 mstack-policy init --root . --app web --base main --check 'node --test' --pstack <exact-pstack-commit> --harness cursor --harness codex
 ```
 
-The command creates `.harness/policy.json` and `.harness/workflow.md`, adds
-project-entry pointers, and prepares the canonical verification location. It
-preserves existing instructions. Review conflicts instead of overwriting local
-rules. Omitting `--harness` selects all supported Harnesses. A Codex-only setup
-can pass `--harness codex` without a pstack pin.
+The command creates `.harness/policy.json`, `.harness/workflow.md`, and the
+structural checker files `.harness/check.mjs` and
+`.harness/harness-policy-lib.mjs`. It adds project-entry pointers and creates the
+canonical app directory. Existing instructions remain in place. The command
+refuses to replace a different generated file; review and reconcile the diff
+before retrying. Omitting `--harness` selects all supported Harnesses. A
+team using mstack only can omit `--pstack`, including in Cursor or Grok Bot.
+Include `--pstack` whenever the team also uses native pstack. Selecting a
+Harness does not select its workflow.
+
+The mstack revision comes from the CLI package version. During development,
+retain the reviewed checkout commit as well, since an unreleased checkout can
+share a package version with an older release.
 
 The generated `AGENTS.md` pointer directs agents to `.harness/workflow.md`.
 Initialization also adds a `CLAUDE.md` pointer for Claude Code and a Cursor
@@ -48,8 +59,10 @@ whose installed upstream instructions still exist. A JSON file cannot override
 the upstream workflow by itself. Keep the project entry rules active in every
 team Harness. User instructions retain their normal priority.
 
-Initialization does not discover or prove application behavior. Its incomplete
-contract remains a setup task until the next step passes.
+Initialization does not write `contract.md` or discover application behavior.
+The project check remains incomplete until the next step writes and proves the
+contract and generates its wrappers. During this initial adoption or migration,
+finish the contract in the isolated task worktree before running preflight.
 
 ## Create or migrate one verification definition
 
@@ -59,6 +72,8 @@ Run `/create-verification-skill` against the real application. Put the result in
 .harness/
   policy.json
   workflow.md
+  check.mjs
+  harness-policy-lib.mjs
   verify/
     web/
       contract.md
@@ -68,8 +83,10 @@ Run `/create-verification-skill` against the real application. Put the result in
       helpers/
 ```
 
-The contract owns launch, instance isolation, Doctor checks, user actions,
-expected results, evidence, cleanup, and helper invocations. Keep available
+The contract has H2 sections named `Launch`, `Doctor`, `Drive`, `Evidence`,
+`Cleanup`, and `Isolation`. Add `Helpers` to document owned scripts. These
+sections own startup, instance state, user actions, expected results, evidence,
+and cleanup. Keep available
 Harness tool names in their installed driver skills. The canonical contract can
 name a repository-owned Playwright script, API client, or CLI directly.
 
@@ -89,7 +106,7 @@ Render wrappers after the canonical files exist:
 
 ```bash
 mstack-policy wrappers --root .
-mstack-policy check --root .
+node .harness/check.mjs
 ```
 
 Wrappers contain `metadata.verification-contract` with a repository-relative
@@ -175,16 +192,36 @@ work. Do not require access to another Harness's transcript.
 
 ## Add CI and repository protection
 
-Add `mstack-policy check --root .` to the business repository's CI using the
-pinned package version. Run the actual required commands there as well. To
-validate a submitted receipt, restore its artifact archive, check out the exact
-PR head with the actual target available, and pass `--receipt`.
+Commit the exported checker and its library with the policy. Run it from the
+business repository root in CI:
+
+```bash
+node .harness/check.mjs
+```
+
+This command validates project structure without installing mstack or executing
+repository verification commands. Run the policy's actual required commands in
+separate CI steps. The exported checker accepts no arguments and does not
+validate run receipts.
+
+For receipt validation, use the full CLI from the reviewed checkout or a release
+that contains it. Restore the receipt, command logs, and evidence at their
+recorded relative paths. Check out the exact PR head on the receipt's named
+task branch and fetch its recorded target reference. A detached checkout or a
+synthetic merge commit does not match that receipt. Then run:
+
+```bash
+mstack-policy check --root . --receipt .harness/runs/<run-id>/receipt.json
+```
 
 Make these CI jobs required through the repository host's protected-branch
 settings. Configure reviews and the team's merge permissions there. The policy
 file and local CLI do not enable branch protection, prevent direct remote
 pushes, or prove that a check is required. Verify those host settings before
-calling the team's rollout complete.
+calling the team's rollout complete. Protect the CI workflow and exported
+checker through the team's review rules so a PR cannot silently remove its own
+gate. A merge queue or a strict up-to-date requirement closes the gap between
+verification and integration.
 
 Keep publishing under the team's existing release owner. If the project
 publishes to npm and requires a matching GitHub Release, verify both from the
@@ -203,6 +240,17 @@ fixture or a passing static check does not establish real-team compatibility.
 
 Pin workflow revisions independently. During an upgrade, compare changes to
 verification generation and maintenance instructions, regenerate wrappers when
-needed, and repeat affected rollout checks. Keep model choices in each user's
-Harness configuration. Delete completed plans and retain durable lessons in the
-canonical contract, tests, or project documentation.
+needed, and repeat affected rollout checks.
+
+Review checker upgrades as project changes. Compare the proposed version's
+`scripts/harness-check.mjs` and `scripts/harness-policy-lib.mjs` with the two
+exported files. Copy both reviewed versions together in a dedicated change,
+preserving any intentional local adaptation through a reviewed merge. Update the
+project workflow or policy when their requirements change. Run the exported
+checker and the app's affected verification before accepting the upgrade.
+`init` preserves differing generated files; rerunning it is not an upgrade
+command and does not silently replace the checker.
+
+Keep model choices in each user's Harness configuration. Delete completed plans
+and retain durable lessons in the canonical contract, tests, or project
+documentation.

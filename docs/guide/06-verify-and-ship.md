@@ -34,7 +34,7 @@ The UI bullet above hides a real requirement. The agent needs a scripted way to 
 
 [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) interviews the repository, not you. It works out what a user touches, how the app launches locally, what can drive it (an existing harness first, otherwise browser and CDP, a PTY, or plain HTTP), what evidence proves behavior, and whether two instances can run side by side. It asks you only what the code can't answer.
 
-It writes one `.harness/verify/<app>/contract.md` with Launch, Isolate, Doctor, Drive, Evidence, Cleanup, and Helpers sections. The adjacent `features/README.md` indexes the app's user paths and expected results. Owned scripts live in `helpers/`. The [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) shows the required detail.
+It writes one `.harness/verify/<app>/contract.md` with Launch, Isolation, Doctor, Drive, Evidence, Cleanup, and Helpers sections. The adjacent `features/README.md` indexes the app's user paths and expected results. Owned scripts live in `helpers/`. The [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) shows the required detail.
 
 The generator then renders thin `verify-<app>` wrappers for the configured Harnesses. Each wrapper's `metadata.verification-contract` points at the same contract from the repository root. Wrappers select an available driver without copying launch commands, selectors, or proof requirements. Because Cursor also discovers `.agents/skills/`, a project using both Cursor and Codex has one shared wrapper there. See [the wrapper paths](../../skills/create-verification-skill/references/harness-paths.md).
 

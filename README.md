@@ -294,6 +294,8 @@ workflow even when no native skill creator or repository validator is installed.
 - `scripts/install.mjs` stages, validates, and commits an installation.
 - `scripts/remote-install.mjs` stages and transfers an SSH environment install.
 - `scripts/validate.mjs` checks inventory, frontmatter, links, and portability.
+- `scripts/check-harness-policy.mjs` validates a business repository's mixed
+  pstack/mstack policy and detects duplicate verification maps.
 - `.codex-plugin/` packages the same skill tree for Codex.
 
 The installer stages every selected skill, applies its adapter, validates the
@@ -319,6 +321,22 @@ portable replacement for pstack's `poteto-mode`; it describes capabilities and
 uses the current harness's adapter instead of naming one vendor's commands.
 
 Run `node scripts/validate.mjs` to print the validated skill count.
+
+For a business repository that mixes pstack and mstack, initialize its shared
+project workflow from this checkout:
+
+```bash
+node <mstack-checkout>/scripts/check-harness-policy.mjs init --root <project> --app web --check 'node --test' --pstack <exact-pstack-commit>
+```
+
+Replace the app, check command, and pstack revision with the project's values.
+Initialization exports `.harness/check.mjs` and its library for committed CI
+checks, without requiring an unpublished npm version. It leaves the application
+contract for `/create-verification-skill` to create or migrate and prove. See
+[mixed-Harness adoption](./docs/guide/11-mixed-harness.md) for wrapper generation,
+receipts, repository protection, and reviewed checker upgrades. After a release
+includes this CLI, use its exact package version for initialization and run
+recording.
 
 To validate and print a user's model configuration, run:
 

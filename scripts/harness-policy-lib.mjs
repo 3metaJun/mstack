@@ -84,7 +84,7 @@ export function validateHarnessPolicy(policy) {
   }
   if (objectFields(policy.verification, "policy.verification", ["canonicalRoot", "apps", "requiredCommands"], errors)) {
     const canonicalRoot = policy.verification.canonicalRoot;
-    if (!relativePath(canonicalRoot) || SKILL_ROOTS.some((root) => canonicalRoot === root || canonicalRoot.startsWith(`${root}/`) || root.startsWith(`${canonicalRoot}/`))) {
+    if (!relativePath(canonicalRoot) || SKILL_ROOTS.some((root) => canonicalRoot.toLowerCase() === root || canonicalRoot.toLowerCase().startsWith(`${root}/`) || root.startsWith(`${canonicalRoot.toLowerCase()}/`))) {
       errors.push("policy.verification.canonicalRoot must be a portable repository-relative path outside harness skill roots");
     }
     stringList(policy.verification.apps, "policy.verification.apps", errors, appName);
@@ -99,7 +99,6 @@ export function validateHarnessPolicy(policy) {
   return errors;
 }
 
-// Check existing ancestors before either reading or creating a project path.
 export function safeProjectPath(root, relative) {
   if (typeof root !== "string" || !root || !relativePath(relative)) throw new Error(`Unsafe project path: ${String(relative)}`);
   const absoluteRoot = resolve(root);

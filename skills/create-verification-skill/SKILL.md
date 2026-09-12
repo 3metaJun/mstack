@@ -50,7 +50,7 @@ canonical version. A copied legacy map is not evidence of correct behavior.
 The contract must include these H2 sections:
 
 - **Launch:** Exact start command, readiness signal, ownership marker, and teardown.
-- **Isolate:** Instance-specific ports, profiles, and data directories, or an
+- **Isolation:** Instance-specific ports, profiles, and data directories, or an
   explicit exclusive-use procedure for resources that cannot be separated.
 - **Doctor:** A read-only check that confirms the right instance, build, port,
   data directory, and auth are healthy.
