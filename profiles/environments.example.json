@@ -30,8 +30,8 @@
     "targets": {
       "codex": "/home/dev/.agents/skills",
       "claude": "/home/dev/.claude/skills",
-      "opencode": "/home/dev/.config/opencode/skills",
-      "pi": "/home/dev/.pi/agent/skills"
+      "opencode": "/home/dev/.agents/skills",
+      "pi": "/home/dev/.agents/skills"
     },
     "artifacts": {
       "agents": {
@@ -43,8 +43,8 @@
       "meta-mode-tools": {
         "codex": "/home/dev/.agents/tools/meta-mode",
         "claude": "/home/dev/.claude/tools/meta-mode",
-        "opencode": "/home/dev/.config/opencode/tools/meta-mode",
-        "pi": "/home/dev/.pi/agent/tools/meta-mode"
+        "opencode": "/home/dev/.agents/tools/meta-mode",
+        "pi": "/home/dev/.agents/tools/meta-mode"
       }
     }
   }

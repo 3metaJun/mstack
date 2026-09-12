@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { localPathKey, stagingPath, targetPathsOverlap } from "./install-paths.mjs";
@@ -89,6 +89,23 @@ test("treats local macOS targets as case-insensitive", () => {
   assert.notEqual(localPathKey(upper, "linux"), localPathKey(lower, "linux"));
 });
 
+test("rejects transaction storage reached through a discovery-root alias before writing", () => {
+  const { root, env } = fixture();
+  const discovery = env.HARNESS_SKILLS_CODEX_DIR;
+  const alias = join(root, "alias");
+  try {
+    mkdirSync(discovery, { recursive: true });
+    symlinkSync(discovery, alias, process.platform === "win32" ? "junction" : "dir");
+    env.HARNESS_SKILLS_PI_DIR = join(alias, "custom");
+    const result = run(["--harness", "pi", "--skill", "meta-mode", "--replace", "--dry-run"], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Transaction storage would be discoverable/);
+    assert.deepEqual(readdirSync(discovery), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("dry-run reports a plan without creating target directories", () => {
   const { root, env } = fixture();
   try {
@@ -132,7 +149,7 @@ test("recovers a dead installer lock but preserves a live lock", () => {
   }
 });
 
-test("uses pi's agent directory for the default skill target", () => {
+test("uses the shared directory for pi skills", () => {
   const { env } = fixture();
   env.USERPROFILE = join(env.TEMP ?? tmpdir(), "mstack-pi-home");
   env.HOME = env.USERPROFILE;
@@ -140,7 +157,7 @@ test("uses pi's agent directory for the default skill target", () => {
 
   const result = run(["--harness", "pi", "--skill", "meta-mode", "--dry-run"], env);
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.stdout.includes(join(env.USERPROFILE, ".pi", "agent", "skills")));
+  assert.ok(result.stdout.includes(join(env.USERPROFILE, ".agents", "skills")));
 });
 
 test("installs harness-specific frontmatter and preserves conflicts", () => {
@@ -176,7 +193,7 @@ test("installs harness-specific frontmatter and preserves conflicts", () => {
     const replaced = run(["--harness", "codex", "--replace"], env);
     assert.equal(replaced.status, 0, replaced.stderr);
     assert.equal(existsSync(marker), false);
-    const backupRoot = join(env.HARNESS_SKILLS_CODEX_DIR, ".harness-skills-backups");
+    const backupRoot = join(dirname(env.HARNESS_SKILLS_CODEX_DIR), ".harness-skills-backups", basename(env.HARNESS_SKILLS_CODEX_DIR));
     const backupMarker = findFile(backupRoot, "marker.txt");
     assert.equal(readFileSync(backupMarker, "utf8"), "keep me");
   } finally {
@@ -184,7 +201,7 @@ test("installs harness-specific frontmatter and preserves conflicts", () => {
   }
 });
 
-test("keeps skill backups and failed replacements beside their actual targets", () => {
+test("keeps skill backups and failed replacements outside discovery roots", () => {
   const { root, env } = fixture();
   const codexTarget = join(env.HARNESS_SKILLS_CODEX_DIR, "meta-mode");
   const claudeTarget = join(env.HARNESS_SKILLS_CLAUDE_DIR, "meta-mode");
@@ -192,7 +209,8 @@ test("keeps skill backups and failed replacements beside their actual targets", 
   mkdirSync(claudeTarget, { recursive: true });
   writeFileSync(join(codexTarget, "marker.txt"), "old codex", "utf8");
   writeFileSync(join(claudeTarget, "marker.txt"), "old claude", "utf8");
-  writeFileSync(join(env.HARNESS_SKILLS_CLAUDE_DIR, ".harness-skills-backups"), "block", "utf8");
+  mkdirSync(join(root, ".harness-skills-backups"), { recursive: true });
+  writeFileSync(join(dirname(env.HARNESS_SKILLS_CLAUDE_DIR), ".harness-skills-backups", basename(env.HARNESS_SKILLS_CLAUDE_DIR)), "block", "utf8");
 
   try {
     const result = run(
@@ -203,10 +221,10 @@ test("keeps skill backups and failed replacements beside their actual targets", 
     assert.equal(readFileSync(join(codexTarget, "marker.txt"), "utf8"), "old codex");
     assert.equal(readFileSync(join(claudeTarget, "marker.txt"), "utf8"), "old claude");
     assert.ok(
-      findFile(join(env.HARNESS_SKILLS_CODEX_DIR, ".harness-skills-failed"), "SKILL.md"),
-      "expected the rolled-back replacement beside the Codex skill target",
+      findFile(join(dirname(env.HARNESS_SKILLS_CODEX_DIR), ".harness-skills-failed", basename(env.HARNESS_SKILLS_CODEX_DIR)), "SKILL.md"),
+      "expected the rolled-back replacement outside the Codex skill root",
     );
-    assert.equal(existsSync(join(root, ".harness-skills-failed")), false);
+    assert.equal(existsSync(join(env.HARNESS_SKILLS_CODEX_DIR, ".harness-skills-failed")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -224,8 +242,10 @@ test("continues rollback after one target cannot be restored", () => {
     mkdirSync(target, { recursive: true });
     writeFileSync(join(target, "marker.txt"), `old ${harness}`, "utf8");
   }
-  writeFileSync(join(env.HARNESS_SKILLS_CLAUDE_DIR, ".harness-skills-failed"), "block rollback", "utf8");
-  writeFileSync(join(env.HARNESS_SKILLS_OPENCODE_DIR, ".harness-skills-backups"), "block commit", "utf8");
+  mkdirSync(join(root, ".harness-skills-backups"), { recursive: true });
+  mkdirSync(join(root, ".harness-skills-failed"), { recursive: true });
+  writeFileSync(join(dirname(env.HARNESS_SKILLS_CLAUDE_DIR), ".harness-skills-failed", basename(env.HARNESS_SKILLS_CLAUDE_DIR)), "block rollback", "utf8");
+  writeFileSync(join(dirname(env.HARNESS_SKILLS_OPENCODE_DIR), ".harness-skills-backups", basename(env.HARNESS_SKILLS_OPENCODE_DIR)), "block commit", "utf8");
 
   try {
     const result = run(
@@ -241,7 +261,7 @@ test("continues rollback after one target cannot be restored", () => {
     assert.equal(readFileSync(join(targets.codex, "marker.txt"), "utf8"), "old codex");
     assert.equal(readFileSync(join(targets.opencode, "marker.txt"), "utf8"), "old opencode");
     assert.equal(
-      readFileSync(findFile(join(env.HARNESS_SKILLS_CLAUDE_DIR, ".harness-skills-backups"), "marker.txt"), "utf8"),
+      readFileSync(findFile(join(dirname(env.HARNESS_SKILLS_CLAUDE_DIR), ".harness-skills-backups", basename(env.HARNESS_SKILLS_CLAUDE_DIR)), "marker.txt"), "utf8"),
       "old claude",
     );
   } finally {

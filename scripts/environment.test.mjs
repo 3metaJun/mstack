@@ -284,7 +284,7 @@ test("remote installer passes an unquoted rsync destination argument", () => {
     'import { appendFileSync } from "node:fs";',
     'const [mode, ...args] = process.argv.slice(2);',
     'appendFileSync(process.env.MSTACK_FAKE_TRANSPORT_LOG, JSON.stringify({ mode, args }) + "\\n");',
-    'if (mode === "ssh" && args.at(-1)?.includes("mktemp -d")) { console.log("/srv/mstack remote/pi/skills/.mstack-stage.fake"); console.error("Authorized use only"); }',
+    'if (mode === "ssh" && args.at(-1)?.includes("mktemp -d")) { console.log("/srv/mstack remote/pi/.mstack-stage.fake"); console.error("Authorized use only"); }',
   ].join("\n"), "utf8");
   writeFileSync(configPath, JSON.stringify({
     fleet: {
@@ -319,7 +319,7 @@ test("remote installer passes an unquoted rsync destination argument", () => {
       .map((line) => JSON.parse(line));
     const rsync = calls.find((call) => call.mode === "rsync");
     assert.ok(rsync, "expected a fake rsync invocation");
-    assert.equal(rsync.args.at(-1), "dev@tailnet-host:/srv/mstack remote/pi/skills/.mstack-stage.fake/");
+    assert.equal(rsync.args.at(-1), "dev@tailnet-host:/srv/mstack remote/pi/.mstack-stage.fake/");
     assert.doesNotMatch(rsync.args.at(-1), /'/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -580,7 +580,7 @@ test("remote installer uploads everything before commit and rolls back a partial
     'if (mode === "ssh" && script.includes("mktemp -d")) {',
     '  state.stageCount += 1;',
     '  save();',
-    '  console.log(`/srv/rollback/skills/.mstack-stage.fake-${state.stageCount}`);',
+    '  console.log(`/srv/rollback/.mstack-stage.fake-${state.stageCount}`);',
     '  process.exit(0);',
     '}',
     'const target = script.match(/(?:^|; )target=\'([^\']+)\'/)?.[1];',

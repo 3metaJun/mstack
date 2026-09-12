@@ -23,6 +23,7 @@
   },
   "opencode": {
     "directoryVariable": "HARNESS_SKILLS_OPENCODE_DIR",
+    "sharedSkills": true,
     "configVariable": "XDG_CONFIG_HOME",
     "configFallback": ".config",
     "prefix": ["opencode"],
@@ -36,6 +37,7 @@
   },
   "pi": {
     "directoryVariable": "HARNESS_SKILLS_PI_DIR",
+    "sharedSkills": true,
     "configVariable": "PI_CODING_AGENT_DIR",
     "configFallback": ".pi/agent",
     "suffix": ["skills"],

@@ -1,4 +1,5 @@
 {
+  "directoryName": true,
   "removeFrontmatter": {
     "show-me-your-work": ["metadata"]
   },

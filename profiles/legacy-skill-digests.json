@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "package": "@3metajun/mstack",
+  "sources": [
+    "v0.2.0",
+    "v0.2.1",
+    "v0.3.0",
+    "v0.4.0"
+  ],
+  "normalization": "CRLF to LF; SHA-256 of UTF-8 SKILL.md, including released Claude adapter variants",
+  "skills": {
+    "architect": [
+      "cc8a035aa7a2aa417676c4e364b86f4a3e2b85748bf2d0916402105b011a1083"
+    ],
+    "arena": [
+      "f100383e190b806567015d2cbbaf90b9a1b0151ae60b08aa6185fc6eca3c9552"
+    ],
+    "automate-me": [
+      "6ab6c4c4a4b50a7cb182149408bd1758229d4386fbb8b1a66cf6927847b02c27",
+      "971364464d32e0f991168193fc4561e8bc16f7663ccf7fd75541472ad62965df"
+    ],
+    "blast-radius": [
+      "ca63c902c065c3de95d5c7f5db665b4cf8c3b881eafbef9dde3db66ca340a752"
+    ],
+    "bro": [
+      "8b822d47b9299627f5e4fe42684a031105792c8531443da1ae3423adfa2de96f"
+    ],
+    "codebase-design": [
+      "2033d2660df023eddc9a72d840daf997bbbe15e9e768228948dbde906e03cf80",
+      "4b6d115f53163365388e25bf5306eeafceacb9b739780ac4e788c47c80598f0c"
+    ],
+    "create-verification-skill": [
+      "7242b478eb0face01b1f1d27950efa69e415219b278993bc3e75f297707bba48",
+      "eca219cac2808714d6aa3090fd3065d1da6a579d432f277aef334f1ca0dfe770"
+    ],
+    "diagnosing-bugs": [
+      "a68cc23f0b3bd9b9c00db6243100b59ec1edda045182ed12a0d51a2cb647cf85",
+      "ecc513932a6cbc3e83a0e8fbd6e6a80d669e8f86c473586b878be58712d58a81"
+    ],
+    "figure-it-out": [
+      "a892d780bae548ec537ad1edea44b11ab85c3223345c84276f567ef30bfdca97"
+    ],
+    "how": [
+      "3f936290068d8c1e34ddfde844f840f84b89f0478eaa7dcddebc0502fc71c7bd",
+      "92b3be3cd554a192f762d2be0344ad53a90386795b018c29c832686189fe4a52",
+      "a3e2acb068e126bad1ddadb4b16bb14154d5687fffc8ce2fe8209660b83c2e4b"
+    ],
+    "interrogate": [
+      "8772ecf8ed7e64118459160d4cd61096877b52cc557104a3ae305b036be16ac9",
+      "ab2508809da00eac47444b102cd7d11730f15b2476cd6cd947e330cc08814e78",
+      "dd6cd20978aa29e66875ed91a05db9b30e429675a1987b605f3df35c7a2b6777"
+    ],
+    "maintain-verification-skill": [
+      "b236ab1a439ae067d41d0fc191517992da1130d7935d3c8fa5084def26512296",
+      "bfa8b97a5ca35d618228c37eb02c74589c0fcb1af13d06201b10e0eb3274e32c"
+    ],
+    "make-bot-ui": [
+      "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
+    ],
+    "meta-mode": [
+      "29dd37fbd946ebbcfc9950657a41e0a6f26b10536b7cea5c896b7d12d0f322e4",
+      "53cb6ae809072973802f78fac92fc75efbe111330271513fa756cd2f0d053ad4",
+      "798df0dae0ca4959b81d6465b1c3c392ffc5cefd98f5b0834a53262eb1b2fa86",
+      "9546ad48d518152b537e8e9c450bc3a94f11cfd3477f459269f24597821c6f80"
+    ],
+    "no-comments": [
+      "ab2c513e04c211b3cd3d56e2905b2aa29d5f2859ebd8c4aafb4ae5d7cd983144",
+      "f5bc3892fd057751d5928cffbebabbcde58804021a520bf67fac6b550d3399f5"
+    ],
+    "principle-attack-the-premise": [
+      "58c2998cbe0318b648d2f78c080003c5d3685a0ede2a98e56bc29e2fdfa7417a"
+    ],
+    "principle-boundary-discipline": [
+      "0ebee28a5f8bf5cac890dc37a18f3cdf66c360d85336fe8efa0be04430ecdddf"
+    ],
+    "principle-build-the-lever": [
+      "b49623e8e41c072ce14e6479a0a93cb932cd1a320642334cf0ac8f9e7cf31ded"
+    ],
+    "principle-encode-lessons-in-structure": [
+      "e66d95bd954a1e8ba298bc451ba1e9190c758f6d77c240540bedf8f28c895694"
+    ],
+    "principle-exhaust-the-design-space": [
+      "67e7e29ab4f484bfddcac55ece4d70f6efc25ccbf91de7de31fcec385f9f059e"
+    ],
+    "principle-experience-first": [
+      "3013367ce42fabb55799ffbcc51ad20b2ae7ec1b898bad4ac4ceaa2f093edbe1"
+    ],
+    "principle-fix-root-causes": [
+      "2f48a508674c8b9f3339aba95929079af54fb7fbd367b4eb45175388f1e170f9"
+    ],
+    "principle-foundational-thinking": [
+      "e69eea824d81c4bb32cbcdb26513bf964882daeeb647bb99210978e86bec1a49"
+    ],
+    "principle-guard-the-context-window": [
+      "d42b8f8b02cdcb4f84b466ffcd623ca911a8bbf93b46b545d8b3ca4e950b2580"
+    ],
+    "principle-laziness-protocol": [
+      "f45159ad7ea5f01a08d364897307f69ca18fa57b87d6ed6b89ca222a2388bf7d"
+    ],
+    "principle-make-operations-idempotent": [
+      "5cf54da6cc34714fbe97e45fd61a4678662d087d7f6f6dc81cace3f34041f541"
+    ],
+    "principle-migrate-callers-then-delete-legacy-apis": [
+      "388e9cbc9e52bd72d9044d7e37126bd3355c4e8f1188447e2a6850fe4fc549d7"
+    ],
+    "principle-minimize-reader-load": [
+      "d44ded81ac7cfc194dca65c9943a55fe8a058660485049a6e607e6bdf5d70738"
+    ],
+    "principle-model-the-domain": [
+      "4464cc1a0a2366ff8249659c30f525dba6206947f037f07f5931238ed0e96f82"
+    ],
+    "principle-never-block-on-the-human": [
+      "15d583bb6125a88dd0ff375bfdbdc1ac874027bf741cda5f6f4d3e939363051e"
+    ],
+    "principle-outcome-oriented-execution": [
+      "f2fe80adf2da1e1e15aa1d1b465f1cb963acb05114be9032a89ae6ead06df288"
+    ],
+    "principle-prove-it-works": [
+      "eb89aa6f3283cd73ba56d6cc01e0d4b9ec12367144988525b2c43761cbed4ada"
+    ],
+    "principle-redesign-from-first-principles": [
+      "b3ac6bc1c707aa8ad1a331851ad71aeb48f179136907ab2015f34881c674d056"
+    ],
+    "principle-separate-before-serializing-shared-state": [
+      "30cc80284a90bb5d94cde5a3533a8a27755832c2c4e638f8e3b97bbf8ba94924"
+    ],
+    "principle-sequence-verifiable-units": [
+      "84bf426fd9c7f2bb8561baad84a06bb5b2c78534e7599bdd3fde47ce5596d707"
+    ],
+    "principle-subtract-before-you-add": [
+      "65fa4e1a2a630040eb0abbcfeaf0e82241fd968443021b535f94b4b6d4b7aa0f"
+    ],
+    "principle-test-behavior-not-implementation": [
+      "c6104107aa4902342d36eb5c6b7f99862eadff5ba27f367cde011ccdde4d8d17"
+    ],
+    "principle-type-system-discipline": [
+      "9397a9ce6e26e54d0e6e9f81e488f626f3daefd6903509536fbdfb0d021a274f"
+    ],
+    "recall": [
+      "be67c9e064a2b6d2ec52e915c19f6507f9f389a112e9961eb93b3c793b565e70",
+      "fbf2ae86fe5f3aeff6a6454b1a0f0899eebb5311a37ba44a3a0088fc2523ca77"
+    ],
+    "reflect": [
+      "5478382b85614482fdf8799c9b0113d0c12c6595ee1003aa62c91f6288b91089",
+      "80b93579e53f7fdcaf2e95e363bd6f5cb8c4689a67ba4f6823eb011bb92ce40c",
+      "ab350465ad395806d8d844139ced88da3f48cb0c05caa1afc31a91b3927c5476"
+    ],
+    "setup-mstack": [
+      "555c577bf494baafafa980ee3f647149c180a615a706ef409845cd03cd16e142",
+      "5fbe454ff5cea061d8b29e5be4a0eb1d2f040f99927f23ccd6007ec5c02e5b6a",
+      "77194b522f7ceab59c2bc140bdcce5df5f900b7199469fa343ec0735daa1f866"
+    ],
+    "show-me-your-work": [
+      "a62b58b5f0bab5a99ac4111973ad40cfd30d8e729eb56ed09d9a1cdda7a440c0",
+      "d189454d45306b8b2ace4456684fc9dbaf9d3c5305e2fe3c35afed8977f1552f"
+    ],
+    "swarm": [
+      "015c31b71a020a585b628ed8308245530c008b42facedd3040b385628b3ea599",
+      "d0ddb740c26ef3da2a47bd2ef5eab12aa224aa19a9d02ff7a0e6ce9dd2a7d3ac"
+    ],
+    "tdd": [
+      "bb077c26ad22c0171f3c06e72d288556a46a8fce34164ea7da686d78c135544c"
+    ],
+    "teach": [
+      "5a85664f8cce57429af0d8c060a20d8740579867f0976f4981032e8855cab2b5"
+    ],
+    "technical-writing": [
+      "40dafbe83d76600dfd9417bb3861b2a73ac75010838412a10b8fa2b82b00b9a0"
+    ],
+    "typescript-best-practices": [
+      "02b41b2cbb0ac43940b8f4df8b54c55f1aac0a68890a9379f9b006b2a8f1f4a0"
+    ],
+    "unslop": [
+      "6948335a00f9fed7a29204b9f08f74a9d9596d90989fd06f58f02d984ceab6f3"
+    ],
+    "why": [
+      "873aedc86d1321093e9a195ac8bff1783241b309a1d33808ab74f181c4b8f22d",
+      "b1edfe9a6a5fd2cac3111e12a2a3bbf84160bf8921bc559e49ec91d6e15d6ecc"
+    ],
+    "writing-for-agents": [
+      "3b50712cac5d212e449bc9e9baeed4866412b152aa30feef53fdc4a0f3791840",
+      "c24b51c9e1e4c9618bf103262c2e89af3391c06d3589a64d9a0b9f826a166763"
+    ]
+  }
+}

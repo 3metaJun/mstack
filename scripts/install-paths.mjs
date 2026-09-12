@@ -1,8 +1,16 @@
+import { existsSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export function localPathKey(value, platform = process.platform) {
   const normalized = resolve(value);
   return platform === "win32" || platform === "darwin" ? normalized.toLowerCase() : normalized;
+}
+
+export function physicalPathKey(value) {
+  const absolute = resolve(value);
+  let ancestor = absolute;
+  while (!existsSync(ancestor) && dirname(ancestor) !== ancestor) ancestor = dirname(ancestor);
+  return localPathKey(resolve(realpathSync(ancestor), relative(ancestor, absolute)));
 }
 
 export function pathIsWithin(root, candidate, platform = process.platform) {
