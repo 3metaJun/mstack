@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/cursor/plugins/tree/main/pstack",
-  "commit": "7366ac128bdf95f45e6734f412b49a4031800169",
+  "commit": "f5bdd6826fd0a0d9cbc4347134c3a74a200b9d9d",
   "artifacts": {
     "agents": {
       "agents/comment-reviewer.md": "c0fd0383008da45fc78cfac17b9007d62c42f87ad1c8d5c2fb658b1fd01f7c82",
@@ -108,8 +108,8 @@
       "target": "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
     },
     "meta-mode": {
-      "source": "9319963075ef537e1d83edc4814f6bc6a7c90779ea261227934c984a0a5e88fb",
-      "target": "798df0dae0ca4959b81d6465b1c3c392ffc5cefd98f5b0834a53262eb1b2fa86"
+      "source": "d5817d996f6da294c86cacb2bd1b0c40c85968844a6afd194fe69efa8654878f",
+      "target": "4efa5f64e1f6bd01fd08eb6fb720ab4c84c7f3d787fff9df71d0e07ab65b73fe"
     },
     "no-comments": {
       "source": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",

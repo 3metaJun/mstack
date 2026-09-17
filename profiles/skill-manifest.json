@@ -1,7 +1,7 @@
 {
   "version": 1,
   "sources": {
-    "pstack": "7366ac128bdf95f45e6734f412b49a4031800169",
+    "pstack": "f5bdd6826fd0a0d9cbc4347134c3a74a200b9d9d",
     "mattpocock/skills": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
   },
   "files": {
@@ -205,14 +205,14 @@
     "skills/meta-mode/playbooks/autopilot-full.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-full.md",
-      "sourceDigest": "52f69170bd7fa6b436992d90d3ef7fba893201e0b497297b416e9aea0e567d5f",
-      "targetDigest": "0a649471ca2e98d91e2a83c05437ff6c5e4137769df8e12352cc8651c9c27579"
+      "sourceDigest": "2042a89a0399b5fe700110bc03746899536c10f0df186e9fb15bbd4a2f6dfce5",
+      "targetDigest": "be9eeb3df8df26671d5e134b14b337d9b2fa311e096d1ee6c66c06c6c55c047b"
     },
     "skills/meta-mode/playbooks/autopilot-stack.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
-      "sourceDigest": "66364cd3a2286cbecfb73d3a7bf7d1fa387ede8525d37ef22b69d4ac03c2c5b2",
-      "targetDigest": "eb6f902e29a3546d50d95a6f5989654a5ecaa83c94a07a91495e812a923c803f"
+      "sourceDigest": "60e0d997f7b369004a02089c71b9091d3f8e9bc0b4a3c1142598380faa7722fd",
+      "targetDigest": "7a3dd0ab570560e1051e38fd16711914dacd476202be358e25c0f34c917a2b45"
     },
     "skills/meta-mode/playbooks/babysit.md": {
       "upstream": "pstack",
@@ -253,8 +253,8 @@
     "skills/meta-mode/playbooks/multi-phase-plan.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
-      "sourceDigest": "63426a55519fbc4fb9f00baf5cc7b1148f70dfb62ad360a0f6533d287dd36edf",
-      "targetDigest": "62c9a4b1d6bd6e5ad718af0d4972432773afa5af10ae05b8b751f0fc117ac78f"
+      "sourceDigest": "b823e05b64bbef84ae5169717c5fab1d9ab5079625996271e3aa7abcdce7b8ad",
+      "targetDigest": "51f824fa3caae6bd0fd69852f66387ef2e203e6c15f8f8982cf20d0d22965bf1"
     },
     "skills/meta-mode/playbooks/opening-a-pr.md": {
       "upstream": "pstack",
@@ -342,8 +342,8 @@
     "skills/meta-mode/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
-      "sourceDigest": "6bbf35cb2111c358461c7ba90f210dad4573f3a3ada92f6459eac0c69d83b01a",
-      "targetDigest": "798df0dae0ca4959b81d6465b1c3c392ffc5cefd98f5b0834a53262eb1b2fa86"
+      "sourceDigest": "b3c505602b82fb3641a3983e9c46fb974881faa12ece1af804fae27afb7be532",
+      "targetDigest": "4efa5f64e1f6bd01fd08eb6fb720ab4c84c7f3d787fff9df71d0e07ab65b73fe"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",

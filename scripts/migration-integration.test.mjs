@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
@@ -6,6 +7,11 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 const installer = resolve("scripts", "install.mjs");
+// Legacy fixtures must match released content the digest list covers; the
+// working tree can carry unreleased edits. The installer stages from the
+// working tree, so post-install assertions read the live file instead.
+const releasedVersion = JSON.parse(execFileSync("git", ["show", "v0.4.1:package.json"], { encoding: "utf8" })).version;
+const releasedCanonical = execFileSync("git", ["show", `v${releasedVersion}:skills/meta-mode/SKILL.md`], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
 const canonical = readFileSync(resolve("skills", "meta-mode", "SKILL.md"), "utf8");
 
 function snapshot(root) {
@@ -37,7 +43,7 @@ function fixture(t) {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
   }
-  function installOld(harness, { content = canonical, receipt = false, name = "meta-mode" } = {}) {
+  function installOld(harness, { content = releasedCanonical, receipt = false, name = "meta-mode" } = {}) {
     const path = join(roots[harness], name);
     write(join(path, "SKILL.md"), content);
     write(join(path, "local-support.txt"), `${harness} supporting content`);
@@ -116,7 +122,7 @@ test("a later retirement failure restores previously retired copies and Claude c
   assert.match(result.stderr, /Rollback results:/);
   assert.ok(result.stdout.includes(`backup: ${opencode} ->`), "OpenCode retirement must have committed before the injected failure");
   for (const [harness, target] of [["opencode", opencode], ["pi", pi], ["claude", claude]]) {
-    assert.equal(readFileSync(join(target, "SKILL.md"), "utf8"), canonical);
+    assert.equal(readFileSync(join(target, "SKILL.md"), "utf8"), releasedCanonical);
     assert.equal(readFileSync(join(target, "local-support.txt"), "utf8"), `${harness} supporting content`);
   }
   assert.equal(existsSync(join(f.roots.shared, "meta-mode")), false);
@@ -128,7 +134,7 @@ test("migration archives authenticated crashed stages and preserves unselected o
   const remoteStage = join(f.roots.opencode, ".mstack-stage.old");
   const unselectedStage = join(f.roots.pi, ".mstack-stage.unselected");
   const emptyStage = join(f.roots.shared, ".harness-skills-stage-empty");
-  f.write(join(localStage, "SKILL.md"), canonical);
+  f.write(join(localStage, "SKILL.md"), releasedCanonical);
   f.write(join(localStage, "support.txt"), "Preserve crashed local support");
   f.write(join(remoteStage, "SKILL.md"), "---\nname: meta-mode\ndescription: Customized installed copy\n---\nRemote stage body\n");
   f.write(join(remoteStage, ".mstack-install.json"), JSON.stringify({ package: "@3metajun/mstack", schemaVersion: 1 }));
