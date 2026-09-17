@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 - 2026-09-18
+
+### Fixes
+
+- Fetch release tags in CI so migration fixtures can verify released content.
+- Keep the pinned upstream commit in CI aligned with the checked-in manifests.
+
 ## 0.4.1 - 2026-09-12
 
 ### Upgrade notes
