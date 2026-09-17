@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -91,12 +92,15 @@ test("disabled discovery migration does not inspect unknown custom copies", (t) 
 test("digest provenance includes actual released canonical and Claude adapter content", () => {
   const data = JSON.parse(readFileSync(join(repository, "profiles", "legacy-skill-digests.json"), "utf8"));
   assert.deepEqual(data.sources, ["v0.2.0", "v0.2.1", "v0.3.0", "v0.4.0"]);
+  // Ownership digests cover released versions; the working tree may carry
+  // unreleased edits, so read the latest released tag instead of the live file.
+  const releasedVersion = JSON.parse(execFileSync("git", ["show", "v0.4.1:package.json"], { encoding: "utf8" })).version;
+  const released = (name) => execFileSync("git", ["show", `v${releasedVersion}:skills/${name}/SKILL.md`], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
   for (const name of ["meta-mode", "show-me-your-work"]) {
-    const text = readFileSync(join(repository, "skills", name, "SKILL.md"), "utf8").replaceAll("\r\n", "\n");
-    const hash = createHash("sha256").update(text).digest("hex");
+    const hash = createHash("sha256").update(released(name).replaceAll("\r\n", "\n")).digest("hex");
     assert.equal(data.skills[name].includes(hash), true, name);
   }
-  const canonical = readFileSync(join(repository, "skills", "show-me-your-work", "SKILL.md"), "utf8").replaceAll("\r\n", "\n");
+  const canonical = released("show-me-your-work").replaceAll("\r\n", "\n");
   const claude = canonical.replace(
     "metadata:\n  requirements: Node.js 18 or newer for scripts/log.mjs\n",
     'compatibility: "Node.js 18 or newer is required for scripts/log.mjs."\n',
