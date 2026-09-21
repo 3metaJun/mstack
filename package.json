@@ -1,7 +1,10 @@
 {
   "name": "@3metajun/mstack",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Portable engineering skills for Codex, Claude Code, OpenCode, and pi.",
+  "keywords": [
+    "pi-package"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/3metaJun/mstack.git"
@@ -48,6 +51,11 @@
   ],
   "engines": {
     "node": ">=18"
+  },
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
   },
   "publishConfig": {
     "access": "public"

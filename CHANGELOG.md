@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 - 2026-09-21
+
+### Changes
+
+- Publish as an official pi package: declare the `pi` manifest, tag the npm
+  package with the `pi-package` keyword, and list skills explicitly so mstack
+  appears in the pi.dev/packages gallery. Install with
+  `pi install npm:@3metajun/mstack`.
+
 ## 0.4.2 - 2026-09-18
 
 ### Fixes
