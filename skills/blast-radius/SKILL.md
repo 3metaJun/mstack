@@ -21,8 +21,6 @@ state where the evidence stops:
 4. A script or test that calls the real shipped code and fails loudly if wrong.
 5. Reproduction in the running application.
 
-Treat anything below level 4 as unproven unless the user accepts a lower bar.
-
 ## Workflow
 
 1. Read the complete diff and identify changed behavior, including implicit

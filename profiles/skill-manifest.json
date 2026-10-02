@@ -45,7 +45,7 @@
       "upstream": "pstack",
       "source": "skills/blast-radius/SKILL.md",
       "sourceDigest": "20cb2945f5fe62055166f745107274af5f19428ca033e53a9b8bc69650d3ded1",
-      "targetDigest": "ca63c902c065c3de95d5c7f5db665b4cf8c3b881eafbef9dde3db66ca340a752"
+      "targetDigest": "72113714dc5e7ef634a8b220e3a8dacea7b0e82d1f24136c13e04013749ef41a"
     },
     "skills/bro/SKILL.md": {
       "upstream": "pstack",
@@ -128,7 +128,7 @@
       "upstream": "pstack",
       "source": "skills/figure-it-out/SKILL.md",
       "sourceDigest": "e041c64a39f1084a20e60ee99762c4dbd3ec8be56ed33fd68ea867b8bd8bd3e4",
-      "targetDigest": "a892d780bae548ec537ad1edea44b11ab85c3223345c84276f567ef30bfdca97"
+      "targetDigest": "37c25a3c0b354da74e33a2a291fc21e62140304eee2447ed73400bc2759402ec"
     },
     "skills/how/references/explainer-prompt.md": {
       "upstream": "pstack",
@@ -152,7 +152,7 @@
       "upstream": "pstack",
       "source": "skills/interrogate/references/code-quality-review.md",
       "sourceDigest": "623d3d8122d075c303b562783b471a732992e84166b318f85ab6d6c118b13304",
-      "targetDigest": "623d3d8122d075c303b562783b471a732992e84166b318f85ab6d6c118b13304"
+      "targetDigest": "79162fda183eafd40d51661fbb5e151c7ba250f89e506ba17f5bd135dcbd50a8"
     },
     "skills/interrogate/references/lead-judgment.md": {
       "upstream": "pstack",
@@ -164,13 +164,13 @@
       "upstream": "pstack",
       "source": "skills/interrogate/references/reviewer-prompt.md",
       "sourceDigest": "a397cc61102add709803d917fb23d726920525bf23e7c06dc4ed0b5cbeb00e54",
-      "targetDigest": "a397cc61102add709803d917fb23d726920525bf23e7c06dc4ed0b5cbeb00e54"
+      "targetDigest": "e0598e254792b56de39bb16b1e6db559b03a522fdc54b98f942d254090920ae6"
     },
     "skills/interrogate/references/rubric.md": {
       "upstream": "pstack",
       "source": "skills/interrogate/references/rubric.md",
       "sourceDigest": "59e9b7cc4556e735e1b859a7dd1f7637b013a2426a84825ac1c51979942c158a",
-      "targetDigest": "59e9b7cc4556e735e1b859a7dd1f7637b013a2426a84825ac1c51979942c158a"
+      "targetDigest": "a85aa801abbaf14434f00579440abc0d8e2723227ba8bf57de7cca8d6e7d2f25"
     },
     "skills/interrogate/SKILL.md": {
       "upstream": "pstack",
@@ -206,7 +206,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-full.md",
       "sourceDigest": "2042a89a0399b5fe700110bc03746899536c10f0df186e9fb15bbd4a2f6dfce5",
-      "targetDigest": "dcc69e752a90147f9097a8462d77dec327e42957b12122311b304c95b3e62ede"
+      "targetDigest": "80b6f7d54b4430a1ee416ff2da72330bc480243afebab85a488b77b7bc8ab7d2"
     },
     "skills/meta-mode/playbooks/autopilot-stack.md": {
       "upstream": "pstack",
@@ -224,7 +224,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/bug-fix.md",
       "sourceDigest": "e958c67d5454fc12d76ec645b50dfd85c423082aac13a49e2913ef2815948216",
-      "targetDigest": "930fd89634d0377fc9a3209baca2452fd5143827ebdfa38047b81450aa7d11b1"
+      "targetDigest": "8872387c8893159c2557929af3c2b35270b245ace9aa04b76f3d8f622b526d2d"
     },
     "skills/meta-mode/playbooks/eval.md": {
       "upstream": "pstack",
@@ -236,7 +236,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/feature.md",
       "sourceDigest": "430dae0fd736554ff7dffc3ef0644c9f0c845e25742f69e598c35b9b89660301",
-      "targetDigest": "975a25bc49aa6d6e3d7c1ce984bde5814cab6af4eba6758449b0f81f7d47e876"
+      "targetDigest": "f9ac3784c615c1e84d40ec30ede16872988dcb8364d480343e4d98b7961f06c2"
     },
     "skills/meta-mode/playbooks/hillclimb.md": {
       "upstream": "pstack",
@@ -272,7 +272,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/pause-safely.md",
       "sourceDigest": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd",
-      "targetDigest": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd"
+      "targetDigest": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d"
     },
     "skills/meta-mode/playbooks/perf-issue.md": {
       "upstream": "pstack",
@@ -290,7 +290,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/refactoring.md",
       "sourceDigest": "53bac1f1fe886600dd1991b5511b7975e6a206168038f9d282d88e45408e93cf",
-      "targetDigest": "4b71e75dc42e0ebf3a459a4cb6e36f88d6ba850dad4713f93e9f6f46c17abaf9"
+      "targetDigest": "81761553c8cb8a76beb38184b2c2f2a0d419aa64c987cc7896f4771cd7d4e021"
     },
     "skills/meta-mode/playbooks/runtime-forensics.md": {
       "upstream": "pstack",
@@ -308,7 +308,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/shipping.md",
       "sourceDigest": "c301902136e0a9a0a55403c35374f6f5738e501aee66c27458dc197b87557550",
-      "targetDigest": "09ff98c955958fdf9b062ddafa292e1b6d2f9ae5d3a3eb11e3d979b950568828"
+      "targetDigest": "0102de98f44f1b9921352fe60dbd3789710985bed2a491fd033bf012a1a812b2"
     },
     "skills/meta-mode/playbooks/trace-forensics.md": {
       "upstream": "pstack",
@@ -333,6 +333,11 @@
       "source": "skills/poteto-mode/references/bugbot-triage.md",
       "sourceDigest": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
       "targetDigest": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309"
+    },
+    "skills/meta-mode/references/build-output-reuse.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "e4e8c096a34b48d5e60410c5493c35a034cc2759bd4009ffe5c6fe8dc4c82321"
     },
     "skills/meta-mode/references/capability-matrix.md": {
       "upstream": null,
@@ -403,7 +408,7 @@
       "upstream": "pstack",
       "source": "skills/principle-guard-the-context-window/SKILL.md",
       "sourceDigest": "9f60e2c79b35f865cb103462f9128c6760b70f603475d1e535e5930f61840f66",
-      "targetDigest": "d42b8f8b02cdcb4f84b466ffcd623ca911a8bbf93b46b545d8b3ca4e950b2580"
+      "targetDigest": "7a0a9540d4c0e8053ace79628d0a493444a82d1bbe1d8e94c8e561606c3d2912"
     },
     "skills/principle-laziness-protocol/SKILL.md": {
       "upstream": "pstack",
@@ -439,19 +444,19 @@
       "upstream": "pstack",
       "source": "skills/principle-never-block-on-the-human/SKILL.md",
       "sourceDigest": "d82bce9ab9193249d1ec0d514202d89602f0fd3d312174d622c2dd222bae5a2e",
-      "targetDigest": "15d583bb6125a88dd0ff375bfdbdc1ac874027bf741cda5f6f4d3e939363051e"
+      "targetDigest": "90cd48f4082367fe70fc1659fec5a8d0e76a40cb7f9be4797b4b460cec28a4dd"
     },
     "skills/principle-outcome-oriented-execution/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/principle-outcome-oriented-execution/SKILL.md",
       "sourceDigest": "beedcaed75572a6a1662d47f16da203c2bd2c9dbffbbd678d4ba187d67b7e670",
-      "targetDigest": "f2fe80adf2da1e1e15aa1d1b465f1cb963acb05114be9032a89ae6ead06df288"
+      "targetDigest": "922ade1be5f671575b3c93367c3d08c9dbb2f7444a42bacbfb834656724d61ac"
     },
     "skills/principle-prove-it-works/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/principle-prove-it-works/SKILL.md",
       "sourceDigest": "ae13d287984a5864312b6286899d4ee2b60f8272b5e5e8fcc586a7c3ea51020b",
-      "targetDigest": "eb89aa6f3283cd73ba56d6cc01e0d4b9ec12367144988525b2c43761cbed4ada"
+      "targetDigest": "69fe19f428387ffbdf60d81fa6817272f1f88bc30ec7cd7edad408ce607ff39c"
     },
     "skills/principle-redesign-from-first-principles/SKILL.md": {
       "upstream": "pstack",
@@ -469,7 +474,7 @@
       "upstream": "pstack",
       "source": "skills/principle-sequence-verifiable-units/SKILL.md",
       "sourceDigest": "761390804ee36c32f5338d8db47ec54463d40ff96dbb296dfafabcd5f2593eec",
-      "targetDigest": "84bf426fd9c7f2bb8561baad84a06bb5b2c78534e7599bdd3fde47ce5596d707"
+      "targetDigest": "bc512996a3f226d1964444341e3fab1bda7f1b2928b136ab406ac4486150430f"
     },
     "skills/principle-subtract-before-you-add/SKILL.md": {
       "upstream": "pstack",
@@ -539,7 +544,7 @@
       "upstream": "pstack",
       "source": "skills/setup-pstack/SKILL.md",
       "sourceDigest": "5acdc3db4f15f3e9b81fb56eab7f17cdccde1a11a40053ed7743f7467729c8a9",
-      "targetDigest": "5fbe454ff5cea061d8b29e5be4a0eb1d2f040f99927f23ccd6007ec5c02e5b6a"
+      "targetDigest": "ede1efcab2c6503521faed92ab691df87dd92b48e33c66cc57d72d4ea4c5ff82"
     },
     "skills/show-me-your-work/references/decision-log-template.tsv": {
       "upstream": "pstack",
@@ -570,7 +575,7 @@
       "upstream": "pstack",
       "source": "skills/tdd/SKILL.md",
       "sourceDigest": "011cab0ecc04a3632121efb493ae4d60aa282a9b72c66de74dd8ad7e4313e05a",
-      "targetDigest": "bb077c26ad22c0171f3c06e72d288556a46a8fce34164ea7da686d78c135544c"
+      "targetDigest": "4930d09f2ca2dd47487c66d21d82bd376e35cd70bb8e42bfad5e19506c2ca2df"
     },
     "skills/teach/SKILL.md": {
       "upstream": "pstack",
@@ -582,7 +587,7 @@
       "upstream": "pstack",
       "source": "skills/technical-writing/SKILL.md",
       "sourceDigest": "6d6d9e625ae412ee8f36df8deb6fd9203d7c6acca776d5ee3cabbb9126f8b84c",
-      "targetDigest": "40dafbe83d76600dfd9417bb3861b2a73ac75010838412a10b8fa2b82b00b9a0"
+      "targetDigest": "a450d685f477833640054828477fff97e1fd4ffb396a845b512d131b633c1919"
     },
     "skills/typescript-best-practices/references/patterns.md": {
       "upstream": "pstack",
@@ -600,7 +605,7 @@
       "upstream": "pstack",
       "source": "skills/unslop/SKILL.md",
       "sourceDigest": "c6d2572294d933a428211921069e9a248490e9b466ca59437cb4d9de248600ca",
-      "targetDigest": "6948335a00f9fed7a29204b9f08f74a9d9596d90989fd06f58f02d984ceab6f3"
+      "targetDigest": "290a10a90e52f080fdf0f225f043088990b5cd8d8b8307c800a91cfeb1568aa4"
     },
     "skills/why/references/epistemics.md": {
       "upstream": "pstack",
