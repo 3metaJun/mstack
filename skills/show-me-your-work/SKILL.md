@@ -55,18 +55,37 @@ deliverable, such as a major migration or cross-language port.
 - Prefer evidence made by committed, rerunnable scripts.
 - Never place credentials, raw private messages, or sensitive payloads in a row.
 
+## Run boundaries
+
+A run is one agent conversation, including later turns and summaries. A pickup,
+replacement agent, or new chat starts a new run. Keep the coordinator as the
+sole writer; transfer that ownership before another run appends.
+
+When appending to a log with existing rows, first append a row with phase
+`start`. Its decision names the timestamp range of preceding rows this run did
+not write; its evidence identifies the current run, such as an agent ID or
+session pointer. Reserve `start` for this purpose. Before appending in a later
+turn, read the last rows. If another run wrote a `start` row since this run's
+last entry, append a new `start` row before continuing.
+
 ## Audit before handoff
 
-Compare the log with the current run's interaction trace. Use the active
+Audit only this run's stretches. Each starts at its `start` row, or the first
+row if this run created the log, and ends at another run's next `start` row.
+Compare those rows with the current run's interaction trace. Use the active
 harness's current-session API or transcript pointer when exposed. If the
 harness does not expose the current session, compare against the commands,
 messages, diffs, and artifacts still present in the current context, and mark
 the transcript portion unavailable:
 
-1. Confirm every row maps to a real action.
+1. Confirm every row in this run's stretches maps to a real decision or action.
 2. Resolve every evidence pointer and verify its claim.
 3. Add omitted pivots or abandoned approaches that affected the outcome.
-4. Remove padding that would not help a reviewer.
+4. Correct invented, padded, or inaccurate rows by appending a superseding row
+   with the actual outcome and a resolvable pointer. The audit preserves history.
+
+Do not audit other runs' rows as your own. If this run's work proves an earlier
+row wrong, append a correction with the evidence.
 
 When an independent reviewer or subagent is available, ask it to inspect the
 trail and artifacts for weak evidence, skipped verification, risky choices, and
