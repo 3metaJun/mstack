@@ -18,11 +18,10 @@ test can be written cheaply.
 4. Run it before the fix and confirm it fails for the intended reason.
 5. Make the smallest production change that fixes the cause.
 6. Run the new test and confirm it passes.
-7. Run nearby tests, type checks, lint, or scenario checks in proportion to risk.
 
 ## When a failing test is impractical
 
-Explain why before fixing, then use the closest executable proof: a targeted
+Use the closest executable proof instead: a targeted
 script, reproduction command, browser path, snapshot comparison, log assertion,
 or focused integration check.
 
@@ -37,5 +36,4 @@ large fixture churn, or infrastructure that costs more than the bug warrants.
 - Make flaky signals deterministic where practical.
 - Fix the focused case before expanding to sibling coverage.
 
-Report the failing-before evidence, passing-after evidence, and adjacent checks.
-If red-before could not be demonstrated, say why.
+Report the failing-before and passing-after evidence.

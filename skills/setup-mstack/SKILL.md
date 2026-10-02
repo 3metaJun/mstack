@@ -1,6 +1,6 @@
 ---
 name: setup-mstack
-description: "Configure the model used by each mstack role. Use for /setup-mstack, configuring mstack models, or changing model choices."
+description: "Configure models and reasoning budgets for mstack roles. Use for /setup-mstack, configuring mstack models, changing model choices, or setting a reasoning budget."
 ---
 
 # Set up mstack models
@@ -21,9 +21,45 @@ portable so the same role names work in every supported Harness.
 
 Do not write a model name that the current Harness did not report as available.
 
+## Select a reasoning budget
+
+Ask for the reasoning budget when configuring models. Show the current
+Harness's value from `budgets` when present. Offer these choices:
+
+- `unlimited`: Keep the selected models' effort levels.
+- `large`: Target `xhigh` reasoning.
+- `medium`: Target `high` reasoning.
+- `small`: Target `medium` reasoning.
+
+Aliases `inherit-parent` and `auto` remain unchanged. They do not enforce an
+effort level. For a concrete model name ending in `-max`, `-xhigh`, `-high`,
+`-medium`, or `-low`, optionally followed by `-fast`, replace only that effort
+token. Accept the rewritten name only if the selected Harness reports it as
+available. Otherwise choose the highest detected effort at or below the target
+with the same model stem and `-fast` suffix. Preserve the user's chosen model
+family and version. If no such name exists, ask for a model choice or use the
+Harness's separate reasoning setting. A model name with no effort suffix also
+needs that separate setting; do not invent a suffix.
+
+In a repository checkout, save the current Harness's detected concrete model
+names as a JSON array, then preview the rewrite with:
+
+```bash
+node scripts/model-budget.mjs --harness <name> --budget <label> --catalog <detected-models.json> --file <models.json>
+```
+
+After the user confirms the preview, repeat with `--apply`. The command writes
+only the selected Harness's role overrides and `budgets` entry. It refuses all
+writes when a model is unresolved or reviewer entries collapse to duplicates.
+Without this CLI, apply the same rules directly and verify the file afterward.
+This budget selects reasoning effort, not a token or monetary spending cap.
+
 ## Write the configuration
 
-Store a JSON object with a `roles` object and an optional `overrides` object.
+Store a JSON object with a `roles` object, an optional `overrides` object, and
+an optional `budgets` object keyed by Harness. A budget value is `unlimited`,
+`large`, `medium`, or `small`; it records the selection, while the rewritten
+role values are what workers execute.
 Use these roles:
 
 - `implementer` for feature and refactoring workers.

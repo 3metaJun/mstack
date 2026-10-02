@@ -57,6 +57,14 @@ export function validateModelConfig(config, harnesses) {
       validateRoleValue(role, model, `overrides.${harness}.${role}`, errors);
     }
   }
+  if (config.budgets !== undefined) {
+    if (!config.budgets || typeof config.budgets !== "object" || Array.isArray(config.budgets)) {
+      errors.push("budgets must be an object keyed by Harness");
+    } else for (const [harness, budget] of Object.entries(config.budgets)) {
+      if (!harnesses.includes(harness)) errors.push(`budgets.${harness} names an unsupported harness`);
+      if (!["unlimited", "large", "medium", "small"].includes(budget)) errors.push(`budgets.${harness} must be unlimited, large, medium, or small`);
+    }
+  }
   return errors;
 }
 
