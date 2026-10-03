@@ -5,8 +5,10 @@ import { deflateRawSync } from "node:zlib";
 // Fields accepted by claude.ai uploads and the Skills API. Anything else is a hard
 // error there, even though Claude Code ignores unknown keys.
 export const UPLOAD_FIELDS = new Set(["name", "description", "license", "compatibility", "metadata", "allowed-tools"]);
-export const MAX_ARCHIVE_BYTES = 30 * 1024 * 1024;
 const RESERVED_NAME_WORDS = ["anthropic", "claude"];
+// The Skills API guide limits the total upload to 30 MB uncompressed. claude.ai's own
+// limit is not documented, so this is the closest published bound for either surface.
+export const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
 
 export function splitFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -14,31 +16,44 @@ export function splitFrontmatter(content) {
   return { block: match[1], body: content.slice(match[0].length) };
 }
 
-// Reads top-level scalar keys, including folded (>) and literal (|) blocks. Nested
-// maps such as `metadata` are reported by key only, which is all upload validation needs.
+// Reads top-level keys, including folded (>) and literal (|) blocks and plain or quoted
+// scalars that wrap onto indented lines. Nested maps such as `metadata` are reported
+// by key only, which is all upload validation needs.
 export function parseTopLevel(block) {
   const fields = new Map();
   const lines = block.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
-    const match = lines[i].match(/^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$/);
+    const match = lines[i].match(/^([A-Za-z][A-Za-z0-9_-]*):(?:\s+(.*))?$/);
     if (!match) continue;
-    const [, key, rest] = match;
+    const [, key, rest = ""] = match;
     if (fields.has(key)) throw new Error(`duplicate frontmatter key ${key}`);
-    const indicator = rest.match(/^([>|])[+-]?$/);
     const continuation = [];
     while (i + 1 < lines.length && (lines[i + 1] === "" || /^\s/.test(lines[i + 1]))) {
       continuation.push(lines[(i += 1)]);
     }
+    const text = continuation.map((line) => line.trim()).filter(Boolean);
+    const indicator = rest.match(/^([>|])[+-]?$/);
     if (indicator) {
-      const text = continuation.map((line) => line.trim()).filter(Boolean);
       fields.set(key, indicator[1] === ">" ? text.join(" ") : text.join("\n"));
-    } else if (rest === "" && continuation.some((line) => line.trim())) {
-      fields.set(key, continuation);
+    } else if (rest === "") {
+      fields.set(key, text.length ? continuation : "");
     } else {
-      fields.set(key, rest.replace(/^(["'])(.*)\1$/, "$2"));
+      fields.set(key, parseScalar(key, [rest.trim(), ...text].join(" ")));
     }
   }
   return fields;
+}
+
+function parseScalar(key, raw) {
+  const double = raw.match(/^"((?:[^"\\]|\\.)*)"\s*(?:#.*)?$/);
+  if (double) return double[1].replace(/\\(["\\])/g, "$1");
+  const single = raw.match(/^'((?:[^']|'')*)'\s*(?:#.*)?$/);
+  if (single) return single[1].replace(/''/g, "'");
+  const plain = raw.replace(/\s+#.*$/, "");
+  // Claude Code's reader accepts this, but a strict YAML parser rejects it. Flow
+  // collections such as `{a: b}` legitimately contain ": ".
+  if (!/^[{[]/.test(plain) && /:\s/.test(plain)) throw new Error(`frontmatter ${key} contains ": " and must be quoted`);
+  return plain;
 }
 
 export function validateUploadFrontmatter(skill, content) {
@@ -55,7 +70,9 @@ export function validateUploadFrontmatter(skill, content) {
   const name = fields.get("name");
   if (name !== skill) problems.push(`${skill}: frontmatter name must equal the directory name for upload`);
   if (typeof name === "string") {
-    if (!/^[a-z0-9-]{1,64}$/.test(name)) problems.push(`${skill}: name must be 1-64 lowercase letters, digits, or hyphens`);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name) || name.length > 64) {
+      problems.push(`${skill}: name must be 1-64 lowercase letters, digits, and single hyphens, none at either end`);
+    }
     if (RESERVED_NAME_WORDS.some((word) => name.includes(word))) problems.push(`${skill}: name contains a reserved word`);
   }
   const description = fields.get("description");
@@ -83,18 +100,126 @@ export function listFiles(directory) {
 
 // An uploaded skill is isolated: links into sibling skills or the wider repository
 // resolve nowhere. Replace each such link with its text and a pointer by skill name.
-export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
-  return content.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (whole, text, target) => {
-    if (/^(?:[a-z][a-z0-9+.-]*:|#)/i.test(target)) return whole;
-    const resolved = resolve(dirname(filePath), target.split("#")[0]);
-    if (resolved === skillRoot || resolved.startsWith(skillRoot + sep)) return whole;
+// Code fences and inline code are left alone. A reference-style definition cannot be
+// rewritten without changing its uses, so one that leaves the skill is an error when
+// its label is used.
+// A label holds no bare `[` and no blank line, so a stray bracket cannot pair with a link
+// in a later paragraph.
+const INLINE_LINK = /(!?)\[((?:[^[\]\n]|\n(?!\s*\n))*)\]\((?:<([^>]+)>|((?:[^()\s]|\([^()\s]*\))+))(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
+const LINK_DEFINITION = /^ {0,3}\[([^\]]+)\]:\s*<?([^\s>]+)/;
+const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i;
+
+function resolveTarget(target, filePath) {
+  const path = target.split(/[?#]/)[0];
+  let decoded = path;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    // Not valid percent-encoding, so the raw text is the path.
+  }
+  return resolve(dirname(filePath), decoded);
+}
+
+function staysInside(resolved, skillRoot) {
+  return resolved === skillRoot || resolved.startsWith(skillRoot + sep);
+}
+
+function rewriteInline(text, filePath, skillRoot, skillsRoot) {
+  return text.replace(INLINE_LINK, (whole, _bang, label, angled, plain) => {
+    const target = angled ?? plain;
+    if (EXTERNAL.test(target)) return whole;
+    const resolved = resolveTarget(target, filePath);
+    if (staysInside(resolved, skillRoot)) return whole;
     if (resolved.startsWith(skillsRoot + sep)) {
       const [sibling, ...rest] = relative(skillsRoot, resolved).split(sep);
       const inner = rest.filter((part) => part !== "SKILL.md").join("/");
-      return `${text} (the \`${sibling}\` skill${inner ? `, \`${inner}\`` : ""})`;
+      return `${label} (the \`${sibling}\` skill${inner ? `, \`${inner}\`` : ""})`;
     }
-    return text;
+    return label;
   });
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// A definition only matters when something uses its label, so prose such as
+// "[Note]: /tmp/x is the dir" is not an error. Multi-line definitions are not detected.
+function assertNoEscapingDefinitions(text, filePath, skillRoot, skillsRoot) {
+  for (const line of text.split(/\r?\n/)) {
+    const definition = line.match(LINK_DEFINITION);
+    if (!definition || EXTERNAL.test(definition[2]) || staysInside(resolveTarget(definition[2], filePath), skillRoot)) continue;
+    const label = escapeRegExp(definition[1]);
+    const used = new RegExp(`\\]\\[${label}\\]|\\[${label}\\]\\[\\]|\\[${label}\\](?![:(\\[])`, "i");
+    const uses = text.split(/\r?\n/).filter((other) => other !== line).some((other) => used.test(other));
+    if (uses) throw new Error(`${relative(skillsRoot, filePath)}: reference-style link leaves the skill: ${definition[2]}`);
+  }
+}
+
+function rewriteProse(text, filePath, skillRoot, skillsRoot) {
+  // Code spans are masked so link syntax inside them survives, while a span inside a
+  // link label does not stop the link from being rewritten.
+  const spans = [];
+  const masked = text.replace(/(``[^\n]*?``|`[^`\n]*`)/g, (span) => `\u0000${spans.push(span) - 1}\u0000`);
+  return rewriteInline(masked, filePath, skillRoot, skillsRoot).replace(/\u0000(\d+)\u0000/g, (_, index) => spans[index]);
+}
+
+// Fenced code passes through untouched. Prose between fences is rewritten as one block,
+// because a link label may wrap across lines. Definitions are checked over all prose in
+// the file, since a definition usually sits after the fences that its uses precede.
+export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
+  // The code-span mask uses NUL as its delimiter.
+  if (content.includes("\u0000")) throw new Error(`${relative(skillsRoot, filePath)}: contains a NUL byte`);
+  const parts = content.split(/(\r?\n)/);
+  const segments = [];
+  let prose = "";
+  let fence = null;
+  let rawLine = false;
+  const flush = () => {
+    if (prose) segments.push({ prose });
+    prose = "";
+  };
+  parts.forEach((part, index) => {
+    if (index % 2) {
+      if (rawLine) segments.push({ raw: part });
+      else prose += part;
+      return;
+    }
+    // A backtick fence's info string cannot contain a backtick, or it is inline code.
+    const opener = part.match(/^ {0,3}(`{3,}(?=[^`]*$)|~{3,})/)?.[1];
+    if (fence) {
+      rawLine = true;
+      if (opener && opener[0] === fence.char && opener.length >= fence.length && /^\s*$/.test(part.slice(part.indexOf(opener) + opener.length))) {
+        fence = null;
+      }
+    } else if (opener) {
+      fence = { char: opener[0], length: opener.length };
+      rawLine = true;
+    } else {
+      rawLine = false;
+    }
+    if (rawLine) {
+      flush();
+      segments.push({ raw: part });
+    } else {
+      prose += part;
+    }
+  });
+  flush();
+  assertNoEscapingDefinitions(
+    segments.map((segment) => segment.prose).filter((text) => text !== undefined).join("\n"),
+    filePath,
+    skillRoot,
+    skillsRoot,
+  );
+  return segments
+    .map((segment) => segment.raw ?? rewriteProse(segment.prose, filePath, skillRoot, skillsRoot))
+    .join("");
+}
+
+export function uploadSizeProblem(skill, files) {
+  const bytes = files.reduce((total, file) => total + file.data.length, 0);
+  return bytes > MAX_UPLOAD_BYTES ? `${skill}: ${bytes} uncompressed bytes exceed the ${MAX_UPLOAD_BYTES} byte upload limit` : null;
 }
 
 export function buildSkillFiles(skill, skillsRoot) {
