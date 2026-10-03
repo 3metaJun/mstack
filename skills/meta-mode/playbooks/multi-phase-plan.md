@@ -40,7 +40,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
   - [ ] `<mstack-skills>/meta-mode/playbooks/opening-a-pr.md`
   - [ ] `<mstack-skills>/<each other leaf skill the program uses>`
 - [ ] Arm the 30-minute audit tick. In a local session, a real terminal `/loop`. In a cloud root, a cloud-sleeper wake chain. Never leave the cadence to memory.
-- [ ] Use this tick prompt, verbatim. "Re-read the execution playbook from the active skill installation and the armed /goal. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then post a status message to the operator in chat, whether or not anything changed, with the queue table of PR, owner, state, and head SHA, the verdicts since the last tick, what merged, open operator gates, and blockers."
+- [ ] Use this tick prompt, verbatim. "Re-read the execution playbook from the active skill installation and the armed /goal. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then post a short status message only for tracked changes not reported earlier, such as a PR opened, code-ready head, round started or closed, verdict, merge, stuck agent and action taken, blocker added or cleared, or operator decision. Name those changes without repeating unchanged tables or blockers. With no new change, end the turn without reply text. Either way, append a decision-log row naming the reported items or none."
 - [ ] On the operator's hold or stand-down, send every owner a zero-writes order at once.
 
 ### Spawn owners
@@ -59,12 +59,13 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run `unslop` before each commit and `no-comments` before review.
 - [ ] Triage every Bugbot and security-reviewer comment per `../references/bugbot-triage.md`.
-- [ ] Rebase onto current trunk before babysit and again before the merge-ready report.
+- [ ] Rebase onto current trunk before the code-ready report and babysit. Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure caused by a change on trunk. In Autopilot-stack, the root performs topology changes.
+- [ ] Record each child ID, expected runtime, and state in `children.tsv` per Autopilot-full step 2.
 
 ### Verdict and merge, for every PR
 
-- [ ] At the merge-ready head SHA, run the swarm per `<mstack-skills>/swarm/SKILL.md`. One gates lane. The ten live lanes from the PR's **Verify, live** block. The perf lane from its **Verify, perf** block. One audit lane that reads the diff and the receipts and distrusts the PR body.
-- [ ] Clean only when every lane is `PASS`. Findings go back to the owner. A new head gets a fresh swarm and a fresh verdict.
+- [ ] At the code-ready head SHA and each later push that changes the patch, run the swarm per `<mstack-skills>/swarm/SKILL.md`. One gates lane. The ten live lanes from the PR's **Verify, live** block. The perf lane from its **Verify, perf** block. Two or more audit lanes with separate focuses read the diff and receipts, distrusting the PR body. The root audits merge-ready or STACK-READY receipts before the verdict.
+- [ ] Clean only when every lane is `PASS`. Send every proven finding to the owner, including defects filed as notes. Carry defects and their red tests or repro receipts into the next round. A new head gets a fresh swarm and verdict except for results still valid under `playbooks/shipping.md`.
 - [ ] <The merge or append rule from the execution playbook, with the patch-id rule from `playbooks/shipping.md`.>
 
 ### Boot recipe, for every live lane
@@ -128,7 +129,7 @@ Each live lane runs in its own configured environment at the PR head. Drive it w
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Rebased onto current trunk after the verdict, patch-id unchanged.
+- [ ] Rebased onto current trunk during merge prep, CI green at the new head, and the verdict still valid under `playbooks/shipping.md`.
 - [ ] <The owner squash-merges its own PR, or the root appends it to the base-branch stack and the operator lands it bottom-up.>
 
 ## Close the program

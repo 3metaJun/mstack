@@ -206,19 +206,19 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-full.md",
       "sourceDigest": "2042a89a0399b5fe700110bc03746899536c10f0df186e9fb15bbd4a2f6dfce5",
-      "targetDigest": "be9eeb3df8df26671d5e134b14b337d9b2fa311e096d1ee6c66c06c6c55c047b"
+      "targetDigest": "dcc69e752a90147f9097a8462d77dec327e42957b12122311b304c95b3e62ede"
     },
     "skills/meta-mode/playbooks/autopilot-stack.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
       "sourceDigest": "60e0d997f7b369004a02089c71b9091d3f8e9bc0b4a3c1142598380faa7722fd",
-      "targetDigest": "7a3dd0ab570560e1051e38fd16711914dacd476202be358e25c0f34c917a2b45"
+      "targetDigest": "33c6e9c2e2db8b62bbe3f394eb7161a2895cbe4bcd915cbbc28db69250d4fafa"
     },
     "skills/meta-mode/playbooks/babysit.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/babysit.md",
       "sourceDigest": "51be21872152f97612d37258273269b88212b6696432d25d678cac30f02f4157",
-      "targetDigest": "a62385a3c3c3f9f7a54a04b313f76cc5176c188d7b25c32e510208451b3ed026"
+      "targetDigest": "d52fed9c782e79df75e2e0f4f6344bc764e7aded1e5b8ac880ffdcc69dc9768f"
     },
     "skills/meta-mode/playbooks/bug-fix.md": {
       "upstream": "pstack",
@@ -254,13 +254,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
       "sourceDigest": "b823e05b64bbef84ae5169717c5fab1d9ab5079625996271e3aa7abcdce7b8ad",
-      "targetDigest": "51f824fa3caae6bd0fd69852f66387ef2e203e6c15f8f8982cf20d0d22965bf1"
+      "targetDigest": "b4771a313aa64ea72edec9133aa4f88795ee755f78240952fdc1f19d450f62a4"
     },
     "skills/meta-mode/playbooks/opening-a-pr.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/opening-a-pr.md",
       "sourceDigest": "b173ff9638ff62f91f6813c1a0ed3417cdf9f6545a659be0c1fb1f42130e0e66",
-      "targetDigest": "143945e5ded37c8d5b2bc0b3889d2af95ecf884dca1edfe597c59abf387a4200"
+      "targetDigest": "81cc0748aa97accbee24b743fd03852f20f31722c857569e2b7030d8dcea071f"
     },
     "skills/meta-mode/playbooks/orchestrate.md": {
       "upstream": "pstack",
@@ -509,13 +509,13 @@
       "upstream": "pstack",
       "source": "skills/reflect/references/divergent-reviewer.md",
       "sourceDigest": "7da0334ce282e6d8d7349c0cff14ffbd10a91a756c0b5c3ccc97291f57b8bed6",
-      "targetDigest": "1e3f57c622107887b6507e1c7fa599367a629ad05273322814cca87614ef5f02"
+      "targetDigest": "6b21c64302826cea77c539f2be4bab2188be2821c1caaec536c16ef94f4ad99d"
     },
     "skills/reflect/references/judgment-reviewer.md": {
       "upstream": "pstack",
       "source": "skills/reflect/references/judgment-reviewer.md",
       "sourceDigest": "917bb2ad21240a42b440aeb2a17766092e09f70d0982417b2f4caa6d74f27164",
-      "targetDigest": "7fec7389146c2d13fbe1e08382041420cfb43df9ac09ec54867eb6f4a7942044"
+      "targetDigest": "eafa6b19333572c21daeebe1506bda066d7dd44f0b0e0f9185ba8b54b2d10a93"
     },
     "skills/reflect/references/synthesizer.md": {
       "upstream": "pstack",
@@ -527,7 +527,7 @@
       "upstream": "pstack",
       "source": "skills/reflect/references/tooling-reviewer.md",
       "sourceDigest": "8c74ebf7811801d634db7ab609b097d77ea00ab77bb4b258d69bd96e671cfa39",
-      "targetDigest": "9766d27b377ca63a2c3dc44ebd8b8ccbde47e5f7c063c19a400e3398ffa6b516"
+      "targetDigest": "c154b4f948cf470d099acd1770925aa1506edf17ba54de833af16c8d8528bc34"
     },
     "skills/reflect/SKILL.md": {
       "upstream": "pstack",
@@ -558,13 +558,13 @@
       "upstream": "pstack",
       "source": "skills/show-me-your-work/SKILL.md",
       "sourceDigest": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",
-      "targetDigest": "d189454d45306b8b2ace4456684fc9dbaf9d3c5305e2fe3c35afed8977f1552f"
+      "targetDigest": "1464cc0dbe44a03df3250456260de8fdfa8535b80e10abaaf9e5b121637919cd"
     },
     "skills/swarm/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/swarm/SKILL.md",
       "sourceDigest": "d578d877c3b8b9de7163f52579c4683337a940acc0fbe4496a498f5d3b27df30",
-      "targetDigest": "015c31b71a020a585b628ed8308245530c008b42facedd3040b385628b3ea599"
+      "targetDigest": "c24493812f03e0165cdbb3dd19e16d376742afe3b07f92cc48575f27883ae729"
     },
     "skills/tdd/SKILL.md": {
       "upstream": "pstack",
