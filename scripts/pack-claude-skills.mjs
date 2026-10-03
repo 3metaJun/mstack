@@ -4,7 +4,6 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCliArgs } from "./cli-args.mjs";
 import {
-  MAX_ARCHIVE_BYTES,
   buildSkillFiles,
   createZip,
   skillPackable,
@@ -25,7 +24,9 @@ function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help")) return console.log(usage);
   const options = parseCliArgs(args, ["--skill", "--out"], ["--check"]);
-  const selected = options["--skill"] ? options["--skill"].split(",").map((name) => name.trim()) : allSkills;
+  const selected = options["--skill"]
+    ? [...new Set(options["--skill"].split(",").map((name) => name.trim()))]
+    : allSkills;
   const unknown = selected.filter((name) => !allSkills.includes(name) || !skillPackable(skillsRoot, name));
   if (unknown.length) throw new Error(`Unknown skill: ${unknown.join(", ")}`);
 
@@ -34,16 +35,20 @@ function main() {
   for (const skill of selected) {
     const content = readFileSync(join(skillsRoot, skill, "SKILL.md"), "utf8");
     problems.push(...validateUploadFrontmatter(skill, content));
-    const files = buildSkillFiles(skill, skillsRoot);
-    const zip = createZip(files);
-    if (zip.length > MAX_ARCHIVE_BYTES) problems.push(`${skill}: archive is ${zip.length} bytes; the limit is ${MAX_ARCHIVE_BYTES}`);
-    archives.push({ skill, zip, count: files.length });
+    try {
+      const files = buildSkillFiles(skill, skillsRoot);
+      archives.push({ skill, zip: createZip(files), count: files.length });
+    } catch (error) {
+      problems.push(`${skill}: ${error.message}`);
+    }
   }
   if (problems.length) throw new Error(problems.map((problem) => `- ${problem}`).join("\n"));
 
   if (options["--check"]) return console.log(`${selected.length} skills are valid for Claude upload.`);
-  const out = options["--out"] ?? "dist/claude-skills";
-  const outDir = isAbsolute(out) ? out : resolve(process.cwd(), out);
+  // An explicit relative --out follows the caller's directory; the default stays in the
+  // repository, where .gitignore covers it, whatever the working directory is.
+  const out = options["--out"];
+  const outDir = out ? (isAbsolute(out) ? out : resolve(process.cwd(), out)) : join(repoRoot, "dist", "claude-skills");
   mkdirSync(outDir, { recursive: true });
   for (const { skill, zip, count } of archives) {
     writeFileSync(join(outDir, `${skill}.zip`), zip);

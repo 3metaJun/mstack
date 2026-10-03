@@ -5,7 +5,6 @@ import { deflateRawSync } from "node:zlib";
 // Fields accepted by claude.ai uploads and the Skills API. Anything else is a hard
 // error there, even though Claude Code ignores unknown keys.
 export const UPLOAD_FIELDS = new Set(["name", "description", "license", "compatibility", "metadata", "allowed-tools"]);
-export const MAX_ARCHIVE_BYTES = 30 * 1024 * 1024;
 const RESERVED_NAME_WORDS = ["anthropic", "claude"];
 
 export function splitFrontmatter(content) {
@@ -14,31 +13,43 @@ export function splitFrontmatter(content) {
   return { block: match[1], body: content.slice(match[0].length) };
 }
 
-// Reads top-level scalar keys, including folded (>) and literal (|) blocks. Nested
-// maps such as `metadata` are reported by key only, which is all upload validation needs.
+// Reads top-level keys, including folded (>) and literal (|) blocks and plain or quoted
+// scalars that wrap onto indented lines. Nested maps such as `metadata` are reported
+// by key only, which is all upload validation needs.
 export function parseTopLevel(block) {
   const fields = new Map();
   const lines = block.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
-    const match = lines[i].match(/^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$/);
+    const match = lines[i].match(/^([A-Za-z][A-Za-z0-9_-]*):(?:\s+(.*))?$/);
     if (!match) continue;
-    const [, key, rest] = match;
+    const [, key, rest = ""] = match;
     if (fields.has(key)) throw new Error(`duplicate frontmatter key ${key}`);
-    const indicator = rest.match(/^([>|])[+-]?$/);
     const continuation = [];
     while (i + 1 < lines.length && (lines[i + 1] === "" || /^\s/.test(lines[i + 1]))) {
       continuation.push(lines[(i += 1)]);
     }
+    const text = continuation.map((line) => line.trim()).filter(Boolean);
+    const indicator = rest.match(/^([>|])[+-]?$/);
     if (indicator) {
-      const text = continuation.map((line) => line.trim()).filter(Boolean);
       fields.set(key, indicator[1] === ">" ? text.join(" ") : text.join("\n"));
-    } else if (rest === "" && continuation.some((line) => line.trim())) {
-      fields.set(key, continuation);
+    } else if (rest === "") {
+      fields.set(key, text.length ? continuation : "");
     } else {
-      fields.set(key, rest.replace(/^(["'])(.*)\1$/, "$2"));
+      fields.set(key, parseScalar(key, [rest.trim(), ...text].join(" ")));
     }
   }
   return fields;
+}
+
+function parseScalar(key, raw) {
+  const double = raw.match(/^"((?:[^"\\]|\\.)*)"\s*(?:#.*)?$/);
+  if (double) return double[1].replace(/\\(["\\])/g, "$1");
+  const single = raw.match(/^'((?:[^']|'')*)'\s*(?:#.*)?$/);
+  if (single) return single[1].replace(/''/g, "'");
+  const plain = raw.replace(/\s+#.*$/, "");
+  // Claude Code's reader accepts this, but a strict YAML parser rejects it.
+  if (/:\s/.test(plain)) throw new Error(`frontmatter ${key} contains ": " and must be quoted`);
+  return plain;
 }
 
 export function validateUploadFrontmatter(skill, content) {
@@ -55,7 +66,9 @@ export function validateUploadFrontmatter(skill, content) {
   const name = fields.get("name");
   if (name !== skill) problems.push(`${skill}: frontmatter name must equal the directory name for upload`);
   if (typeof name === "string") {
-    if (!/^[a-z0-9-]{1,64}$/.test(name)) problems.push(`${skill}: name must be 1-64 lowercase letters, digits, or hyphens`);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name) || name.length > 64) {
+      problems.push(`${skill}: name must be 1-64 lowercase letters, digits, and single hyphens, none at either end`);
+    }
     if (RESERVED_NAME_WORDS.some((word) => name.includes(word))) problems.push(`${skill}: name contains a reserved word`);
   }
   const description = fields.get("description");
@@ -83,18 +96,68 @@ export function listFiles(directory) {
 
 // An uploaded skill is isolated: links into sibling skills or the wider repository
 // resolve nowhere. Replace each such link with its text and a pointer by skill name.
-export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
-  return content.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (whole, text, target) => {
-    if (/^(?:[a-z][a-z0-9+.-]*:|#)/i.test(target)) return whole;
-    const resolved = resolve(dirname(filePath), target.split("#")[0]);
-    if (resolved === skillRoot || resolved.startsWith(skillRoot + sep)) return whole;
+// Code fences and inline code are left alone. A reference-style definition cannot be
+// rewritten without changing its uses, so one that leaves the skill is an error.
+const INLINE_LINK = /(!?)\[([^\]]*)\]\((?:<([^>]+)>|((?:[^()\s]|\([^()\s]*\))+))(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
+const LINK_DEFINITION = /^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)/;
+const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i;
+
+function resolveTarget(target, filePath) {
+  const path = target.split(/[?#]/)[0];
+  let decoded = path;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    // Not valid percent-encoding, so the raw text is the path.
+  }
+  return resolve(dirname(filePath), decoded);
+}
+
+function staysInside(resolved, skillRoot) {
+  return resolved === skillRoot || resolved.startsWith(skillRoot + sep);
+}
+
+function rewriteInline(text, filePath, skillRoot, skillsRoot) {
+  return text.replace(INLINE_LINK, (whole, _bang, label, angled, plain) => {
+    const target = angled ?? plain;
+    if (EXTERNAL.test(target)) return whole;
+    const resolved = resolveTarget(target, filePath);
+    if (staysInside(resolved, skillRoot)) return whole;
     if (resolved.startsWith(skillsRoot + sep)) {
       const [sibling, ...rest] = relative(skillsRoot, resolved).split(sep);
       const inner = rest.filter((part) => part !== "SKILL.md").join("/");
-      return `${text} (the \`${sibling}\` skill${inner ? `, \`${inner}\`` : ""})`;
+      return `${label} (the \`${sibling}\` skill${inner ? `, \`${inner}\`` : ""})`;
     }
-    return text;
+    return label;
   });
+}
+
+export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
+  let fence = null;
+  return content
+    .split(/(\r?\n)/)
+    .map((line) => {
+      const opener = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1];
+      if (fence) {
+        if (opener && opener[0] === fence.char && opener.length >= fence.length && /^\s*$/.test(line.slice(line.indexOf(opener) + opener.length))) {
+          fence = null;
+        }
+        return line;
+      }
+      if (opener) {
+        fence = { char: opener[0], length: opener.length };
+        return line;
+      }
+      const definition = line.match(LINK_DEFINITION)?.[1];
+      if (definition && !EXTERNAL.test(definition) && !staysInside(resolveTarget(definition, filePath), skillRoot)) {
+        throw new Error(`${relative(skillsRoot, filePath)}: reference-style link leaves the skill: ${definition}`);
+      }
+      return line
+        .split(/(``.*?``|`[^`]*`)/)
+        .map((part, index) => (index % 2 ? part : rewriteInline(part, filePath, skillRoot, skillsRoot)))
+        .join("");
+    })
+    .join("");
 }
 
 export function buildSkillFiles(skill, skillsRoot) {

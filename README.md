@@ -89,8 +89,9 @@ npm run pack-claude-skills -- --check
 ```
 
 The command validates every skill against the upload limits (1024-character
-description, no XML tags, name equal to the directory, 30 MB archive) and writes
-`<skill>.zip` with the skill folder at the archive root. Uploaded skills are
+description, no XML tags, name equal to the directory, no leading, trailing, or
+consecutive hyphens) and writes `<skill>.zip` with the skill folder at the
+archive root. Uploaded skills are
 isolated from each other, so links to sibling skills become plain text that
 names the skill. Uploaded skills cannot reach the `meta-mode-tools` artifact, so
 use the plugin or the installer in Claude Code for orchestration and PR

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,6 +101,71 @@ test("unknown skills fail before writing", () => {
       () => execFileSync(process.execPath, [join(repoRoot, "scripts", "pack-claude-skills.mjs"), "--skill", "nope", "--out", dir], { stdio: "pipe" }),
       /Unknown skill: nope/,
     );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("link rewriting skips code, handles images, parentheses, angle brackets, and queries", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  const rewrite = (text) => rewriteEscapingLinks(text, file, root, skillsRoot);
+  assert.equal(rewrite("![fig](../b/img.png)"), "fig (the `b` skill, `img.png`)");
+  assert.equal(rewrite("[x](../b/foo(1).md)"), "x (the `b` skill, `foo(1).md`)");
+  assert.equal(rewrite("[x](<../b/my doc.md>)"), "x (the `b` skill, `my doc.md`)");
+  assert.equal(rewrite("[x](../b/SKILL.md?plain=1#top \"title\")"), "x (the `b` skill)");
+  assert.equal(rewrite("[x](../b/my%20doc.md)"), "x (the `b` skill, `my doc.md`)");
+  assert.equal(rewrite("`[x](../b/SKILL.md)` and ``[y](../b/SKILL.md)``"), "`[x](../b/SKILL.md)` and ``[y](../b/SKILL.md)``");
+  const fenced = "```md\n[x](../b/SKILL.md)\n```\n[x](../b/SKILL.md)\n~~~\n[z](../b/SKILL.md)\n~~~";
+  assert.equal(rewrite(fenced), "```md\n[x](../b/SKILL.md)\n```\nx (the `b` skill)\n~~~\n[z](../b/SKILL.md)\n~~~");
+  assert.equal(rewrite("[in](./k.md)\r\n[out](../b/SKILL.md)"), "[in](./k.md)\r\nout (the `b` skill)");
+});
+
+test("reference-style links that leave the skill are rejected", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  assert.throws(() => rewriteEscapingLinks("[x][ref]\n\n[ref]: ../b/SKILL.md", file, root, skillsRoot), /reference-style link leaves the skill/);
+  assert.equal(rewriteEscapingLinks("[ref]: ./local.md\n[w]: https://e.com", file, root, skillsRoot), "[ref]: ./local.md\n[w]: https://e.com");
+});
+
+test("frontmatter parser joins wrapped scalars, unescapes quotes, and rejects unquoted colons", () => {
+  const fields = parseTopLevel('name: demo\ndescription: one\n  two\nlicense: "say \\"hi\\"" # note\ncompatibility: \'it\'\'s\'\n');
+  assert.equal(fields.get("description"), "one two");
+  assert.equal(fields.get("license"), 'say "hi"');
+  assert.equal(fields.get("compatibility"), "it's");
+  assert.throws(() => parseTopLevel("description: Use for: things"), /must be quoted/);
+  assert.match(validateUploadFrontmatter("demo", "---\nname: demo\ndescription: Use for: things\n---\n").join(), /must be quoted/);
+});
+
+test("name rules follow the Agent Skills specification", () => {
+  for (const name of ["-demo", "demo-", "de--mo", "Demo", "d".repeat(65)]) {
+    assert.match(validateUploadFrontmatter(name, `---\nname: ${name}\ndescription: d\n---\n`).join(), /name must be 1-64/, name);
+  }
+  assert.deepEqual(validateUploadFrontmatter("a1-b2", "---\nname: a1-b2\ndescription: d\n---\n"), []);
+});
+
+test("default output stays in the repository when run from another directory", () => {
+  const target = join(repoRoot, "dist", "claude-skills");
+  const existed = existsSync(target);
+  const cwd = mkdtempSync(join(tmpdir(), "mstack-cwd-"));
+  try {
+    execFileSync(process.execPath, [join(repoRoot, "scripts", "pack-claude-skills.mjs"), "--skill", "architect"], { cwd });
+    assert.equal(existsSync(join(target, "architect.zip")), true);
+    assert.equal(existsSync(join(cwd, "dist")), false);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+    if (!existed) rmSync(join(repoRoot, "dist"), { recursive: true, force: true });
+    else rmSync(join(target, "architect.zip"), { force: true });
+  }
+});
+
+test("repeated --skill names write one archive", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mstack-pack-"));
+  try {
+    const out = execFileSync(process.execPath, [join(repoRoot, "scripts", "pack-claude-skills.mjs"), "--skill", "bro,bro", "--out", dir], { encoding: "utf8" });
+    assert.match(out, /Wrote 1 archives/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
