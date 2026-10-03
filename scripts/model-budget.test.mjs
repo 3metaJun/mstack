@@ -15,7 +15,8 @@ function fixture(t, config, models) {
   writeFileSync(file, JSON.stringify(config));
   writeFileSync(catalog, JSON.stringify(models));
   const run = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", file, "--catalog", catalog, "--harness", "pi", "--budget", budget, ...flags], { encoding: "utf8" });
-  return { root, file, catalog, run };
+  const runAt = (target, budget, ...flags) => spawnSync(process.execPath, [script, "--file", target, "--catalog", catalog, "--harness", "pi", "--budget", budget, ...flags], { encoding: "utf8" });
+  return { root, file, catalog, run, runAt };
 }
 
 test("budget preview and apply preserve aliases, families and other Harness choices", (t) => {
@@ -79,6 +80,15 @@ test("missing configurations can be created with inherited roles", (t) => {
   assert.deepEqual(JSON.parse(readFileSync(f.file, "utf8")).roles, {
     implementer: "inherit-parent", reviewer: "inherit-parent", judge: "inherit-parent", explorer: "inherit-parent", synthesizer: "inherit-parent", candidate: "inherit-parent", operator: "inherit-parent",
   });
+});
+
+test("a failed replacement does not report an applied budget", (t) => {
+  const f = fixture(t, { roles: { reviewer: "auto" } }, []);
+  const target = join(f.root, "blocked", "models.json");
+  writeFileSync(join(f.root, "blocked"), "not a directory");
+  const result = f.runAt(target, "small", "--apply");
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stdout, /"applied": true/);
 });
 
 test("invalid options, catalogs and budget metadata fail without modifying configuration", (t) => {
