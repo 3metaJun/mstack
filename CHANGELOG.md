@@ -1,24 +1,40 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 - 2026-10-03
 
 ### Changes
 
-- Harden `pack-claude-skills`: leave links in code fences and inline code alone,
-  rewrite image, parenthesized, angle-bracket, and query-string links, reject
-  reference-style links that leave a skill, join wrapped frontmatter scalars,
-  require quoted values that contain a colon, apply the Agent Skills name
-  hyphen rules, and write the default output under the repository whatever the
-  working directory. Check the Skills API's 30 MB limit against uncompressed
-  bytes instead of the compressed archive.
 - Add a Claude Code plugin marketplace (`.claude-plugin/`) so
-  `claude plugin marketplace add 3metaJun/mstack` installs all skills and
-  agents, including the files `meta-mode` needs under `tools/meta-mode`.
-- Add `npm run pack-claude-skills` to validate skills against claude.ai upload
+  `claude plugin marketplace add 3metaJun/mstack` followed by
+  `claude plugin install mstack@mstack` installs all 50 skills and both agents,
+  including the files `meta-mode` needs under `tools/meta-mode`. The plugin
+  version tracks the npm version.
+- Add `npm run pack-claude-skills` to validate skills against Claude upload
   limits and build one zip per skill for Claude Desktop chat, Cowork, and
-  claude.ai.
-- Check the Claude plugin manifest, its version, and the new scripts in
-  `npm test` and `npm run check-package`.
+  claude.ai. The packer rewrites links that leave a skill, leaves code alone,
+  rejects reference-style links that cannot be rewritten, applies the Agent
+  Skills name rules, and checks the Skills API's 30 MB limit against
+  uncompressed bytes.
+- Check the Claude plugin manifest and its version in `npm test` and
+  `npm run check-package`, and skip the local `.pi` runtime directory in the
+  private-data scan.
+
+### Upgrade notes
+
+No skill content changed. Use either the plugin or the installer for Claude
+Code on one machine, because both load and the duplicates compete for the skill
+listing budget. Upload packages have not been tried against Claude Desktop or
+claude.ai. Claude's skill-authoring documentation gives a 1,024-character
+description limit while a Help Center article gives 200; several skills exceed
+200, so shorten descriptions for the upload if one is rejected.
+
+### Verification
+
+Both pull requests passed independent subagent review with the confirmed
+findings fixed (three rounds for the packer). Node 18/22 CI passed on Linux,
+macOS, and Windows, together with package checks and both pinned-source
+integrity checks. `claude plugin validate . --strict` passes with Claude Code
+2.1.287, and an isolated install loaded 50 skills and 2 agents.
 
 ## 0.6.0 - 2026-10-03
 
