@@ -71,7 +71,7 @@ next.budgets = { ...config.budgets, [harness]: budget };
 const nextErrors = validateModelConfig(next, harnesses);
 if (nextErrors.length && !unresolved.length) throw new Error(nextErrors.join("\n"));
 const changed = JSON.stringify(config) !== JSON.stringify(next);
-console.log(JSON.stringify({ harness, budget, effort, changes, unresolved, config: next, applied: Boolean(options["--apply"] && !unresolved.length && changed) }, null, 2));
+let applied = false;
 if (unresolved.length) {
   process.exitCode = 1;
 } else if (options["--apply"] && changed) {
@@ -80,7 +80,9 @@ if (unresolved.length) {
   try {
     writeFileSync(temporary, `${JSON.stringify(next, null, 2)}\n`, { flag: "wx", mode: 0o600 });
     renameSync(temporary, file);
+    applied = true;
   } finally {
     rmSync(temporary, { force: true });
   }
 }
+console.log(JSON.stringify({ harness, budget, effort, changes, unresolved, config: next, applied }, null, 2));
