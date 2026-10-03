@@ -77,7 +77,7 @@
     },
     "blast-radius": {
       "source": "20cb2945f5fe62055166f745107274af5f19428ca033e53a9b8bc69650d3ded1",
-      "target": "ca63c902c065c3de95d5c7f5db665b4cf8c3b881eafbef9dde3db66ca340a752"
+      "target": "72113714dc5e7ef634a8b220e3a8dacea7b0e82d1f24136c13e04013749ef41a"
     },
     "bro": {
       "source": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
@@ -89,7 +89,7 @@
     },
     "figure-it-out": {
       "source": "982f2c1024a3a24f6417426ad8e8a3e027fe6210a8a442308fb85073f8f3f6ef",
-      "target": "a892d780bae548ec537ad1edea44b11ab85c3223345c84276f567ef30bfdca97"
+      "target": "37c25a3c0b354da74e33a2a291fc21e62140304eee2447ed73400bc2759402ec"
     },
     "how": {
       "source": "06b714dbd830bc829bfb89e33a1c39daf6d72ea412e488ea9d65f5f33b885a0c",
@@ -149,7 +149,7 @@
     },
     "principle-guard-the-context-window": {
       "source": "9f60e2c79b35f865cb103462f9128c6760b70f603475d1e535e5930f61840f66",
-      "target": "d42b8f8b02cdcb4f84b466ffcd623ca911a8bbf93b46b545d8b3ca4e950b2580"
+      "target": "7a0a9540d4c0e8053ace79628d0a493444a82d1bbe1d8e94c8e561606c3d2912"
     },
     "principle-laziness-protocol": {
       "source": "9006579e9e3f33955d17569733db688ae65f22577dc3b21803d219a5a8445aff",
@@ -173,15 +173,15 @@
     },
     "principle-never-block-on-the-human": {
       "source": "d82bce9ab9193249d1ec0d514202d89602f0fd3d312174d622c2dd222bae5a2e",
-      "target": "15d583bb6125a88dd0ff375bfdbdc1ac874027bf741cda5f6f4d3e939363051e"
+      "target": "90cd48f4082367fe70fc1659fec5a8d0e76a40cb7f9be4797b4b460cec28a4dd"
     },
     "principle-outcome-oriented-execution": {
       "source": "beedcaed75572a6a1662d47f16da203c2bd2c9dbffbbd678d4ba187d67b7e670",
-      "target": "f2fe80adf2da1e1e15aa1d1b465f1cb963acb05114be9032a89ae6ead06df288"
+      "target": "922ade1be5f671575b3c93367c3d08c9dbb2f7444a42bacbfb834656724d61ac"
     },
     "principle-prove-it-works": {
       "source": "ae13d287984a5864312b6286899d4ee2b60f8272b5e5e8fcc586a7c3ea51020b",
-      "target": "eb89aa6f3283cd73ba56d6cc01e0d4b9ec12367144988525b2c43761cbed4ada"
+      "target": "69fe19f428387ffbdf60d81fa6817272f1f88bc30ec7cd7edad408ce607ff39c"
     },
     "principle-redesign-from-first-principles": {
       "source": "a1c7fd0a96b40e12a74bceb0e6bb20a9666dd844dcabfb624acb27da23b929fe",
@@ -193,7 +193,7 @@
     },
     "principle-sequence-verifiable-units": {
       "source": "761390804ee36c32f5338d8db47ec54463d40ff96dbb296dfafabcd5f2593eec",
-      "target": "84bf426fd9c7f2bb8561baad84a06bb5b2c78534e7599bdd3fde47ce5596d707"
+      "target": "bc512996a3f226d1964444341e3fab1bda7f1b2928b136ab406ac4486150430f"
     },
     "principle-subtract-before-you-add": {
       "source": "a983a50e732c1ed315eba7aaf47a61329e31c4794eb1ab9d25d9945265b31e03",
@@ -217,7 +217,7 @@
     },
     "setup-mstack": {
       "source": "a11137437e12831c73f228f449bdfefab487bf7e2c69a4b306189e8fb1e6ab3e",
-      "target": "5fbe454ff5cea061d8b29e5be4a0eb1d2f040f99927f23ccd6007ec5c02e5b6a"
+      "target": "ede1efcab2c6503521faed92ab691df87dd92b48e33c66cc57d72d4ea4c5ff82"
     },
     "show-me-your-work": {
       "source": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",
@@ -229,7 +229,7 @@
     },
     "tdd": {
       "source": "011cab0ecc04a3632121efb493ae4d60aa282a9b72c66de74dd8ad7e4313e05a",
-      "target": "bb077c26ad22c0171f3c06e72d288556a46a8fce34164ea7da686d78c135544c"
+      "target": "4930d09f2ca2dd47487c66d21d82bd376e35cd70bb8e42bfad5e19506c2ca2df"
     },
     "teach": {
       "source": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4",
@@ -237,7 +237,7 @@
     },
     "technical-writing": {
       "source": "6d6d9e625ae412ee8f36df8deb6fd9203d7c6acca776d5ee3cabbb9126f8b84c",
-      "target": "40dafbe83d76600dfd9417bb3861b2a73ac75010838412a10b8fa2b82b00b9a0"
+      "target": "a450d685f477833640054828477fff97e1fd4ffb396a845b512d131b633c1919"
     },
     "typescript-best-practices": {
       "source": "28f9e61710e205f6f3c5476f333483cff0e988f6a5b639e2faad536344b40c5e",
@@ -245,7 +245,7 @@
     },
     "unslop": {
       "source": "c6d2572294d933a428211921069e9a248490e9b466ca59437cb4d9de248600ca",
-      "target": "6948335a00f9fed7a29204b9f08f74a9d9596d90989fd06f58f02d984ceab6f3"
+      "target": "290a10a90e52f080fdf0f225f043088990b5cd8d8b8307c800a91cfeb1568aa4"
     },
     "why": {
       "source": "222b93789754ba6ee901835137184acdca667f7e47c523bcc85aca86675fb249",
