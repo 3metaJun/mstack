@@ -11,3 +11,12 @@ test("package and Codex plugin versions stay synchronized", () => {
   const pluginManifest = JSON.parse(readFileSync(join(repoRoot, ".codex-plugin", "plugin.json"), "utf8"));
   assert.equal(pluginManifest.version, packageManifest.version);
 });
+
+test("package and Claude plugin manifests stay synchronized", () => {
+  const packageManifest = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
+  const plugin = JSON.parse(readFileSync(join(repoRoot, ".claude-plugin", "plugin.json"), "utf8"));
+  const marketplace = JSON.parse(readFileSync(join(repoRoot, ".claude-plugin", "marketplace.json"), "utf8"));
+  assert.equal(plugin.version, packageManifest.version);
+  assert.equal(marketplace.plugins.length, 1);
+  assert.equal(marketplace.plugins[0].name, plugin.name);
+});

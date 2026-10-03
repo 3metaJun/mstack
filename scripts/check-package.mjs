@@ -13,6 +13,14 @@ if (packageManifest.version !== pluginManifest.version) {
   );
 }
 
+const claudePlugin = JSON.parse(readFileSync(join(repoRoot, ".claude-plugin", "plugin.json"), "utf8"));
+if (packageManifest.version !== claudePlugin.version) {
+  throw new Error(
+    `Package and Claude plugin versions must match (package.json=${packageManifest.version}, ` +
+      `.claude-plugin/plugin.json=${claudePlugin.version}).`,
+  );
+}
+
 const npmArgs = ["pack", "--dry-run", "--json"];
 const npmExecutable = process.env.npm_execpath ? process.execPath : "npm";
 const result = spawnSync(
@@ -55,6 +63,8 @@ const requiredFiles = [
   ...Object.keys(baseline.files), ...Object.values(packageManifest.bin),
   "scripts/harness-project.mjs", "scripts/harness-policy-lib.mjs",
   "scripts/harness-workflow.md", "scripts/harness-check.mjs",
+  ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json",
+  "scripts/pack-claude-skills.mjs", "scripts/claude-package-lib.mjs",
 ];
 const missing = requiredFiles.filter((path) => !packedFiles.has(path));
 if (missing.length) {

@@ -1,0 +1,14 @@
+{
+  "name": "mstack",
+  "description": "Portable engineering skills and agents from mstack.",
+  "owner": {
+    "name": "3metaJun"
+  },
+  "plugins": [
+    {
+      "name": "mstack",
+      "source": "./",
+      "description": "50 portable engineering skills plus the meta-agent and comment-reviewer agents."
+    }
+  ]
+}

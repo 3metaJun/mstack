@@ -135,9 +135,24 @@ try {
   errors.push(`invalid plugin manifest: ${error.message}`);
 }
 
+for (const file of ["plugin.json", "marketplace.json"]) {
+  try {
+    const manifest = JSON.parse(readFileSync(join(repoRoot, ".claude-plugin", file), "utf8"));
+    if (manifest.name !== "mstack") errors.push(`.claude-plugin/${file} has the wrong name`);
+    if (file === "plugin.json" && manifest.skills !== undefined) {
+      errors.push(".claude-plugin/plugin.json must use the default skills/ directory");
+    }
+    if (file === "marketplace.json" && manifest.plugins?.[0]?.source !== "./") {
+      errors.push(".claude-plugin/marketplace.json must serve the repository root as the plugin");
+    }
+  } catch (error) {
+    errors.push(`invalid .claude-plugin/${file}: ${error.message}`);
+  }
+}
+
 function walk(directory) {
   return readdirSync(directory).flatMap((name) => {
-    if (name === "node_modules" || (directory === repoRoot && (name === ".git" || name === ".audit"))) {
+    if (name === "node_modules" || (directory === repoRoot && (name === ".git" || name === ".audit" || name === ".pi"))) {
       return [];
     }
     const path = join(directory, name);

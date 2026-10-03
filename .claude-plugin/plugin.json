@@ -1,0 +1,13 @@
+{
+  "name": "mstack",
+  "displayName": "mstack",
+  "version": "0.6.0",
+  "description": "Portable engineering skills for Codex, Claude Code, OpenCode, and pi.",
+  "author": {
+    "name": "3metaJun"
+  },
+  "homepage": "https://github.com/3metaJun/mstack#readme",
+  "repository": "https://github.com/3metaJun/mstack",
+  "license": "MIT",
+  "keywords": ["skills", "workflows", "verification", "engineering"]
+}
