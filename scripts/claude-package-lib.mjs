@@ -6,6 +6,9 @@ import { deflateRawSync } from "node:zlib";
 // error there, even though Claude Code ignores unknown keys.
 export const UPLOAD_FIELDS = new Set(["name", "description", "license", "compatibility", "metadata", "allowed-tools"]);
 const RESERVED_NAME_WORDS = ["anthropic", "claude"];
+// The Skills API guide limits the total upload to 30 MB uncompressed. claude.ai's own
+// limit is not documented, so this is the closest published bound for either surface.
+export const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
 
 export function splitFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -47,8 +50,9 @@ function parseScalar(key, raw) {
   const single = raw.match(/^'((?:[^']|'')*)'\s*(?:#.*)?$/);
   if (single) return single[1].replace(/''/g, "'");
   const plain = raw.replace(/\s+#.*$/, "");
-  // Claude Code's reader accepts this, but a strict YAML parser rejects it.
-  if (/:\s/.test(plain)) throw new Error(`frontmatter ${key} contains ": " and must be quoted`);
+  // Claude Code's reader accepts this, but a strict YAML parser rejects it. Flow
+  // collections such as `{a: b}` legitimately contain ": ".
+  if (!/^[{[]/.test(plain) && /:\s/.test(plain)) throw new Error(`frontmatter ${key} contains ": " and must be quoted`);
   return plain;
 }
 
@@ -99,7 +103,7 @@ export function listFiles(directory) {
 // Code fences and inline code are left alone. A reference-style definition cannot be
 // rewritten without changing its uses, so one that leaves the skill is an error.
 const INLINE_LINK = /(!?)\[([^\]]*)\]\((?:<([^>]+)>|((?:[^()\s]|\([^()\s]*\))+))(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
-const LINK_DEFINITION = /^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)/;
+const LINK_DEFINITION = /^ {0,3}\[([^\]]+)\]:\s*<?([^\s>]+)/;
 const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i;
 
 function resolveTarget(target, filePath) {
@@ -132,32 +136,77 @@ function rewriteInline(text, filePath, skillRoot, skillsRoot) {
   });
 }
 
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// A definition only matters when something uses its label, so prose such as
+// "[Note]: /tmp/x is the dir" is not an error. Multi-line definitions are not detected.
+function assertNoEscapingDefinitions(text, filePath, skillRoot, skillsRoot) {
+  for (const line of text.split(/\r?\n/)) {
+    const definition = line.match(LINK_DEFINITION);
+    if (!definition || EXTERNAL.test(definition[2]) || staysInside(resolveTarget(definition[2], filePath), skillRoot)) continue;
+    const label = escapeRegExp(definition[1]);
+    const used = new RegExp(`\\]\\[${label}\\]|\\[${label}\\]\\[\\]|\\[${label}\\](?![:(\\[])`, "i");
+    const uses = text.split(/\r?\n/).filter((other) => other !== line).some((other) => used.test(other));
+    if (uses) throw new Error(`${relative(skillsRoot, filePath)}: reference-style link leaves the skill: ${definition[2]}`);
+  }
+}
+
+function rewriteProse(text, filePath, skillRoot, skillsRoot) {
+  assertNoEscapingDefinitions(text, filePath, skillRoot, skillsRoot);
+  // Code spans are masked so link syntax inside them survives, while a span inside a
+  // link label does not stop the link from being rewritten.
+  const spans = [];
+  const masked = text.replace(/(``[^\n]*?``|`[^`\n]*`)/g, (span) => `\u0000${spans.push(span) - 1}\u0000`);
+  return rewriteInline(masked, filePath, skillRoot, skillsRoot).replace(/\u0000(\d+)\u0000/g, (_, index) => spans[index]);
+}
+
+// Fenced code passes through untouched. Prose between fences is rewritten as one block,
+// because a link label may wrap across lines.
 export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
+  const parts = content.split(/(\r?\n)/);
+  const output = [];
+  let prose = "";
   let fence = null;
-  return content
-    .split(/(\r?\n)/)
-    .map((line) => {
-      const opener = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1];
-      if (fence) {
-        if (opener && opener[0] === fence.char && opener.length >= fence.length && /^\s*$/.test(line.slice(line.indexOf(opener) + opener.length))) {
-          fence = null;
-        }
-        return line;
+  let rawLine = false;
+  const flush = () => {
+    if (prose) output.push(rewriteProse(prose, filePath, skillRoot, skillsRoot));
+    prose = "";
+  };
+  parts.forEach((part, index) => {
+    if (index % 2) {
+      if (rawLine) output.push(part);
+      else prose += part;
+      return;
+    }
+    // A backtick fence's info string cannot contain a backtick, or it is inline code.
+    const opener = part.match(/^ {0,3}(`{3,}(?=[^`]*$)|~{3,})/)?.[1];
+    if (fence) {
+      rawLine = true;
+      if (opener && opener[0] === fence.char && opener.length >= fence.length && /^\s*$/.test(part.slice(part.indexOf(opener) + opener.length))) {
+        fence = null;
       }
-      if (opener) {
-        fence = { char: opener[0], length: opener.length };
-        return line;
-      }
-      const definition = line.match(LINK_DEFINITION)?.[1];
-      if (definition && !EXTERNAL.test(definition) && !staysInside(resolveTarget(definition, filePath), skillRoot)) {
-        throw new Error(`${relative(skillsRoot, filePath)}: reference-style link leaves the skill: ${definition}`);
-      }
-      return line
-        .split(/(``.*?``|`[^`]*`)/)
-        .map((part, index) => (index % 2 ? part : rewriteInline(part, filePath, skillRoot, skillsRoot)))
-        .join("");
-    })
-    .join("");
+    } else if (opener) {
+      fence = { char: opener[0], length: opener.length };
+      rawLine = true;
+    } else {
+      rawLine = false;
+    }
+    if (rawLine) {
+      flush();
+      output.push(part);
+    } else {
+      prose += part;
+    }
+  });
+  flush();
+  return output.join("");
+}
+
+export function uploadSizeProblem(skill, files) {
+  const bytes = files.reduce((total, file) => total + file.data.length, 0);
+  return bytes > MAX_UPLOAD_BYTES ? `${skill}: ${bytes} uncompressed bytes exceed the ${MAX_UPLOAD_BYTES} byte upload limit` : null;
 }
 
 export function buildSkillFiles(skill, skillsRoot) {

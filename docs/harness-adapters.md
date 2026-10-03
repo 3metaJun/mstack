@@ -65,9 +65,10 @@ the canonical tree.
 
 Claude's skill-authoring documentation lists a 1,024-character `description`
 limit, which the packer enforces. A Help Center article on custom skills lists
-200 characters, and neither source documents an archive size limit. If an upload
-rejects a skill for description length, shorten that description for the upload
-rather than the canonical file, and report which limit applied.
+200 characters. The Skills API guide limits an upload to 30 MB uncompressed; the
+packer checks that figure, but claude.ai's own size limit is not documented. If
+an upload rejects a skill for description length, shorten that description for the
+upload rather than the canonical file, and report which limit applied.
 
 The plugin manifest version must equal `package.json`; `npm test` and
 `npm run check-package` verify it. Check plugin changes with

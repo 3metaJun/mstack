@@ -7,6 +7,7 @@ import {
   buildSkillFiles,
   createZip,
   skillPackable,
+  uploadSizeProblem,
   validateUploadFrontmatter,
 } from "./claude-package-lib.mjs";
 
@@ -37,6 +38,8 @@ function main() {
     problems.push(...validateUploadFrontmatter(skill, content));
     try {
       const files = buildSkillFiles(skill, skillsRoot);
+      const sizeProblem = uploadSizeProblem(skill, files);
+      if (sizeProblem) problems.push(sizeProblem);
       archives.push({ skill, zip: createZip(files), count: files.length });
     } catch (error) {
       problems.push(`${skill}: ${error.message}`);

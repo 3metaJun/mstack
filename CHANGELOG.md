@@ -9,7 +9,8 @@
   reference-style links that leave a skill, join wrapped frontmatter scalars,
   require quoted values that contain a colon, apply the Agent Skills name
   hyphen rules, and write the default output under the repository whatever the
-  working directory. Drop the unsourced 30 MB archive limit.
+  working directory. Check the Skills API's 30 MB limit against uncompressed
+  bytes instead of the compressed archive.
 - Add a Claude Code plugin marketplace (`.claude-plugin/`) so
   `claude plugin marketplace add 3metaJun/mstack` installs all skills and
   agents, including the files `meta-mode` needs under `tools/meta-mode`.

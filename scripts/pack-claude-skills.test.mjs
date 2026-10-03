@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ import {
   createZip,
   parseTopLevel,
   rewriteEscapingLinks,
+  uploadSizeProblem,
   validateUploadFrontmatter,
 } from "./claude-package-lib.mjs";
 
@@ -146,18 +147,24 @@ test("name rules follow the Agent Skills specification", () => {
   assert.deepEqual(validateUploadFrontmatter("a1-b2", "---\nname: a1-b2\ndescription: d\n---\n"), []);
 });
 
-test("default output stays in the repository when run from another directory", () => {
-  const target = join(repoRoot, "dist", "claude-skills");
-  const existed = existsSync(target);
+test("default output stays in the packer's repository when run from another directory", () => {
+  // A temporary checkout layout, so the real dist/ is never touched.
+  const root = mkdtempSync(join(tmpdir(), "mstack-root-"));
   const cwd = mkdtempSync(join(tmpdir(), "mstack-cwd-"));
   try {
-    execFileSync(process.execPath, [join(repoRoot, "scripts", "pack-claude-skills.mjs"), "--skill", "architect"], { cwd });
-    assert.equal(existsSync(join(target, "architect.zip")), true);
+    mkdirSync(join(root, "scripts"));
+    for (const file of ["pack-claude-skills.mjs", "claude-package-lib.mjs", "cli-args.mjs"]) {
+      cpSync(join(repoRoot, "scripts", file), join(root, "scripts", file));
+    }
+    mkdirSync(join(root, "profiles"));
+    cpSync(join(repoRoot, "profiles", "skills.json"), join(root, "profiles", "skills.json"));
+    cpSync(join(repoRoot, "skills", "architect"), join(root, "skills", "architect"), { recursive: true });
+    execFileSync(process.execPath, [join(root, "scripts", "pack-claude-skills.mjs"), "--skill", "architect"], { cwd });
+    assert.equal(existsSync(join(root, "dist", "claude-skills", "architect.zip")), true);
     assert.equal(existsSync(join(cwd, "dist")), false);
   } finally {
+    rmSync(root, { recursive: true, force: true });
     rmSync(cwd, { recursive: true, force: true });
-    if (!existed) rmSync(join(repoRoot, "dist"), { recursive: true, force: true });
-    else rmSync(join(target, "architect.zip"), { force: true });
   }
 });
 
@@ -169,4 +176,59 @@ test("repeated --skill names write one archive", () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("links with code in the label or a wrapped label are rewritten", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  const rewrite = (text) => rewriteEscapingLinks(text, file, root, skillsRoot);
+  assert.equal(rewrite("[`foo`](../b/SKILL.md)"), "`foo` (the `b` skill)");
+  assert.equal(rewrite("see [the `b` skill](../b/SKILL.md)."), "see the `b` skill (the `b` skill).");
+  assert.equal(rewrite("[the b\nskill](../b/SKILL.md)"), "the b\nskill (the `b` skill)");
+  assert.equal(rewrite("[the b\r\nskill](../b/SKILL.md)\r\nnext"), "the b\r\nskill (the `b` skill)\r\nnext");
+  assert.equal(rewrite("`a` text `[x](../b/SKILL.md)`"), "`a` text `[x](../b/SKILL.md)`");
+});
+
+test("fence detection follows CommonMark openers and closers", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  const rewrite = (text) => rewriteEscapingLinks(text, file, root, skillsRoot);
+  // Backticks in the info string make this inline code, not a fence.
+  assert.equal(rewrite("```x``` and [y](../b/SKILL.md)\n[z](../b/SKILL.md)"), "```x``` and y (the `b` skill)\nz (the `b` skill)");
+  // A shorter inner fence does not close a longer one.
+  assert.equal(
+    rewrite("````\n```\n[x](../b/SKILL.md)\n````\n[y](../b/SKILL.md)"),
+    "````\n```\n[x](../b/SKILL.md)\n````\ny (the `b` skill)",
+  );
+  // An unclosed fence protects the rest of the file.
+  assert.equal(rewrite("```\n[x](../b/SKILL.md)"), "```\n[x](../b/SKILL.md)");
+});
+
+test("a link definition is an error only when its label is used", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  const prose = "[Note]: /tmp/x is the dir";
+  assert.equal(rewriteEscapingLinks(prose, file, root, skillsRoot), prose);
+  for (const use of ["[t][ref]", "[ref][]", "see [Ref] here"]) {
+    assert.throws(
+      () => rewriteEscapingLinks(`${use}\n\n[ref]: ../b/SKILL.md`, file, root, skillsRoot),
+      /reference-style link leaves the skill/,
+      use,
+    );
+  }
+});
+
+test("flow collections may contain a colon", () => {
+  assert.equal(parseTopLevel("metadata: {a: b}").get("metadata"), "{a: b}");
+  assert.equal(parseTopLevel("description: see http://x and 10:30").get("description"), "see http://x and 10:30");
+});
+
+test("upload size counts uncompressed bytes against the documented limit", () => {
+  const small = [{ name: "s/a", data: Buffer.alloc(10) }];
+  const big = [{ name: "s/a", data: Buffer.alloc(16 * 1024 * 1024) }, { name: "s/b", data: Buffer.alloc(16 * 1024 * 1024) }];
+  assert.equal(uploadSizeProblem("s", small), null);
+  assert.match(uploadSizeProblem("s", big), /exceed the 31457280 byte upload limit/);
 });
