@@ -101,8 +101,11 @@ export function listFiles(directory) {
 // An uploaded skill is isolated: links into sibling skills or the wider repository
 // resolve nowhere. Replace each such link with its text and a pointer by skill name.
 // Code fences and inline code are left alone. A reference-style definition cannot be
-// rewritten without changing its uses, so one that leaves the skill is an error.
-const INLINE_LINK = /(!?)\[([^\]]*)\]\((?:<([^>]+)>|((?:[^()\s]|\([^()\s]*\))+))(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
+// rewritten without changing its uses, so one that leaves the skill is an error when
+// its label is used.
+// A label holds no bare `[` and no blank line, so a stray bracket cannot pair with a link
+// in a later paragraph.
+const INLINE_LINK = /(!?)\[((?:[^[\]\n]|\n(?!\s*\n))*)\]\((?:<([^>]+)>|((?:[^()\s]|\([^()\s]*\))+))(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
 const LINK_DEFINITION = /^ {0,3}\[([^\]]+)\]:\s*<?([^\s>]+)/;
 const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i;
 
@@ -154,7 +157,6 @@ function assertNoEscapingDefinitions(text, filePath, skillRoot, skillsRoot) {
 }
 
 function rewriteProse(text, filePath, skillRoot, skillsRoot) {
-  assertNoEscapingDefinitions(text, filePath, skillRoot, skillsRoot);
   // Code spans are masked so link syntax inside them survives, while a span inside a
   // link label does not stop the link from being rewritten.
   const spans = [];
@@ -163,20 +165,23 @@ function rewriteProse(text, filePath, skillRoot, skillsRoot) {
 }
 
 // Fenced code passes through untouched. Prose between fences is rewritten as one block,
-// because a link label may wrap across lines.
+// because a link label may wrap across lines. Definitions are checked over all prose in
+// the file, since a definition usually sits after the fences that its uses precede.
 export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
+  // The code-span mask uses NUL as its delimiter.
+  if (content.includes("\u0000")) throw new Error(`${relative(skillsRoot, filePath)}: contains a NUL byte`);
   const parts = content.split(/(\r?\n)/);
-  const output = [];
+  const segments = [];
   let prose = "";
   let fence = null;
   let rawLine = false;
   const flush = () => {
-    if (prose) output.push(rewriteProse(prose, filePath, skillRoot, skillsRoot));
+    if (prose) segments.push({ prose });
     prose = "";
   };
   parts.forEach((part, index) => {
     if (index % 2) {
-      if (rawLine) output.push(part);
+      if (rawLine) segments.push({ raw: part });
       else prose += part;
       return;
     }
@@ -195,13 +200,21 @@ export function rewriteEscapingLinks(content, filePath, skillRoot, skillsRoot) {
     }
     if (rawLine) {
       flush();
-      output.push(part);
+      segments.push({ raw: part });
     } else {
       prose += part;
     }
   });
   flush();
-  return output.join("");
+  assertNoEscapingDefinitions(
+    segments.map((segment) => segment.prose).filter((text) => text !== undefined).join("\n"),
+    filePath,
+    skillRoot,
+    skillsRoot,
+  );
+  return segments
+    .map((segment) => segment.raw ?? rewriteProse(segment.prose, filePath, skillRoot, skillsRoot))
+    .join("");
 }
 
 export function uploadSizeProblem(skill, files) {

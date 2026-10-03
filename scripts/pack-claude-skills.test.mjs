@@ -232,3 +232,36 @@ test("upload size counts uncompressed bytes against the documented limit", () =>
   assert.equal(uploadSizeProblem("s", small), null);
   assert.match(uploadSizeProblem("s", big), /exceed the 31457280 byte upload limit/);
 });
+
+test("a definition is matched with its use across fences and blocks", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  const fenced = "[x][ref]\n\n```\ncode\n```\n\n[ref]: ../b/SKILL.md";
+  assert.throws(() => rewriteEscapingLinks(fenced, file, root, skillsRoot), /reference-style link leaves the skill/);
+  const reversed = "[ref]: ../b/SKILL.md\n\n```\ncode\n```\n\nsee [x][ref]";
+  assert.throws(() => rewriteEscapingLinks(reversed, file, root, skillsRoot), /reference-style link leaves the skill/);
+  // A definition shown inside a fence is example text, not a definition.
+  const example = "```\n[ref]: ../b/SKILL.md\n```\nsee [x][ref]";
+  assert.equal(rewriteEscapingLinks(example, file, root, skillsRoot), example);
+});
+
+test("a link label cannot start at a stray bracket or span a blank line", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  const file = join(root, "r.md");
+  const rewrite = (text) => rewriteEscapingLinks(text, file, root, skillsRoot);
+  assert.equal(rewrite("arr[i is x\n\nsee [link](../b/SKILL.md) ok"), "arr[i is x\n\nsee link (the `b` skill) ok");
+  const split = "[foo\n\nbar](../b/SKILL.md)";
+  assert.equal(rewrite(split), split);
+  assert.equal(rewrite("[foo\r\n\r\nbar](../b/SKILL.md)"), "[foo\r\n\r\nbar](../b/SKILL.md)");
+});
+
+test("content with a NUL byte is rejected because the code-span mask uses it", () => {
+  const skillsRoot = resolve("/s");
+  const root = join(skillsRoot, "a");
+  assert.throws(
+    () => rewriteEscapingLinks("\u00005\u0000 [x](../b/SKILL.md) `c`", join(root, "r.md"), root, skillsRoot),
+    /contains a NUL byte/,
+  );
+});
