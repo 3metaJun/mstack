@@ -212,7 +212,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
       "sourceDigest": "60e0d997f7b369004a02089c71b9091d3f8e9bc0b4a3c1142598380faa7722fd",
-      "targetDigest": "32d16e0ff0446d16bcf9d2709b48052598936ffc197798db0697c7f634202959"
+      "targetDigest": "33c6e9c2e2db8b62bbe3f394eb7161a2895cbe4bcd915cbbc28db69250d4fafa"
     },
     "skills/meta-mode/playbooks/babysit.md": {
       "upstream": "pstack",
@@ -564,7 +564,7 @@
       "upstream": "pstack",
       "source": "skills/swarm/SKILL.md",
       "sourceDigest": "d578d877c3b8b9de7163f52579c4683337a940acc0fbe4496a498f5d3b27df30",
-      "targetDigest": "227486a648d715404453c1f2f416dcc35c6b1c42040aba51b97ff81da493d6e7"
+      "targetDigest": "c24493812f03e0165cdbb3dd19e16d376742afe3b07f92cc48575f27883ae729"
     },
     "skills/tdd/SKILL.md": {
       "upstream": "pstack",
