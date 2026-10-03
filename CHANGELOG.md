@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.6.0 - 2026-10-03
+
+### Changes
+
+- Reconcile autopilot owner babysitting, code-ready verification rounds, stack
+  topology ownership, and isolated replacement writers.
+- Bind swarm evidence to the requested SHAs and measurement methods. Identify
+  decision-log run boundaries and preserve corrections through append-only rows.
+- Remove reflect's fixed finding count and port the requested upstream prompt
+  reductions across the shared skill tree.
+- Add `npm run model-budget -- --harness <name> --budget <label> --catalog <file>`
+  to preview detected-model effort rewrites. Add `--apply` after reviewing the
+  preview. Aliases and other Harness choices are preserved; unresolved models
+  and duplicate reviewer panels reject writes.
+- Allow individual shipping lane results to survive tests, docs, or lint-only
+  changes after documented build-output comparisons. Dev-server lanes and
+  lanes without saved build output rerun; CI and review always run fresh.
+
+### Upgrade notes
+
+Reinstall skills to receive the workflow updates. Reasoning budgets choose an
+available effort variant, not a token or spending cap. Prompt reductions apply
+across Harnesses; equivalent model behavior was not established by the tests.
+The upstream pins remain unchanged because these are selective reviewed ports.
+
+### Verification
+
+Both changes passed independent subagent review with the confirmed findings
+fixed. Node 18/22 CI passed on Linux, macOS, and Windows, together with Bun tests
+and typechecking, package checks, and both pinned-source integrity checks.
+
 ## 0.5.0 - 2026-09-21
 
 ### Changes
