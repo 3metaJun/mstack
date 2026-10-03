@@ -43,6 +43,34 @@ It also keeps backups outside skill roots so recursive scanners do not load
 archived versions. Project wrappers use their separate generator and are not
 migrated by the user-level installer.
 
+## Claude plugin and upload surfaces
+
+Claude Code, the Code tab of the Claude desktop app, Cowork, and claude.ai read
+skills from different places and enforce different frontmatter rules:
+
+| Surface | Source | Frontmatter rules |
+| --- | --- | --- |
+| Claude Code and the desktop Code tab | `~/.claude/skills/` (installer) or the `mstack` plugin | Unknown keys ignored; `name` falls back to the directory name |
+| Claude Code plugin | `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json`, default `skills/` and `agents/` | `name` is kept, skills are namespaced `/mstack:<skill>` |
+| Desktop chat, Cowork, claude.ai | Zip per skill from `npm run pack-claude-skills` | Only `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`; `name` is required |
+
+The installer's Claude adapter drops `name` so OpenCode, which scans
+`~/.claude/skills/`, skips that copy. Plugin loading and uploads read the
+canonical files, which keep `name`. Because uploads reject unknown keys, the
+canonical frontmatter must stay inside the upload field set; the packer test and
+`npm run pack-claude-skills -- --check` enforce this, along with the description
+and archive limits. Claude-only invocation fields such as `user-invocable` and
+`disable-model-invocation` therefore belong in an install-time adapter, never in
+the canonical tree.
+
+The plugin manifest version must equal `package.json`; `npm test` and
+`npm run check-package` verify it. Check plugin changes with
+`claude plugin validate . --strict` using Claude Code 2.1 or later.
+
+Sources: [Claude Code plugins reference](https://code.claude.com/docs/en/plugins-reference),
+[marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), and
+[skills](https://code.claude.com/docs/en/skills).
+
 ## Shared project verification wrappers
 
 Project verification has one canonical contract at

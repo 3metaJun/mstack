@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- Add a Claude Code plugin marketplace (`.claude-plugin/`) so
+  `claude plugin marketplace add 3metaJun/mstack` installs all skills and
+  agents, including the files `meta-mode` needs under `tools/meta-mode`.
+- Add `npm run pack-claude-skills` to validate skills against claude.ai upload
+  limits and build one zip per skill for Claude Desktop chat, Cowork, and
+  claude.ai.
+- Check the Claude plugin manifest, its version, and the new scripts in
+  `npm test` and `npm run check-package`.
+
 ## 0.6.0 - 2026-10-03
 
 ### Changes

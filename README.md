@@ -46,6 +46,56 @@ skills and failed replacements must stay outside discovery roots because
 OpenCode also scans hidden subdirectories. Artifact backups stay beside the
 artifact target. The installer prints each backup path and retains its contents.
 
+## Use with Claude Code and Claude Desktop
+
+Claude Code and the Code tab of the Claude desktop app share one skill system,
+so either route below covers both. Pick one per machine: a plugin install and
+`~/.claude/skills/` copies both load, and the duplicates compete for the skill
+listing budget.
+
+### Claude Code plugin (recommended)
+
+The repository is also a Claude Code plugin marketplace. The plugin ships all
+skills and both agents, and it carries the `tools/meta-mode/` files that
+`meta-mode` resolves at `../../tools/meta-mode`:
+
+```bash
+claude plugin marketplace add 3metaJun/mstack
+claude plugin install mstack@mstack
+```
+
+Plugin skills are namespaced, for example `/mstack:meta-mode`, and the agents
+appear as `mstack:meta-agent` and `mstack:comment-reviewer`. Run
+`claude plugin details mstack` to see the inventory and its projected token
+cost; the 50 skill descriptions add about 3,000 tokens to every session.
+`claude plugin marketplace update mstack` picks up new releases, because the
+plugin `version` tracks the npm version.
+
+The installer remains the route for bare `/meta-mode` names, per-skill
+selection, and the shared Codex, OpenCode, and pi copy:
+`npx @3metajun/mstack --harness claude`.
+
+### Claude Desktop chat, Cowork, and claude.ai
+
+These surfaces take one zip per skill through the Skills upload page, and they
+reject frontmatter fields other than `name`, `description`, `license`,
+`compatibility`, `metadata`, and `allowed-tools`. Build upload-ready archives
+with:
+
+```bash
+npm run pack-claude-skills -- --out dist/claude-skills
+npm run pack-claude-skills -- --skill diagnosing-bugs,tdd --out dist/claude-skills
+npm run pack-claude-skills -- --check
+```
+
+The command validates every skill against the upload limits (1024-character
+description, no XML tags, name equal to the directory, 30 MB archive) and writes
+`<skill>.zip` with the skill folder at the archive root. Uploaded skills are
+isolated from each other, so links to sibling skills become plain text that
+names the skill. Uploaded skills cannot reach the `meta-mode-tools` artifact, so
+use the plugin or the installer in Claude Code for orchestration and PR
+watching.
+
 ## Install optional artifacts
 
 The same installer can copy the portable artifacts that accompany the skills.
@@ -342,6 +392,10 @@ workflow even when no native skill creator or repository validator is installed.
 - `scripts/check-harness-policy.mjs` validates a business repository's mixed
   pstack/mstack policy and detects duplicate verification maps.
 - `.codex-plugin/` packages the same skill tree for Codex.
+- `.claude-plugin/` packages the same tree and agents as a Claude Code plugin
+  marketplace.
+- `scripts/pack-claude-skills.mjs` builds per-skill zips for Claude Desktop and
+  claude.ai uploads.
 
 The installer stages every selected skill, applies its adapter, validates the
 result, and then renames the staged directory into place. It uses a lock per
