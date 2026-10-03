@@ -152,7 +152,7 @@ for (const file of ["plugin.json", "marketplace.json"]) {
 
 function walk(directory) {
   return readdirSync(directory).flatMap((name) => {
-    if (name === "node_modules" || (directory === repoRoot && (name === ".git" || name === ".audit"))) {
+    if (name === "node_modules" || (directory === repoRoot && (name === ".git" || name === ".audit" || name === ".pi"))) {
       return [];
     }
     const path = join(directory, name);

@@ -14,3 +14,4 @@ traces/
 .mstack-sync-upstream/
 **/.mstack-sync-upstream-tx/
 dist/
+.pi/tasks/
