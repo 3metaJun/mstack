@@ -57,8 +57,17 @@ interface UnitListOptions {
 }
 
 interface LedgerRecordOptions {
+  readonly baseSha: string;
+  readonly baseBranch: string;
+  readonly patchId: string;
   readonly evidence: string;
-  readonly verifier?: string;
+  readonly verifier: string;
+}
+
+interface LedgerCheckOptions {
+  readonly baseSha: string;
+  readonly baseBranch: string;
+  readonly patchId: string;
 }
 
 interface InboxPushOptions {
@@ -340,10 +349,13 @@ function createProgram(io: Io): Command {
     .action(() => requireSubcommand(program));
   leaf(ledger, "record", "record a verification verdict")
     .argument("<pr>", "pull request number", positiveInteger)
-    .argument("<sha>", "commit SHA")
+    .argument("<sha>", "head commit SHA")
     .argument("<verdict>", "verification verdict", parseVerdict)
-    .requiredOption("--evidence <path>", "evidence path")
-    .option("--verifier <name>", "verifier name")
+    .requiredOption("--base-sha <sha>", "base commit SHA")
+    .requiredOption("--base-branch <branch>", "base branch")
+    .requiredOption("--patch-id <id>", "stable git patch-id")
+    .requiredOption("--evidence <path>", "runtime evidence path")
+    .requiredOption("--verifier <name>", "verifier name")
     .action(
       (
         pr: number,
@@ -358,6 +370,9 @@ function createProgram(io: Io): Command {
             store.ledger.record({
               pr,
               sha,
+              baseSha: options.baseSha,
+              baseBranch: options.baseBranch,
+              patchId: options.patchId,
               verdict,
               evidence: options.evidence,
               verifier: options.verifier,
@@ -367,12 +382,22 @@ function createProgram(io: Io): Command {
     );
   leaf(ledger, "check", "check a verification verdict")
     .argument("<pr>", "pull request number", positiveInteger)
-    .argument("<sha>", "commit SHA")
-    .action((pr: number, sha: string) =>
+    .argument("<sha>", "head commit SHA")
+    .requiredOption("--base-sha <sha>", "base commit SHA")
+    .requiredOption("--base-branch <branch>", "base branch")
+    .requiredOption("--patch-id <id>", "stable git patch-id")
+    .action((pr: number, sha: string, options: LedgerCheckOptions) =>
       runStore(
         program,
         io,
-        (store) => store.ledger.check({ pr, sha }),
+        (store) =>
+          store.ledger.check({
+            pr,
+            sha,
+            baseSha: options.baseSha,
+            baseBranch: options.baseBranch,
+            patchId: options.patchId,
+          }),
         (row) => row.verdict
       )
     );

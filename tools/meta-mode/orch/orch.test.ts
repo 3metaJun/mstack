@@ -261,7 +261,13 @@ describe("Store", () => {
     const { store } = await initializedStore();
 
     try {
-      await store.ledger.check({ pr: 184530, sha: "abc123" });
+      await store.ledger.check({
+        pr: 184530,
+        sha: "abc123",
+        baseSha: "base123",
+        baseBranch: "main",
+        patchId: "patch123",
+      });
       throw new Error("expected ledger check to fail");
     } catch (error) {
       expect(error).toBeInstanceOf(NotFoundError);
@@ -271,6 +277,9 @@ describe("Store", () => {
           json: {
             pr: "184530",
             sha: "abc123",
+            baseSha: "base123",
+            baseBranch: "main",
+            patchId: "patch123",
             verdict: "NOT-VERIFIED",
           },
         });
@@ -278,14 +287,20 @@ describe("Store", () => {
     }
     expect(() => parseVerdict("looks-good")).toThrow("verdict must be");
 
+    const identity = {
+      baseSha: "base123",
+      baseBranch: "main",
+      patchId: "patch123",
+    };
     const recorded = await store.ledger.record({
       pr: 184530,
       sha: "abc123",
+      ...identity,
       verdict: "unit-test-verified",
       evidence: "reports/verify.md",
       verifier: "sol",
     });
-    expect(await store.ledger.check({ pr: 184530, sha: "abc123" })).toEqual(
+    expect(await store.ledger.check({ pr: 184530, sha: "abc123", ...identity })).toEqual(
       recorded
     );
     expect(await store.ledger.summary()).toEqual({
@@ -295,12 +310,23 @@ describe("Store", () => {
     await store.ledger.record({
       pr: 184530,
       sha: "abc123",
+      ...identity,
       verdict: "live-ui-verified",
       evidence: "reports/live.md",
+      verifier: "runtime",
     });
     expect(await store.ledger.summary()).toEqual({
       "live-ui-verified": 1,
     });
+    await expect(
+      store.ledger.check({
+        pr: 184530,
+        sha: "abc123",
+        baseSha: "different-base",
+        baseBranch: "main",
+        patchId: "patch123",
+      })
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it("pushes, peeks, and atomically drains inbox pointers", async () => {
@@ -563,7 +589,7 @@ describe("Store", () => {
 
     await writeFile(
       join(directory, "ledger.tsv"),
-      "pr\tsha\tverdict\tevidence\tverifier\tts\n1\tsha\tinvalid\treport\tme\tnow\n"
+      "pr\tsha\tbaseSha\tbaseBranch\tpatchId\tverdict\tevidence\tverifier\tts\n1\tsha\tbase\tmain\tpatch\tinvalid\treport\tme\tnow\n"
     );
     await expect(store.ledger.summary()).rejects.toThrow(
       "ledger.tsv has invalid verdict invalid"
@@ -673,11 +699,20 @@ describe("orch CLI", () => {
       "check",
       "184530",
       "abc123",
+      "--base-sha",
+      "base123",
+      "--base-branch",
+      "main",
+      "--patch-id",
+      "patch123",
     ]);
     expect(missingLedger.code).toBe(2);
     expect(JSON.parse(missingLedger.stdout)).toEqual({
       pr: "184530",
       sha: "abc123",
+      baseSha: "base123",
+      baseBranch: "main",
+      patchId: "patch123",
       verdict: "NOT-VERIFIED",
     });
     expect(missingLedger.stderr).toBe("");

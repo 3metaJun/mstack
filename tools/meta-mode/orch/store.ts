@@ -15,7 +15,7 @@ import {
 import { basename, dirname, join, resolve } from "node:path";
 
 const UNIT_HEADER = "id\ttrack\tstate\tbranch\tpr\tsha\tbrief";
-const LEDGER_HEADER = "pr\tsha\tverdict\tevidence\tverifier\tts";
+const LEDGER_HEADER = "pr\tsha\tbaseSha\tbaseBranch\tpatchId\tverdict\tevidence\tverifier\tts";
 const LOCK_FILE = ".orch.lock";
 
 export type Verdict =
@@ -38,6 +38,9 @@ export interface Unit {
 export interface LedgerEntry {
   readonly pr: string;
   readonly sha: string;
+  readonly baseSha: string;
+  readonly baseBranch: string;
+  readonly patchId: string;
   readonly verdict: Verdict;
   readonly evidence: string;
   readonly verifier: string;
@@ -136,14 +139,20 @@ export interface ListUnitsParams {
 export interface RecordLedgerParams {
   readonly pr: number;
   readonly sha: string;
+  readonly baseSha: string;
+  readonly baseBranch: string;
+  readonly patchId: string;
   readonly verdict: Verdict;
   readonly evidence: string;
-  readonly verifier?: string;
+  readonly verifier: string;
 }
 
 export interface CheckLedgerParams {
   readonly pr: number;
   readonly sha: string;
+  readonly baseSha: string;
+  readonly baseBranch: string;
+  readonly patchId: string;
 }
 
 export interface PushInboxParams {
@@ -573,9 +582,9 @@ async function saveUnits(store: string, rows: readonly Unit[]): Promise<void> {
 }
 
 async function readLedger(store: string): Promise<readonly LedgerEntry[]> {
-  return (await readTsv(join(store, "ledger.tsv"), LEDGER_HEADER, 6)).map(
+  return (await readTsv(join(store, "ledger.tsv"), LEDGER_HEADER, 9)).map(
     (row) => {
-      const rawVerdict = row[2] ?? "";
+      const rawVerdict = row[5] ?? "";
       const verdict = verdictOrNull(rawVerdict);
       if (verdict === null) {
         throw new UserError(`ledger.tsv has invalid verdict ${rawVerdict}`);
@@ -583,10 +592,13 @@ async function readLedger(store: string): Promise<readonly LedgerEntry[]> {
       return {
         pr: row[0] ?? "",
         sha: row[1] ?? "",
+        baseSha: row[2] ?? "",
+        baseBranch: row[3] ?? "",
+        patchId: row[4] ?? "",
         verdict,
-        evidence: row[3] ?? "",
-        verifier: row[4] ?? "",
-        ts: row[5] ?? "",
+        evidence: row[6] ?? "",
+        verifier: row[7] ?? "",
+        ts: row[8] ?? "",
       };
     }
   );
@@ -596,6 +608,9 @@ function ledgerCells(row: LedgerEntry): readonly string[] {
   return [
     row.pr,
     row.sha,
+    row.baseSha,
+    row.baseBranch,
+    row.patchId,
     row.verdict,
     row.evidence,
     row.verifier,
@@ -992,7 +1007,7 @@ ${table(
 Verdicts: ${countLine(currentSummary.ledgerVerdicts)}
 
 ${table(
-  ["PR", "SHA", "Verdict", "Evidence", "Verifier", "Timestamp"],
+  ["PR", "Head SHA", "Base SHA", "Base branch", "Patch-id", "Verdict", "Evidence", "Verifier", "Timestamp"],
   ledgerRows.map(ledgerCells)
 )}
 
@@ -1408,13 +1423,13 @@ export function openStore(
         const verdict = parseVerdict(params.verdict);
         const row: LedgerEntry = {
           pr: String(positiveInteger(params.pr, "PR")),
-          sha: requiredCell(params.sha, "SHA"),
+          sha: requiredCell(params.sha, "head SHA"),
+          baseSha: requiredCell(params.baseSha, "base SHA"),
+          baseBranch: requiredCell(params.baseBranch, "base branch"),
+          patchId: requiredCell(params.patchId, "stable patch-id"),
           verdict,
           evidence: requiredCell(params.evidence, "evidence"),
-          verifier:
-            params.verifier === undefined
-              ? ""
-              : requiredCell(params.verifier, "verifier"),
+          verifier: requiredCell(params.verifier, "verifier"),
           ts: new Date().toISOString(),
         };
         const rows = [...(await readLedger(store))];
@@ -1432,14 +1447,29 @@ export function openStore(
       check: async (params) => {
         ensureOpen();
         const pr = String(positiveInteger(params.pr, "PR"));
-        const sha = requiredCell(params.sha, "SHA");
+        const sha = requiredCell(params.sha, "head SHA");
+        const baseSha = requiredCell(params.baseSha, "base SHA");
+        const baseBranch = requiredCell(params.baseBranch, "base branch");
+        const patchId = requiredCell(params.patchId, "stable patch-id");
         const row = (await readLedger(store)).find(
           (value) => value.pr === pr && value.sha === sha
         );
-        if (row === undefined) {
+        if (
+          row === undefined ||
+          row.baseSha !== baseSha ||
+          row.baseBranch !== baseBranch ||
+          row.patchId !== patchId
+        ) {
           throw new NotFoundError("NOT-VERIFIED", {
             compact: "NOT-VERIFIED",
-            json: { pr, sha, verdict: "NOT-VERIFIED" },
+            json: {
+              pr,
+              sha,
+              baseSha,
+              baseBranch,
+              patchId,
+              verdict: "NOT-VERIFIED",
+            },
           });
         }
         return row;
