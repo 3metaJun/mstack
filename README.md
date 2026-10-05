@@ -115,6 +115,7 @@ The available installable artifacts are:
 | `agents` | Codex: `$CODEX_HOME/agents/` as TOML; other harnesses: their native `agents/` directory as Markdown |
 | `meta-mode-tools` | `tools/meta-mode/` beside the resolved skill root; shared consumers use `~/.agents/tools/meta-mode/` |
 | `guide` | `docs/guide/` beside the resolved skill root |
+| `session-context` | `session-context/` beside the resolved skill root; plain-text routing guidance, never implicit |
 
 Codex skills default to `~/.agents/skills/`, while Codex agents default to
 `~/.codex/agents/`. An unset or empty `CODEX_HOME` uses `~/.codex`.
@@ -155,7 +156,11 @@ reviewed and copied into a project repository's committed
 `.cursor/automations/benny/` directory using its own setup instructions.
 mstack does not ship portable `commands/`, `hooks/`, or `settings/` trees:
 those are harness- and project-owned configuration surfaces and must be
-written or merged explicitly by the user.
+written or merged explicitly by the user. The optional `session-context`
+artifact is plain-text guidance only; select it with `--artifact session-context`
+and configure the harness's own session surface explicitly. It does not register
+a startup hook, grant permissions, or make session routing implicit. Hooks remain
+unsupported unless explicitly configured outside mstack.
 
 ## Choose installation directories
 

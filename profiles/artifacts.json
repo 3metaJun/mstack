@@ -22,6 +22,11 @@
       "path": ["docs", "guide"],
       "description": "The adapted mstack workflow guide and its images."
     },
+    "session-context": {
+      "source": "docs/session-context",
+      "path": ["session-context"],
+      "description": "Optional plain-text session routing guidance; never installed implicitly or registered as a hook."
+    },
     "benny": {
       "source": "automations/benny",
       "installable": false,
