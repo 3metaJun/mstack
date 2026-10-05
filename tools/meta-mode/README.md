@@ -9,6 +9,7 @@ This directory contains the optional Bun tools that support `meta-mode`:
 - `worktree-audit.mjs` produces a read-only, cross-platform worktree audit.
 - `worktree-audit.sh` remains a compatibility wrapper for the historical name.
 - `resume.mjs` creates, publishes, and reads durable cold-start checkpoints under `.git/mstack/resume`.
+- `pr-safety.mjs` provides harness-neutral deadline, landing-revision, guarded-merge, and command-transport helpers.
 
 The tools are not required by the portable skill installer. Run them from this
 directory with Bun after installing dependencies from `package.json`. Their
@@ -16,6 +17,8 @@ inputs and outputs are deliberately separate from the canonical
 `skills/meta-mode/SKILL.md`, so each Harness can use its own equivalent runtime.
 
 Run `node check-playbooks.mjs <project-root>` to validate `.agents/playbooks/` before using project extensions. Pass `--bundled <path>` to check against another installed skill tree.
+
+`pr-safety.mjs` accepts both GitHub CLI (`gh`) and Origin-style guarded merge arguments; callers retain responsibility for authorization and post-merge readback.
 
 `worktree-audit.mjs` (or its `worktree-audit.sh` compatibility wrapper) can include the latest session that touched a worktree when
 you set `MSTACK_TRANSCRIPTS_DIR` to a directory containing the active Harness's
