@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -14,16 +14,21 @@ function flat(text) {
 }
 
 function frontmatter(text) {
-  return text.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? "";
+  return text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/)?.[1] ?? "";
+}
+
+function readText(path) {
+  return readFileSync(path, "utf8").replace(/^﻿/, "").replaceAll("\r\n", "\n");
 }
 
 function field(text, key) {
   return frontmatter(text).match(new RegExp(`^${key}:[ \\t]*(.*)$`, "m"))?.[1].trim() ?? "";
 }
 
+// Match against the directory listing so a stem resolves the same on case-insensitive and case-sensitive filesystems and cannot escape the directory.
 function readPlaybook(root, stem) {
-  const path = join(root, `${stem}.md`);
-  return existsSync(path) ? readFileSync(path, "utf8").replaceAll("\r\n", "\n") : null;
+  const file = `${stem}.md`;
+  return readdirSync(root).includes(file) ? readText(join(root, file)) : null;
 }
 
 function diagnostic(severity, message, code) {
@@ -31,14 +36,16 @@ function diagnostic(severity, message, code) {
 }
 
 export function checkPlaybooksDetailed(root, bundled = BUNDLED) {
+  if (!existsSync(root) || !statSync(root).isDirectory()) throw new Error(`Project root is not a directory: ${root}`);
   const directory = join(resolve(root), ".agents", "playbooks");
   if (!existsSync(directory)) return { diagnostics: [], errors: [], warnings: [] };
+  if (!existsSync(bundled) || !statSync(bundled).isDirectory()) throw new Error(`Bundled playbooks directory not found: ${bundled}`);
 
   const diagnostics = [];
   const add = (severity, message, code) => diagnostics.push(diagnostic(severity, message, code));
   for (const name of readdirSync(directory).filter((file) => file.endsWith(".md")).sort()) {
     const relativePath = `.agents/playbooks/${name}`;
-    const text = readFileSync(join(directory, name), "utf8").replaceAll("\r\n", "\n");
+    const text = readText(join(directory, name));
     const when = field(text, "when");
     if (!when) add("error", `${relativePath}: its frontmatter needs a "when:" line`, "missing-when");
 

@@ -474,9 +474,9 @@ node tools/meta-mode/check-playbooks.mjs <project-root>
 
 A project playbook belongs in `<project-root>/.agents/playbooks/`. Its frontmatter
 must contain `when:` and may contain a comma-separated `extends:` list. Changes
-must quote the exact bundled step they anchor to with `After`, `Before`, `Replace`,
-or `In`. Use `--bundled <path>` when checking a staged skill installation instead
-of this checkout.
+must be list items that quote the exact bundled step they anchor to with `After`,
+`Before`, `Replace`, or `In`. Use `--bundled <path>` when checking a staged skill
+installation instead of this checkout.
 
 To compare the pstack inventory and non-skill artifacts, run:
 

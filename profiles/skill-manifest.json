@@ -353,7 +353,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "b3c505602b82fb3641a3983e9c46fb974881faa12ece1af804fae27afb7be532",
-      "targetDigest": "7b536c7484e19cf426e3f382ee58143678bb8c94c1bab33b0b89f1f9b2d62d96"
+      "targetDigest": "32363f67837dfe03bc5fd1b58ba940f2cfde2dfe46bce808416ad7cd4f63fd90"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",
@@ -726,7 +726,7 @@
     "tools/meta-mode/check-playbooks.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "f9d19c79e28ec3ca07626b2f963f2f2de8867c52ad2779f115c3620729a898cf"
+      "targetDigest": "3a753d840c391cbf93979d6d474bc3965b387bc507de6925420ca78ff5db6aaf"
     },
     "tools/meta-mode/orch/orch.test.ts": {
       "upstream": "pstack",
@@ -769,17 +769,7 @@
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "6957647e879f5cd85386a50fb4fa7fb9d83c6179f6e55d7b9e0d1a33f3912812"
-    },
-    "tools/meta-mode/resume.mjs": {
-      "upstream": null,
-      "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "57c3b067f69ce36d30b9a6c5df0f8cbf2c0cef46777eb4d3c7e40b62f087ec72"
-    },
-    "tools/meta-mode/resume.test.mjs": {
-      "upstream": null,
-      "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "2ed58fbbff1486f7ad0faf0550a825ad4648775b3a12743936247fdb2fbd54eb"
+      "targetDigest": "5a2dcf51ad2a816941a116b0e4c9c4e113c9d2a721a15f5ac8ef7a4b1a9afeaf"
     },
     "tools/meta-mode/watch-pr/cli.test.ts": {
       "upstream": "pstack",
