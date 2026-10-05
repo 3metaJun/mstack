@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
-import { checkPlaybooks } from "../tools/meta-mode/check-playbooks.mjs";
+import { checkPlaybooks, checkPlaybooksDetailed } from "../tools/meta-mode/check-playbooks.mjs";
 
 const script = resolve("tools/meta-mode/check-playbooks.mjs");
 
@@ -60,6 +60,38 @@ test("runs through a symlink and rejects unknown options", (t) => {
   const unknown = run(root, bundledRoot, "--unknown");
   assert.equal(unknown.status, 1);
   assert.match(unknown.stderr, /Unknown option: --unknown/);
+});
+
+test("classifies duplicate extends and anchors as warnings, with strict mode failing", (t) => {
+  const { root, bundledRoot } = fixture(t, {
+    "bug-fix.md": "---\nextends: bug-fix, bug-fix\nwhen: Use it for bugs.\n---\n- **In** \"Binary-search the cause.\": first.\n- **In** \"Binary-search the cause.\": second.\n",
+  }, { "bug-fix.md": "Binary-search the cause.\n" });
+  const detailed = checkPlaybooksDetailed(root, bundledRoot);
+  assert.deepEqual(detailed.errors, []);
+  assert.equal(detailed.warnings.length, 2);
+  assert.equal(checkPlaybooks(root, bundledRoot).length, 2);
+  const normal = run(root, bundledRoot);
+  assert.equal(normal.status, 0);
+  assert.match(normal.stderr, /warning:.*extends/);
+  const strict = run(root, bundledRoot, "--strict");
+  assert.equal(strict.status, 1);
+  const json = run(root, bundledRoot, "--json");
+  assert.equal(json.status, 0);
+  const output = JSON.parse(json.stdout);
+  assert.equal(output.ok, true);
+  assert.equal(output.errors.length, 0);
+  assert.equal(output.warnings.length, 2);
+});
+
+test("rejects an anchor found in more than one base playbook", (t) => {
+  const { root, bundledRoot } = fixture(t, {
+    "combined.md": "---\nextends: first, second\nwhen: Use it.\n---\n- **After** \"Shared step\": adjust.\n",
+  }, { "first.md": "Shared step\n", "second.md": "Shared step\n" });
+  const result = run(root, bundledRoot, "--json");
+  assert.equal(result.status, 1);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.errors[0].code, "ambiguous-anchor");
+  assert.match(output.errors[0].message, /ambiguous/);
 });
 
 test("leaves a repository without project playbooks valid", (t) => {

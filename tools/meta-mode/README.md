@@ -16,7 +16,7 @@ directory with Bun after installing dependencies from `package.json`. Their
 inputs and outputs are deliberately separate from the canonical
 `skills/meta-mode/SKILL.md`, so each Harness can use its own equivalent runtime.
 
-Run `node check-playbooks.mjs <project-root>` to validate `.agents/playbooks/` before using project extensions. Pass `--bundled <path>` to check against another installed skill tree.
+Run `node check-playbooks.mjs <project-root>` to validate `.agents/playbooks/` before using project extensions. Pass `--bundled <path>` to check against another installed skill tree. The normal output remains human-readable. Add `--json` for a machine-readable object with `errors`, `warnings`, and `diagnostics`. Errors fail the command; warnings for duplicate `extends` entries or anchors do not fail unless you add `--strict`.
 
 `pr-safety.mjs` accepts both GitHub CLI (`gh`) and Origin-style guarded merge arguments; callers retain responsibility for authorization and post-merge readback.
 
