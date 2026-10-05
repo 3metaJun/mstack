@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import process from "node:process";
@@ -11,7 +12,10 @@ const usage = `Usage:
   node tools/meta-mode/resume.mjs publish --project <dir> --id <id>
   node tools/meta-mode/resume.mjs read --project <dir> [--id <id>]
 
-A resume is drafted in .git/mstack/resume and becomes visible only after publish.`;
+A resume is drafted under the repository's common Git directory (.git/mstack/resume/<worktree-key>)
+and becomes visible only after publish. Because it lives outside the worktree, removing a linked
+worktree does not delete it. Published checkpoints record the sha256 of the note and artifacts, and
+read reports any file that is missing or changed since publish.`;
 
 function git(project, args) {
   try {
@@ -26,13 +30,48 @@ function repository(project) {
   const input = resolve(project || process.cwd());
   const root = resolve(git(input, ["rev-parse", "--show-toplevel"]));
   const worktree = root;
-  const gitDir = join(resolve(git(input, ["rev-parse", "--absolute-git-dir"])), "mstack", "resume");
+  // The common dir is shared by every linked worktree and survives `git worktree remove`. It can be printed relative to `input`.
+  const commonDir = resolve(input, git(input, ["rev-parse", "--git-common-dir"]));
+  // Resume ids are only unique within one worktree, so each worktree gets its own directory.
+  const key = createHash("sha256").update(root).digest("hex").slice(0, 16);
+  const gitDir = join(commonDir, "mstack", "resume", key);
+  return { input, root, worktree, gitDir };
+}
+
+// Only `begin` stamps an identity; reading a checkpoint must work on a machine with no Git identity.
+function identity(repo) {
   let name = "";
   let email = "";
-  try { name = git(input, ["config", "--get", "user.name"]); } catch { /* report the combined identity error below */ }
-  try { email = git(input, ["config", "--get", "user.email"]); } catch { /* report the combined identity error below */ }
+  try { name = git(repo.input, ["config", "--get", "user.name"]); } catch { /* report the combined identity error below */ }
+  try { email = git(repo.input, ["config", "--get", "user.email"]); } catch { /* report the combined identity error below */ }
   if (!name || !email) throw new Error("Git identity is incomplete: configure user.name and user.email before creating a resume");
-  return { input, root, worktree, gitDir, identity: { name, email } };
+  return { name, email };
+}
+
+function digest(path) {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+// Hash every referenced file by worktree-relative path so `read` can tell a changed or deleted file from a valid one.
+function fileHashes(repo, record) {
+  const hashes = {};
+  for (const file of [record.note, ...record.artifacts]) {
+    const path = inside(repo.root, file, "Path");
+    requireFile(path, "Referenced file");
+    hashes[file] = digest(path);
+  }
+  return hashes;
+}
+
+function verifyFiles(repo, hashes) {
+  return Object.entries(hashes ?? {}).map(([file, sha256]) => {
+    let status = "missing";
+    try {
+      const path = inside(repo.root, file, "Path");
+      if (existsSync(path) && lstatSync(path).isFile()) status = digest(path) === sha256 ? "ok" : "changed";
+    } catch { /* an escaping or unreadable path counts as missing */ }
+    return { path: file, sha256, status };
+  });
 }
 
 function inside(root, file, label) {
@@ -79,7 +118,8 @@ function begin(repo, options) {
   const dir = store(repo);
   const draft = join(dir, `${id}.draft.json`);
   if (existsSync(draft) || existsSync(join(dir, `${id}.json`))) throw new Error(`Resume already exists: ${id}`);
-  const record = { version: 1, id, state: "draft", project: repo.root, worktree: repo.worktree, identity: repo.identity, note: relative(repo.root, note).replaceAll("\\", "/"), artifacts, createdAt: new Date().toISOString() };
+  const noteRel = relative(repo.root, note).replaceAll("\\", "/");
+  const record = { version: 1, id, state: "draft", project: repo.root, worktree: repo.worktree, identity: identity(repo), note: noteRel, artifacts, createdAt: new Date().toISOString() };
   atomic(draft, JSON.stringify(record, null, 2) + "\n");
   console.log(JSON.stringify({ ...record, path: draft }));
 }
@@ -94,7 +134,8 @@ function publish(repo, options) {
   if (record.project !== repo.root || record.worktree !== repo.worktree) throw new Error("Draft belongs to a different project or worktree");
   requireFile(inside(repo.root, record.note, "Note path"), "Note");
   for (const artifact of record.artifacts) requireFile(inside(repo.root, artifact, "Artifact path"), "Artifact");
-  const published = { ...record, state: "published", publishedAt: new Date().toISOString() };
+  // Hash at publish time so the checkpoint describes the files as they are when it becomes visible.
+  const published = { ...record, state: "published", publishedAt: new Date().toISOString(), files: fileHashes(repo, record) };
   const target = join(dir, `${id}.json`);
   atomic(target, JSON.stringify(published, null, 2) + "\n");
   // Removing the draft after the atomic publication makes readers see either a complete record or no record.
@@ -103,12 +144,22 @@ function publish(repo, options) {
 }
 
 function readResume(repo, options) {
-  const dir = store(repo);
+  const dir = repo.gitDir;
+  if (!existsSync(dir)) throw new Error("No published resume checkpoints found");
   let id = options.id;
   if (id) id = resumeId(id);
   if (!id) {
-    const entries = readdirSync(dir).filter((name) => name.endsWith(".json") && !name.endsWith(".draft.json")).sort();
-    id = entries.at(-1)?.slice(0, -5);
+    // Newest by publication time, not by filename: ids are free-form and do not sort chronologically.
+    const published = readdirSync(dir)
+      .filter((name) => name.endsWith(".json") && !name.endsWith(".draft.json"))
+      .flatMap((name) => {
+        try {
+          const record = JSON.parse(readFileSync(join(dir, name), "utf8"));
+          return typeof record.publishedAt === "string" ? [{ id: name.slice(0, -5), publishedAt: record.publishedAt }] : [];
+        } catch { return []; }
+      })
+      .sort((a, b) => (a.publishedAt === b.publishedAt ? a.id.localeCompare(b.id) : a.publishedAt.localeCompare(b.publishedAt)));
+    id = published.at(-1)?.id;
   }
   if (!id) throw new Error("No published resume checkpoints found");
   id = resumeId(id);
@@ -116,7 +167,9 @@ function readResume(repo, options) {
   if (!existsSync(path)) throw new Error(`No published resume found for id: ${id}`);
   const record = JSON.parse(readFileSync(path, "utf8"));
   if (record.project !== repo.root || record.worktree !== repo.worktree) throw new Error("Resume belongs to a different project or worktree");
-  console.log(JSON.stringify({ ...record, path }));
+  const files = verifyFiles(repo, record.files);
+  for (const file of files.filter((item) => item.status !== "ok")) console.error(`resume: warning: ${file.path} is ${file.status} since the checkpoint was published`);
+  console.log(JSON.stringify({ ...record, path, files, filesOk: files.every((item) => item.status === "ok") }));
 }
 
 function parse(args) {
