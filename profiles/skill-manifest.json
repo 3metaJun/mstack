@@ -348,7 +348,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "b3c505602b82fb3641a3983e9c46fb974881faa12ece1af804fae27afb7be532",
-      "targetDigest": "4efa5f64e1f6bd01fd08eb6fb720ab4c84c7f3d787fff9df71d0e07ab65b73fe"
+      "targetDigest": "7b536c7484e19cf426e3f382ee58143678bb8c94c1bab33b0b89f1f9b2d62d96"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",
@@ -718,6 +718,11 @@
       "targetDigest": "ddcdb05af01b37d7513b2017d44e29c30bdaa79ca360c5913d701c16dde70907",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
+    "tools/meta-mode/check-playbooks.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "847d83fe381880ec4d8a50b4fe942e503d7f611408343a8cd1f9207c45b45241"
+    },
     "tools/meta-mode/orch/orch.test.ts": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/orch/orch.test.ts",
@@ -749,7 +754,7 @@
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "c27f30aa0fa15655a9c8dbd9df698a2c69393778bbe516ad5ebdf82ca0de71bd"
+      "targetDigest": "5a2dcf51ad2a816941a116b0e4c9c4e113c9d2a721a15f5ac8ef7a4b1a9afeaf"
     },
     "tools/meta-mode/watch-pr/cli.test.ts": {
       "upstream": "pstack",
