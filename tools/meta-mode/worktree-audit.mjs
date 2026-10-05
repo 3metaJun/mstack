@@ -9,6 +9,11 @@ export function runGit(args, cwd, options = {}) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024, ...options });
   return result.status === 0 ? result.stdout : "";
 }
+/** Like runGit, but a failed command stays distinguishable from empty output. */
+function gitResult(args, cwd) {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  return { ok: result.status === 0, stdout: result.stdout ?? "" };
+}
 function gitOk(args, cwd) { return spawnSync("git", args, { cwd, stdio: "ignore" }).status === 0; }
 
 /** Parse the NUL-delimited porcelain stream without treating paths as shell text. */
@@ -53,7 +58,9 @@ function humanSize(bytes) {
 }
 function age(timestamp, now) { return timestamp > 0 ? `${Math.max(0, Math.floor((now - timestamp) / 86400000))}d` : "?"; }
 function gitStatus(cwd) {
-  const output = runGit(["status", "--porcelain=v1", "-z"], cwd);
+  const { ok, stdout: output } = gitResult(["status", "--porcelain=v1", "-z"], cwd);
+  // A failed status says nothing about uncommitted work, so it must never read as clean.
+  if (!ok) return "unknown";
   if (!output) return "clean";
   const entries = output.split("\0").filter(Boolean);
   const tracked = entries.filter((entry) => !entry.startsWith("?? ")).length;
@@ -70,7 +77,9 @@ function remoteState(worktree, branch, head) {
 function latestTranscript(transcripts, worktree, now) {
   if (!transcripts || !existsSync(transcripts)) return { date: "-", recent: false };
   let newest = 0;
-  const needle = worktree.replaceAll("\\", "/");
+  // Transcripts are JSONL, so a Windows path appears with doubled backslashes. Collapse every run to one slash on both sides.
+  const normalize = (text) => text.replace(/\\+/g, "/");
+  const needle = normalize(worktree);
   const scan = (dir) => {
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
@@ -79,7 +88,7 @@ function latestTranscript(transcripts, worktree, now) {
       if (entry.isDirectory()) scan(path);
       else {
         try {
-          const text = readFileSync(path, "utf8").replaceAll("\\", "/");
+          const text = normalize(readFileSync(path, "utf8"));
           if (text.includes(`${needle}/`) || text.includes(`${needle}\"`) || text.includes(`${needle}'`)) newest = Math.max(newest, lstatSync(path).mtimeMs);
         } catch { /* transcript may disappear during a scan */ }
       }
@@ -92,6 +101,7 @@ function latestTranscript(transcripts, worktree, now) {
 }
 
 export function classify({ dirty, pr, recent, merged }) {
+  if (dirty === "unknown") return "hold-unknown";
   if (dirty.startsWith("wip:")) return "hold-wip";
   if (pr.includes("OPEN")) return "hold-open-pr";
   if (recent) return "verify-recent-chat";
@@ -99,15 +109,19 @@ export function classify({ dirty, pr, recent, merged }) {
   return "review";
 }
 
-export function audit(repo = runGit(["rev-parse", "--show-toplevel"], process.cwd()).trim(), env = process.env) {
+function listAuthoredPrs(repo) {
+  const gh = spawnSync("gh", ["pr", "list", "--author", "@me", "--state", "all", "--limit", "1000", "--json", "number,state,headRefName"], { cwd: repo, encoding: "utf8" });
+  if (gh.status !== 0) return [];
+  try { return JSON.parse(gh.stdout); } catch { return []; }
+}
+
+export function audit(repo = runGit(["rev-parse", "--show-toplevel"], process.cwd()).trim(), env = process.env, { listPrs = listAuthoredPrs } = {}) {
   if (!repo) throw new Error("not in a git repo; pass a repo path");
   repo = resolve(repo);
   const worktrees = parseWorktreePorcelain(runGit(["worktree", "list", "--porcelain", "-z"], repo));
   if (!worktrees.length) throw new Error("could not read git worktrees");
   runGit(["fetch", "origin", "main", "--quiet"], repo); // best effort; stale refs remain useful
-  let prs = [];
-  const gh = spawnSync("gh", ["pr", "list", "--author", "@me", "--state", "all", "--limit", "1000", "--json", "number,state,headRefName"], { cwd: repo, encoding: "utf8" });
-  if (gh.status === 0) { try { prs = JSON.parse(gh.stdout); } catch { prs = []; } }
+  const prs = listPrs(repo);
   const now = Date.now();
   const main = worktrees[0]?.path;
   return worktrees.slice(1).map((wt) => {
