@@ -8,6 +8,7 @@ This directory contains the optional Bun tools that support `meta-mode`:
 - `check-playbooks.mjs` validates project playbook extensions against the bundled playbooks.
 - `worktree-audit.mjs` produces a read-only, cross-platform worktree audit.
 - `worktree-audit.sh` remains a compatibility wrapper for the historical name.
+- `resume.mjs` creates, publishes, and reads durable cold-start checkpoints under `.git/mstack/resume`.
 
 The tools are not required by the portable skill installer. Run them from this
 directory with Bun after installing dependencies from `package.json`. Their
@@ -21,3 +22,8 @@ you set `MSTACK_TRANSCRIPTS_DIR` to a directory containing the active Harness's
 workspace transcripts. Leave it unset when transcript history is unavailable;
 the audit reports `-` in the `LAST_CHAT` column and still checks every Git
 worktree.
+
+Resume checkpoints are project-local and Git-bound. The note and evidence paths
+must be regular files inside the worktree. `begin` writes an unpublished draft;
+`publish` validates those paths and atomically exposes the complete record;
+`read` never returns drafts. Configure `user.name` and `user.email` before use.
