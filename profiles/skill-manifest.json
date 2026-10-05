@@ -348,7 +348,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "b3c505602b82fb3641a3983e9c46fb974881faa12ece1af804fae27afb7be532",
-      "targetDigest": "7b536c7484e19cf426e3f382ee58143678bb8c94c1bab33b0b89f1f9b2d62d96"
+      "targetDigest": "32363f67837dfe03bc5fd1b58ba940f2cfde2dfe46bce808416ad7cd4f63fd90"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",
@@ -721,7 +721,7 @@
     "tools/meta-mode/check-playbooks.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "847d83fe381880ec4d8a50b4fe942e503d7f611408343a8cd1f9207c45b45241"
+      "targetDigest": "3a753d840c391cbf93979d6d474bc3965b387bc507de6925420ca78ff5db6aaf"
     },
     "tools/meta-mode/orch/orch.test.ts": {
       "upstream": "pstack",
