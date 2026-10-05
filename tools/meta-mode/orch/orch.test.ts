@@ -329,6 +329,41 @@ describe("Store", () => {
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("reads a legacy ledger as unbound and migrates it on the next record", async () => {
+    const { directory, store } = await initializedStore();
+    const path = join(directory, "ledger.tsv");
+    await writeFile(
+      path,
+      "pr\tsha\tverdict\tevidence\tverifier\tts\n" +
+        "7\tabc123\tunit-test-verified\treports/old.md\tsol\t2026-01-01T00:00:00.000Z\n"
+    );
+    expect(await store.ledger.summary()).toEqual({ "unit-test-verified": 1 });
+    const identity = { baseSha: "base123", baseBranch: "main", patchId: "patch123" };
+    await expect(
+      store.ledger.check({ pr: 7, sha: "abc123", ...identity })
+    ).rejects.toBeInstanceOf(NotFoundError);
+
+    await store.ledger.record({
+      pr: 8,
+      sha: "def456",
+      ...identity,
+      verdict: "live-ui-verified",
+      evidence: "reports/live.md",
+      verifier: "runtime",
+    });
+    const migrated = (await readFile(path, "utf8")).split("\n");
+    expect(migrated[0]).toBe(
+      "pr\tsha\tbaseSha\tbaseBranch\tpatchId\tverdict\tevidence\tverifier\tts"
+    );
+    expect(migrated[1]).toBe(
+      "7\tabc123\t\t\t\tunit-test-verified\treports/old.md\tsol\t2026-01-01T00:00:00.000Z"
+    );
+    expect(await store.ledger.summary()).toEqual({
+      "unit-test-verified": 1,
+      "live-ui-verified": 1,
+    });
+  });
+
   it("pushes, peeks, and atomically drains inbox pointers", async () => {
     const { directory, store } = await initializedStore();
 

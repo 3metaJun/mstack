@@ -21,9 +21,10 @@ test("rejects incomplete landing revisions at the boundary", () => {
 });
 
 test("guarded merge always carries the verified head", () => {
-  assert.deepEqual(guardedMergeArgs({ pr: 7, head: "abc" }), ["pr", "merge", "7", "--match-head-commit", "abc"]);
-  assert.deepEqual(guardedMergeArgs({ forge: "origin", pr: 7, head: "abc" }), ["pr", "merge", "7", "--expected-head", "abc"]);
-  assert.throws(() => guardedMergeArgs({ pr: 7, head: "" }), /verified head/);
+  const head = "a".repeat(40);
+  assert.deepEqual(guardedMergeArgs({ pr: 7, head }), ["pr", "merge", "7", "--match-head-commit", head]);
+  assert.deepEqual(guardedMergeArgs({ forge: "origin", pr: 7, head }), ["pr", "merge", "7", "--expected-head", head]);
+  for (const bad of ["", "abc", "HEAD", `${head} `, "g".repeat(40)]) assert.throws(() => guardedMergeArgs({ pr: 7, head: bad }), /full verified head oid/);
 });
 
 test("deadline is monotonic and rejects after expiry", () => {

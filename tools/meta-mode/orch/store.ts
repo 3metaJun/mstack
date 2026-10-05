@@ -16,6 +16,8 @@ import { basename, dirname, join, resolve } from "node:path";
 
 const UNIT_HEADER = "id\ttrack\tstate\tbranch\tpr\tsha\tbrief";
 const LEDGER_HEADER = "pr\tsha\tbaseSha\tbaseBranch\tpatchId\tverdict\tevidence\tverifier\tts";
+// Ledgers written before verdicts were bound to the base and patch. They stay readable, and the next write migrates them.
+const LEGACY_LEDGER_HEADER = "pr\tsha\tverdict\tevidence\tverifier\tts";
 const LOCK_FILE = ".orch.lock";
 
 export type Verdict =
@@ -582,8 +584,23 @@ async function saveUnits(store: string, rows: readonly Unit[]): Promise<void> {
 }
 
 async function readLedger(store: string): Promise<readonly LedgerEntry[]> {
-  return (await readTsv(join(store, "ledger.tsv"), LEDGER_HEADER, 9)).map(
-    (row) => {
+  const path = join(store, "ledger.tsv");
+  const legacy =
+    (await requiredFile(path)).replace(/\r/g, "").split("\n", 1)[0] ===
+    LEGACY_LEDGER_HEADER;
+  const rows = await readTsv(
+    path,
+    legacy ? LEGACY_LEDGER_HEADER : LEDGER_HEADER,
+    legacy ? 6 : 9
+  );
+  // A legacy row has no base or patch identity, so no check can match it and it reads as not verified.
+  return rows
+    .map((cells) =>
+      legacy
+        ? [cells[0] ?? "", cells[1] ?? "", "", "", "", ...cells.slice(2)]
+        : cells
+    )
+    .map((row) => {
       const rawVerdict = row[5] ?? "";
       const verdict = verdictOrNull(rawVerdict);
       if (verdict === null) {
@@ -600,8 +617,7 @@ async function readLedger(store: string): Promise<readonly LedgerEntry[]> {
         verifier: row[7] ?? "",
         ts: row[8] ?? "",
       };
-    }
-  );
+    });
 }
 
 function ledgerCells(row: LedgerEntry): readonly string[] {

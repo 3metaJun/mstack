@@ -20,6 +20,8 @@ export class WatchDeadline {
   assert() { if (this.remaining() === 0) throw new DeadlineExceeded(); }
 }
 
+const OID = /^[0-9a-f]{40,64}$/i;
+
 function requiredText(value, key, pattern = null) {
   if (typeof value !== "string" || !value || value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value)) {
     throw new TypeError(`invalid landing revision ${key}`);
@@ -29,7 +31,7 @@ function requiredText(value, key, pattern = null) {
 }
 
 function oid(value, key) {
-  return requiredText(value, key, /^[0-9a-f]{40,64}$/i).toLowerCase();
+  return requiredText(value, key, OID).toLowerCase();
 }
 
 export function parseLandingRevision(value) {
@@ -56,9 +58,10 @@ export function assertLandingRevision(expected, actual) {
 }
 
 export function guardedMergeArgs({ forge = "gh", pr, head }) {
-  if (!Number.isInteger(pr) || pr <= 0 || typeof head !== "string" || !head) throw new TypeError("merge requires a PR number and verified head SHA");
-  if (forge === "gh") return ["pr", "merge", String(pr), "--match-head-commit", head];
-  if (forge === "origin") return ["pr", "merge", String(pr), "--expected-head", head];
+  if (!Number.isInteger(pr) || pr <= 0 || typeof head !== "string" || !OID.test(head)) throw new TypeError("merge requires a PR number and a full verified head oid");
+  const expected = head.toLowerCase();
+  if (forge === "gh") return ["pr", "merge", String(pr), "--match-head-commit", expected];
+  if (forge === "origin") return ["pr", "merge", String(pr), "--expected-head", expected];
   throw new Error(`unsupported forge: ${forge}`);
 }
 
