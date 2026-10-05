@@ -5,11 +5,6 @@
     "mattpocock/skills": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
   },
   "files": {
-    "scripts/worktree-audit.test.mjs": {
-      "upstream": null,
-      "reason": "Focused portability and safety behavior tests for the worktree audit.",
-      "targetDigest": "2b854de22c6029cd6746932b81be93d4eff23a29618d4a7624cf76b7f481b330"
-    },
     "skills/architect/references/design-red-flags.md": {
       "upstream": "pstack",
       "source": "skills/architect/references/design-red-flags.md",
@@ -271,13 +266,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/orchestrate.md",
       "sourceDigest": "d42b4375f1bd4ce23da0b575a198571a2117df7eea10c3c9fc6d92ae1053f7be",
-      "targetDigest": "eb7b5b4d8d3f6366546216d136afe6f3028cac3e31ac897a69af64aa463815b3"
+      "targetDigest": "01d014c9693e4214ef56ab95f0bbc864a47efddcdcb53eda629319cb63766c3f"
     },
     "skills/meta-mode/playbooks/pause-safely.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/pause-safely.md",
       "sourceDigest": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd",
-      "targetDigest": "0deee327d325a4c175614d3df581f388fbcbeb5c67dfc62a8ba517937a5b3338"
+      "targetDigest": "50f1fa76fcdbf92db5a772a0470a128850c960c9eb68156846cc4f5a503f863b"
     },
     "skills/meta-mode/playbooks/perf-issue.md": {
       "upstream": "pstack",
@@ -307,7 +302,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/session-pickup.md",
       "sourceDigest": "1604fb463f7c7410d43fa024ca76c1c1824c166a01fd69d61f073d06fdca2a47",
-      "targetDigest": "7ea205c7394469d61c9a4f234be7f7a426044412ecdb210bc08d43ef7cb554fe"
+      "targetDigest": "5bbf52a3e43524aca7f474962a9e9a6a25d8cd2cc96569dcddccd5bf35466ac8"
     },
     "skills/meta-mode/playbooks/shipping.md": {
       "upstream": "pstack",
@@ -331,7 +326,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/worktree-cleanup.md",
       "sourceDigest": "fc464dc4121926df1704f483c5feca83717c0a40b4651d3e11bd3aedd89441b6",
-      "targetDigest": "7963871a1ba7f31929502a864133fad4e20ac4ba62deafee38470f7a5e4e0332"
+      "targetDigest": "7a13c4a1e27e084f9bb9ce9f7c998d5584efeb3e4bfa15a6422f261f9db0bc77"
     },
     "skills/meta-mode/references/bugbot-triage.md": {
       "upstream": "pstack",
@@ -726,13 +721,13 @@
     "tools/meta-mode/check-playbooks.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "3a753d840c391cbf93979d6d474bc3965b387bc507de6925420ca78ff5db6aaf"
+      "targetDigest": "e962e30da22e1668b0036072b9f9f002664ac3fbc17c66a9161fd31163072282"
     },
     "tools/meta-mode/orch/orch.test.ts": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/orch/orch.test.ts",
       "sourceDigest": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
-      "targetDigest": "c0077ee0b31d46a6a6b2b2f3a1391a947d44cd7d636f29969dd0c826fc79e722",
+      "targetDigest": "821c2cd328e441590bb236733ca48a6f889e13c7c49447c5a0c170ac999af5a5",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/orch/orch.ts": {
@@ -746,7 +741,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/orch/store.ts",
       "sourceDigest": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
-      "targetDigest": "9e2dbb4d8b41b004a50e2317e6c0fee13da366291821e517108cf323de4ddd65",
+      "targetDigest": "c879408105d96814345f9e15f9a909505fec1374036c01e58820a55374a194bb",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/package.json": {
@@ -758,18 +753,28 @@
     },
     "tools/meta-mode/pr-safety.mjs": {
       "upstream": null,
-      "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "12c7e37f6148146cf9e5e0cd647f363f01a57e5084627eec72b5e2170c743e77"
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "1ce77cecdcb4be6c9622257f2e2efac790e47fbd35b1fd8dd93a4d7ef123f2cf"
     },
     "tools/meta-mode/pr-safety.test.mjs": {
       "upstream": null,
-      "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "c30334f2f837725fba92798d97250dea1dcab8846640a2da894e17135f2a2d33"
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "46d00f3086850f82bf713d1fa91c60debde6623fe7bf3007a49eaafb42ddae3e"
     },
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "5a2dcf51ad2a816941a116b0e4c9c4e113c9d2a721a15f5ac8ef7a4b1a9afeaf"
+      "targetDigest": "62e8431ec27bffa8ec911f6286ad183d16b6f451de34f53dd5ea63de5acd0088"
+    },
+    "tools/meta-mode/resume.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "2cdd3e939db59a68d847489c4eeec6a26674ec5bec2852c7e242959af5a5ff8c"
+    },
+    "tools/meta-mode/resume.test.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "6f1074ac94da0c4d1e9a6504acfac428ebc47a3f2656b260b374795d345abd63"
     },
     "tools/meta-mode/watch-pr/cli.test.ts": {
       "upstream": "pstack",
@@ -857,8 +862,8 @@
     },
     "tools/meta-mode/worktree-audit.mjs": {
       "upstream": null,
-      "reason": "Local cross-platform implementation replacing shell-specific audit behavior.",
-      "targetDigest": "f87b0b438dcd6d23c29512b3cc70af1a35049db841d5069298456bf11818281d"
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "ee7946ec0558ddeeb7466003d120124c6c884218f05d51e920c90d4fc010c20c"
     },
     "tools/meta-mode/worktree-audit.sh": {
       "upstream": "pstack",
