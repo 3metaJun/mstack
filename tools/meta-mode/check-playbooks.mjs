@@ -31,39 +31,73 @@ function readPlaybook(root, stem) {
   return readdirSync(root).includes(file) ? readText(join(root, file)) : null;
 }
 
-export function checkPlaybooks(root, bundled = BUNDLED) {
+function diagnostic(severity, message, code) {
+  return { severity, message, code };
+}
+
+export function checkPlaybooksDetailed(root, bundled = BUNDLED) {
   if (!existsSync(root) || !statSync(root).isDirectory()) throw new Error(`Project root is not a directory: ${root}`);
   const directory = join(resolve(root), ".agents", "playbooks");
-  if (!existsSync(directory)) return [];
+  if (!existsSync(directory)) return { diagnostics: [], errors: [], warnings: [] };
   if (!existsSync(bundled) || !statSync(bundled).isDirectory()) throw new Error(`Bundled playbooks directory not found: ${bundled}`);
 
-  const problems = [];
+  const diagnostics = [];
+  const add = (severity, message, code) => diagnostics.push(diagnostic(severity, message, code));
   for (const name of readdirSync(directory).filter((file) => file.endsWith(".md")).sort()) {
     const relativePath = `.agents/playbooks/${name}`;
     const text = readText(join(directory, name));
     const when = field(text, "when");
-    if (!when) problems.push(`${relativePath}: its frontmatter needs a "when:" line`);
+    if (!when) add("error", `${relativePath}: its frontmatter needs a "when:" line`, "missing-when");
 
-    const bases = field(text, "extends")
-      .split(",")
-      .map((stem) => stem.trim())
-      .filter(Boolean)
-      .map((stem) => ({ stem, text: readPlaybook(bundled, stem) }));
+    const extendsValue = field(text, "extends");
+    const stems = extendsValue.split(",").map((stem) => stem.trim()).filter(Boolean);
+    const seenStems = new Set();
+    for (const stem of stems) {
+      if (seenStems.has(stem)) {
+        add("warning", `${relativePath}: extends \`${stem}\` more than once`, "duplicate-extends");
+      }
+      seenStems.add(stem);
+    }
+    const bases = stems.map((stem) => ({ stem, text: readPlaybook(bundled, stem) }));
     for (const base of bases) {
-      if (base.text === null) problems.push(`${relativePath}: extends \`${base.stem}\`, which this mstack has no playbook for`);
+      if (base.text === null) add("error", `${relativePath}: extends \`${base.stem}\`, which this mstack has no playbook for`, "missing-base");
     }
 
+    const anchors = new Map();
     for (const line of text.split("\n")) {
       if (CHANGE_VERB.test(line) && !CHANGE.test(line)) {
-        problems.push(`${relativePath}: a change has no straight-quoted step text to anchor on: ${line.trim().slice(0, 80)}`);
+        add("error", `${relativePath}: a change has no straight-quoted step text to anchor on: ${line.trim().slice(0, 80)}`, "unquoted-anchor");
       }
       const anchor = line.match(CHANGE)?.[1];
-      if (anchor && !bases.some((base) => base.text && flat(base.text).includes(flat(anchor)))) {
-        problems.push(`${relativePath}: "${anchor}" is not in any playbook it extends`);
+      if (!anchor) continue;
+      const normalized = flat(anchor);
+      if (anchors.has(normalized)) add("warning", `${relativePath}: anchor "${anchor}" is repeated`, "duplicate-anchor");
+      anchors.set(normalized, true);
+      const matches = [];
+      for (const base of [...new Map(bases.filter((base) => base.text).map((base) => [base.stem, base])).values()]) {
+        const source = flat(base.text);
+        let at = source.indexOf(normalized);
+        while (at !== -1) {
+          matches.push(base.stem);
+          at = source.indexOf(normalized, at + normalized.length);
+        }
+      }
+      if (matches.length === 0) {
+        add("error", `${relativePath}: "${anchor}" is not in any playbook it extends`, "stale-anchor");
+      } else if (matches.length > 1) {
+        add("error", `${relativePath}: "${anchor}" is ambiguous in the playbooks it extends`, "ambiguous-anchor");
       }
     }
   }
-  return problems;
+  return {
+    diagnostics,
+    errors: diagnostics.filter((item) => item.severity === "error"),
+    warnings: diagnostics.filter((item) => item.severity === "warning"),
+  };
+}
+
+export function checkPlaybooks(root, bundled = BUNDLED) {
+  return checkPlaybooksDetailed(root, bundled).diagnostics.map(({ message }) => message);
 }
 
 function parseArgs(args) {
@@ -72,7 +106,10 @@ function parseArgs(args) {
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
     if (arg === "--help") return { help: true, values, positional };
-    if (arg === "--root" || arg === "--bundled") {
+    if (arg === "--json" || arg === "--strict") {
+      if (values.has(arg)) throw new Error(`Duplicate option: ${arg}`);
+      values.set(arg, true);
+    } else if (arg === "--root" || arg === "--bundled") {
       if (values.has(arg)) throw new Error(`Duplicate option: ${arg}`);
       const value = args[++index];
       if (!value || value.startsWith("--")) throw new Error(`${arg} requires a value`);
@@ -100,18 +137,22 @@ if (directInvocation()) {
   try {
     const parsed = parseArgs(process.argv.slice(2));
     if (parsed.help) {
-      console.log("Usage: node tools/meta-mode/check-playbooks.mjs [--root <project-root>] [--bundled <playbooks>]\n\nChecks .agents/playbooks against bundled meta-mode playbooks.");
+      console.log("Usage: node tools/meta-mode/check-playbooks.mjs [--root <project-root>] [--bundled <playbooks>] [--json] [--strict]\n\nChecks .agents/playbooks against bundled meta-mode playbooks. Warnings do not fail unless --strict is used.");
       process.exit(0);
     }
     const root = parsed.values.get("--root") ?? parsed.positional[0] ?? ".";
     const bundled = parsed.values.get("--bundled") ?? BUNDLED;
-    const problems = checkPlaybooks(root, bundled);
-    if (problems.length > 0) {
-      console.error(problems.join("\n"));
-      process.exitCode = 1;
+    const result = checkPlaybooksDetailed(root, bundled);
+    const strict = parsed.values.has("--strict");
+    const failed = result.errors.length > 0 || (strict && result.warnings.length > 0);
+    if (parsed.values.has("--json")) {
+      console.log(JSON.stringify({ ok: !failed, strict, errors: result.errors, warnings: result.warnings, diagnostics: result.diagnostics }, null, 2));
+    } else if (result.diagnostics.length > 0) {
+      for (const item of result.diagnostics) console.error(`${item.severity === "warning" ? "warning: " : ""}${item.message}`);
     } else {
       console.log("Every project playbook matches this mstack's playbooks.");
     }
+    process.exitCode = failed ? 1 : 0;
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

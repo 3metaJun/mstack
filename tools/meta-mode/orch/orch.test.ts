@@ -261,7 +261,13 @@ describe("Store", () => {
     const { store } = await initializedStore();
 
     try {
-      await store.ledger.check({ pr: 184530, sha: "abc123" });
+      await store.ledger.check({
+        pr: 184530,
+        sha: "abc123",
+        baseSha: "base123",
+        baseBranch: "main",
+        patchId: "patch123",
+      });
       throw new Error("expected ledger check to fail");
     } catch (error) {
       expect(error).toBeInstanceOf(NotFoundError);
@@ -271,6 +277,9 @@ describe("Store", () => {
           json: {
             pr: "184530",
             sha: "abc123",
+            baseSha: "base123",
+            baseBranch: "main",
+            patchId: "patch123",
             verdict: "NOT-VERIFIED",
           },
         });
@@ -278,14 +287,20 @@ describe("Store", () => {
     }
     expect(() => parseVerdict("looks-good")).toThrow("verdict must be");
 
+    const identity = {
+      baseSha: "base123",
+      baseBranch: "main",
+      patchId: "patch123",
+    };
     const recorded = await store.ledger.record({
       pr: 184530,
       sha: "abc123",
+      ...identity,
       verdict: "unit-test-verified",
       evidence: "reports/verify.md",
       verifier: "sol",
     });
-    expect(await store.ledger.check({ pr: 184530, sha: "abc123" })).toEqual(
+    expect(await store.ledger.check({ pr: 184530, sha: "abc123", ...identity })).toEqual(
       recorded
     );
     expect(await store.ledger.summary()).toEqual({
@@ -295,10 +310,56 @@ describe("Store", () => {
     await store.ledger.record({
       pr: 184530,
       sha: "abc123",
+      ...identity,
       verdict: "live-ui-verified",
       evidence: "reports/live.md",
+      verifier: "runtime",
     });
     expect(await store.ledger.summary()).toEqual({
+      "live-ui-verified": 1,
+    });
+    await expect(
+      store.ledger.check({
+        pr: 184530,
+        sha: "abc123",
+        baseSha: "different-base",
+        baseBranch: "main",
+        patchId: "patch123",
+      })
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("reads a legacy ledger as unbound and migrates it on the next record", async () => {
+    const { directory, store } = await initializedStore();
+    const path = join(directory, "ledger.tsv");
+    await writeFile(
+      path,
+      "pr\tsha\tverdict\tevidence\tverifier\tts\n" +
+        "7\tabc123\tunit-test-verified\treports/old.md\tsol\t2026-01-01T00:00:00.000Z\n"
+    );
+    expect(await store.ledger.summary()).toEqual({ "unit-test-verified": 1 });
+    const identity = { baseSha: "base123", baseBranch: "main", patchId: "patch123" };
+    await expect(
+      store.ledger.check({ pr: 7, sha: "abc123", ...identity })
+    ).rejects.toBeInstanceOf(NotFoundError);
+
+    await store.ledger.record({
+      pr: 8,
+      sha: "def456",
+      ...identity,
+      verdict: "live-ui-verified",
+      evidence: "reports/live.md",
+      verifier: "runtime",
+    });
+    const migrated = (await readFile(path, "utf8")).split("\n");
+    expect(migrated[0]).toBe(
+      "pr\tsha\tbaseSha\tbaseBranch\tpatchId\tverdict\tevidence\tverifier\tts"
+    );
+    expect(migrated[1]).toBe(
+      "7\tabc123\t\t\t\tunit-test-verified\treports/old.md\tsol\t2026-01-01T00:00:00.000Z"
+    );
+    expect(await store.ledger.summary()).toEqual({
+      "unit-test-verified": 1,
       "live-ui-verified": 1,
     });
   });
@@ -563,7 +624,7 @@ describe("Store", () => {
 
     await writeFile(
       join(directory, "ledger.tsv"),
-      "pr\tsha\tverdict\tevidence\tverifier\tts\n1\tsha\tinvalid\treport\tme\tnow\n"
+      "pr\tsha\tbaseSha\tbaseBranch\tpatchId\tverdict\tevidence\tverifier\tts\n1\tsha\tbase\tmain\tpatch\tinvalid\treport\tme\tnow\n"
     );
     await expect(store.ledger.summary()).rejects.toThrow(
       "ledger.tsv has invalid verdict invalid"
@@ -673,11 +734,20 @@ describe("orch CLI", () => {
       "check",
       "184530",
       "abc123",
+      "--base-sha",
+      "base123",
+      "--base-branch",
+      "main",
+      "--patch-id",
+      "patch123",
     ]);
     expect(missingLedger.code).toBe(2);
     expect(JSON.parse(missingLedger.stdout)).toEqual({
       pr: "184530",
       sha: "abc123",
+      baseSha: "base123",
+      baseBranch: "main",
+      patchId: "patch123",
       verdict: "NOT-VERIFIED",
     });
     expect(missingLedger.stderr).toBe("");

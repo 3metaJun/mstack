@@ -367,6 +367,35 @@ test("rejects empty and whitespace-only environment targets", () => {
   }
 });
 
+test("default installs do not add the opt-in session context artifact", () => {
+  const { root, env } = fixture();
+  try {
+    const result = run(["--harness", "codex"], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(join(env.HARNESS_SKILLS_CODEX_DIR, "session-context")), false);
+    assert.equal(existsSync(join(root, "codex skills", "..", "session-context")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("installs the session context artifact only when explicitly selected", () => {
+  const { root, env } = fixture();
+  try {
+    const result = run(
+      ["--harness", "codex", "--no-skills", "--artifact", "session-context"],
+      env,
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const target = join(env.HARNESS_SKILLS_CODEX_DIR, "..", "session-context", "SESSION-CONTEXT.md");
+    assert.equal(existsSync(target), true);
+    assert.match(readFileSync(target, "utf8"), /Hooks remain unsupported unless explicitly configured/);
+    assert.match(result.stdout, /Installed 0 skill copies and 1 artifact copies/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("installs selected optional artifacts without skills", () => {
   const { root, env } = fixture();
   try {

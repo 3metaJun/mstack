@@ -303,6 +303,11 @@
       "target": "b67fd0a7950464e1094225a2f85add0714849c1daab6c5289ad7bbc653baa536",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
+    "docs/guide/03-understand.md": {
+      "source": "5db58a1fc2cc7bf1843945fcc7d93eba4f73e26fde5cd097d006be641fe5883e",
+      "target": "1fd73edc1cdde214e82b4b116ba3b1d3ec1dcae18e1ef019de99ee12439c3cf1",
+      "reason": "Point session pickup at the portable project-local resume checkpoint."
+    },
     "docs/guide/06-verify-and-ship.md": {
       "source": "53a6bc8b3e850e34c4d8b1785a488eb7fbcbfe94ed588aeeaca252a5eb6e442c",
       "target": "e99e7108a757eee96397ebb79c6bbbc6f30084a35eb32d98f8de2e2b9c1aad18",

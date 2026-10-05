@@ -266,13 +266,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/orchestrate.md",
       "sourceDigest": "d42b4375f1bd4ce23da0b575a198571a2117df7eea10c3c9fc6d92ae1053f7be",
-      "targetDigest": "c25dcc2662e15ccb91ff19fbe1a156b7fb97d7d49d0c3478dcd9f001e643e398"
+      "targetDigest": "01d014c9693e4214ef56ab95f0bbc864a47efddcdcb53eda629319cb63766c3f"
     },
     "skills/meta-mode/playbooks/pause-safely.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/pause-safely.md",
       "sourceDigest": "7d5fc10e144265f1b35f8157926541e738c1de64b6a85b3e61b51cf268c3dffd",
-      "targetDigest": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d"
+      "targetDigest": "50f1fa76fcdbf92db5a772a0470a128850c960c9eb68156846cc4f5a503f863b"
     },
     "skills/meta-mode/playbooks/perf-issue.md": {
       "upstream": "pstack",
@@ -302,13 +302,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/session-pickup.md",
       "sourceDigest": "1604fb463f7c7410d43fa024ca76c1c1824c166a01fd69d61f073d06fdca2a47",
-      "targetDigest": "97a3d7b0fcecf53c5c3fce9ec17f105196745086911c363d2dc7841bc56e40e2"
+      "targetDigest": "5bbf52a3e43524aca7f474962a9e9a6a25d8cd2cc96569dcddccd5bf35466ac8"
     },
     "skills/meta-mode/playbooks/shipping.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/shipping.md",
       "sourceDigest": "c301902136e0a9a0a55403c35374f6f5738e501aee66c27458dc197b87557550",
-      "targetDigest": "0102de98f44f1b9921352fe60dbd3789710985bed2a491fd033bf012a1a812b2"
+      "targetDigest": "d898c5b32402a3e22a213311d33527423c57cb81b050c8e1e36d42cd2d85a24c"
     },
     "skills/meta-mode/playbooks/trace-forensics.md": {
       "upstream": "pstack",
@@ -326,7 +326,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/worktree-cleanup.md",
       "sourceDigest": "fc464dc4121926df1704f483c5feca83717c0a40b4651d3e11bd3aedd89441b6",
-      "targetDigest": "db0c8eeef5dc5054e79c1b3b8215159f48e12a4fb81225d551080f8773fe1b2c"
+      "targetDigest": "7a13c4a1e27e084f9bb9ce9f7c998d5584efeb3e4bfa15a6422f261f9db0bc77"
     },
     "skills/meta-mode/references/bugbot-triage.md": {
       "upstream": "pstack",
@@ -721,27 +721,27 @@
     "tools/meta-mode/check-playbooks.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "3a753d840c391cbf93979d6d474bc3965b387bc507de6925420ca78ff5db6aaf"
+      "targetDigest": "e962e30da22e1668b0036072b9f9f002664ac3fbc17c66a9161fd31163072282"
     },
     "tools/meta-mode/orch/orch.test.ts": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/orch/orch.test.ts",
       "sourceDigest": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
-      "targetDigest": "913d5c03ba456de547ec609458a2b14c5a3894d33385b0597ee44315252f870b",
+      "targetDigest": "821c2cd328e441590bb236733ca48a6f889e13c7c49447c5a0c170ac999af5a5",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/orch/orch.ts": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/orch/orch.ts",
       "sourceDigest": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
-      "targetDigest": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
+      "targetDigest": "b820c51d3ed13fa62ef5fc969aacf2b0b3c7f471a518f6159d3c3a530a363cd7",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/orch/store.ts": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/orch/store.ts",
       "sourceDigest": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
-      "targetDigest": "39394893aa8191f411a5eee33a554a6232e4568ecf11d7b43f6a21752d4c97cd",
+      "targetDigest": "c879408105d96814345f9e15f9a909505fec1374036c01e58820a55374a194bb",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/package.json": {
@@ -751,10 +751,30 @@
       "targetDigest": "c7ac7fd69bb925415cdc15cd636567304ee40f8d665986e45ed8c0ee658f6caf",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
+    "tools/meta-mode/pr-safety.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "1ce77cecdcb4be6c9622257f2e2efac790e47fbd35b1fd8dd93a4d7ef123f2cf"
+    },
+    "tools/meta-mode/pr-safety.test.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "46d00f3086850f82bf713d1fa91c60debde6623fe7bf3007a49eaafb42ddae3e"
+    },
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "5a2dcf51ad2a816941a116b0e4c9c4e113c9d2a721a15f5ac8ef7a4b1a9afeaf"
+      "targetDigest": "62e8431ec27bffa8ec911f6286ad183d16b6f451de34f53dd5ea63de5acd0088"
+    },
+    "tools/meta-mode/resume.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "2cdd3e939db59a68d847489c4eeec6a26674ec5bec2852c7e242959af5a5ff8c"
+    },
+    "tools/meta-mode/resume.test.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "6f1074ac94da0c4d1e9a6504acfac428ebc47a3f2656b260b374795d345abd63"
     },
     "tools/meta-mode/watch-pr/cli.test.ts": {
       "upstream": "pstack",
@@ -840,17 +860,17 @@
       "targetDigest": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
+    "tools/meta-mode/worktree-audit.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "ee7946ec0558ddeeb7466003d120124c6c884218f05d51e920c90d4fc010c20c"
+    },
     "tools/meta-mode/worktree-audit.sh": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/worktree-audit.sh",
       "sourceDigest": "95b8530f3c0ccada8cabc4b0727c052fbc85c141531375aaace65c427af8aecc",
-      "targetDigest": "68df230b34f10558e021bb6cc9696e4653acc92645a17b35c6b953aa40837fc2",
+      "targetDigest": "6a87d48f5664868537d722e059d4a3807a1283cc0382ec01e7d5f764098dbdbf",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
-    },
-    "tools/meta-mode/worktree-audit.test.sh": {
-      "upstream": null,
-      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "dfc8c11e867f5000a996e8b4aeafc630319964bb1b2946b1a626996dd4919e0f"
     }
   },
   "omitted": {
