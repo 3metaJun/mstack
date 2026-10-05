@@ -386,7 +386,7 @@ workflow even when no native skill creator or repository validator is installed.
 - `automations/benny/` keeps the optional Cursor automation pack from pstack.
 - `docs/guide/` contains the adapted upstream workflow guide.
 - `tools/meta-mode/` contains the optional Bun orchestration and PR watcher
-  tools.
+  tools, plus the project-playbook checker.
 - `scripts/install.mjs` stages, validates, and commits an installation.
 - `scripts/remote-install.mjs` stages and transfers an SSH environment install.
 - `scripts/validate.mjs` checks inventory, frontmatter, links, and portability.
@@ -460,6 +460,18 @@ review the source-to-adaptation patches, then use `--write` to update
 `profiles/skill-manifest.json`. Commit the baseline with the corresponding
 content changes. The hashes detect drift; they do not establish that an adapted
 workflow behaves like its source. See [the baseline review process](docs/skill-integrity.md).
+
+To validate project playbooks that extend the bundled `meta-mode` playbooks, run:
+
+```bash
+node tools/meta-mode/check-playbooks.mjs <project-root>
+```
+
+A project playbook belongs in `<project-root>/.agents/playbooks/`. Its frontmatter
+must contain `when:` and may contain a comma-separated `extends:` list. Changes
+must be list items that quote the exact bundled step they anchor to with `After`,
+`Before`, `Replace`, or `In`. Use `--bundled <path>` when checking a staged skill
+installation instead of this checkout.
 
 To compare the pstack inventory and non-skill artifacts, run:
 
