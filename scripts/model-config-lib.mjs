@@ -57,6 +57,9 @@ export function validateModelConfig(config, harnesses) {
       validateRoleValue(role, model, `overrides.${harness}.${role}`, errors);
     }
   }
+  if (config.sessionHook !== undefined && typeof config.sessionHook !== "boolean") {
+    errors.push("sessionHook must be true or false");
+  }
   if (config.budgets !== undefined) {
     if (!config.budgets || typeof config.budgets !== "object" || Array.isArray(config.budgets)) {
       errors.push("budgets must be an object keyed by Harness");

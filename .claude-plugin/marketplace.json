@@ -8,7 +8,7 @@
     {
       "name": "mstack",
       "source": "./",
-      "description": "50 portable engineering skills plus the meta-agent and comment-reviewer agents."
+      "description": "50 portable engineering skills plus the meta-agent and comment-reviewer agents and a SessionStart hook that routes work to meta-mode."
     }
   ]
 }

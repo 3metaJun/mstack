@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateArtifactOverrides } from "./install-paths.mjs";
+import { validatePluginAgents, validatePluginHooks } from "./claude-package-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
@@ -149,6 +150,8 @@ for (const file of ["plugin.json", "marketplace.json"]) {
     errors.push(`invalid .claude-plugin/${file}: ${error.message}`);
   }
 }
+
+errors.push(...validatePluginHooks(repoRoot), ...validatePluginAgents(repoRoot));
 
 function walk(directory) {
   return readdirSync(directory).flatMap((name) => {

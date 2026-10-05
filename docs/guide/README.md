@@ -16,6 +16,8 @@ Here's what you'll learn:
 10. [Recipes and pitfalls](./10-recipes-and-pitfalls.md). Prompts to copy and mistakes to skip.
 11. [Mix pstack and mstack in one repository](./11-mixed-harness.md). Share verification facts, isolate work, and check evidence across Harnesses.
 
+12. [How mstack is layered, and the Claude Code session hook](./12-claude-code-routing.md). What sits under `/meta-mode`, how the Claude Code plugin routes a new session to it, and how to turn that off.
+
 Read the pages in order the first time. After that, each page stands alone.
 
 ## If you only remember one thing
