@@ -759,12 +759,12 @@
     "tools/meta-mode/pr-safety.mjs": {
       "upstream": null,
       "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "a5d4dc695f492ffe6526e367bcc81796e4549fc9e389752ac654aef68696a471"
+      "targetDigest": "12c7e37f6148146cf9e5e0cd647f363f01a57e5084627eec72b5e2170c743e77"
     },
     "tools/meta-mode/pr-safety.test.mjs": {
       "upstream": null,
       "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "b96660c5c672c882acbfa304ed20a5aa4250bc2fbabe345a9b71e6ab7fc41c53"
+      "targetDigest": "c30334f2f837725fba92798d97250dea1dcab8846640a2da894e17135f2a2d33"
     },
     "tools/meta-mode/README.md": {
       "upstream": null,
@@ -774,12 +774,12 @@
     "tools/meta-mode/resume.mjs": {
       "upstream": null,
       "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "0a4b774716851e7d3f70fd2a62b38badcd027328647a68683f5e25bd0f421313"
+      "targetDigest": "57c3b067f69ce36d30b9a6c5df0f8cbf2c0cef46777eb4d3c7e40b62f087ec72"
     },
     "tools/meta-mode/resume.test.mjs": {
       "upstream": null,
       "reason": "Portable meta-mode runtime tool and focused behavior tests.",
-      "targetDigest": "ff70ae1d2afcc6efe3866d66936cdb9991c70e50ce6c56cd6af3d1ff5b67b40a"
+      "targetDigest": "2ed58fbbff1486f7ad0faf0550a825ad4648775b3a12743936247fdb2fbd54eb"
     },
     "tools/meta-mode/watch-pr/cli.test.ts": {
       "upstream": "pstack",

@@ -3,10 +3,21 @@ import test from "node:test";
 import { DeadlineExceeded, WatchDeadline, assertLandingRevision, guardedMergeArgs, parseLandingRevision, sameLandingRevision } from "./pr-safety.mjs";
 
 test("landing revisions compare head, destination, and repository identity", () => {
-  const revision = parseLandingRevision({ owner: "Owner", repo: "Repo", number: 7, headRefOid: "abc", baseRefName: "main", baseRefOid: "def" });
+  const revision = parseLandingRevision({ owner: "Owner", repo: "Repo", number: 7, headRefOid: "a".repeat(40), baseRefName: "main", baseRefOid: "b".repeat(40) });
   assert.equal(sameLandingRevision(revision, { ...revision, owner: "owner", repo: "repo" }), true);
-  assert.equal(sameLandingRevision(revision, { ...revision, baseRefOid: "new" }), false);
-  assert.throws(() => assertLandingRevision(revision, { ...revision, headRefOid: "new" }), /changed/);
+  assert.equal(sameLandingRevision(revision, { ...revision, baseRefOid: "c".repeat(40) }), false);
+  assert.throws(() => assertLandingRevision(revision, { ...revision, headRefOid: "c".repeat(40) }), /changed/);
+});
+
+test("rejects incomplete landing revisions at the boundary", () => {
+  const valid = { owner: "Owner", repo: "Repo", number: 7, headRefOid: "a".repeat(40), baseRefName: "main", baseRefOid: "b".repeat(40) };
+  for (const invalid of [
+    { ...valid, owner: "" },
+    { ...valid, repo: "repo name" },
+    { ...valid, headRefOid: "abc" },
+    { ...valid, baseRefOid: "" },
+    { ...valid, baseRefName: " main" },
+  ]) assert.throws(() => parseLandingRevision(invalid), /invalid landing revision/);
 });
 
 test("guarded merge always carries the verified head", () => {

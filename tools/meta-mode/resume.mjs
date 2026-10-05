@@ -48,6 +48,13 @@ function requireFile(path, label) {
   if (!lstatSync(path).isFile()) throw new Error(`${label} is not a regular file: ${path}`);
 }
 
+function resumeId(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,96}$/.test(value)) {
+    throw new Error("Resume id must contain only letters, numbers, dot, underscore, or hyphen");
+  }
+  return value;
+}
+
 function atomic(path, value) {
   const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
   writeFileSync(temporary, value, { encoding: "utf8", flag: "wx", mode: 0o600 });
@@ -68,8 +75,7 @@ function begin(repo, options) {
     requireFile(path, "Artifact");
     return relative(repo.root, path).replaceAll("\\", "/");
   });
-  const id = options.id || `resume-${Date.now()}-${process.pid}`;
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,96}$/.test(id)) throw new Error("Resume id must contain only letters, numbers, dot, underscore, or hyphen");
+  const id = resumeId(options.id || `resume-${Date.now()}-${process.pid}`);
   const dir = store(repo);
   const draft = join(dir, `${id}.draft.json`);
   if (existsSync(draft) || existsSync(join(dir, `${id}.json`))) throw new Error(`Resume already exists: ${id}`);
@@ -80,15 +86,16 @@ function begin(repo, options) {
 
 function publish(repo, options) {
   if (!options.id) throw new Error("publish requires --id <id>");
+  const id = resumeId(options.id);
   const dir = store(repo);
-  const draft = join(dir, `${options.id}.draft.json`);
-  if (!existsSync(draft)) throw new Error(`No draft resume found for id: ${options.id}`);
+  const draft = join(dir, `${id}.draft.json`);
+  if (!existsSync(draft)) throw new Error(`No draft resume found for id: ${id}`);
   const record = JSON.parse(readFileSync(draft, "utf8"));
   if (record.project !== repo.root || record.worktree !== repo.worktree) throw new Error("Draft belongs to a different project or worktree");
   requireFile(inside(repo.root, record.note, "Note path"), "Note");
   for (const artifact of record.artifacts) requireFile(inside(repo.root, artifact, "Artifact path"), "Artifact");
   const published = { ...record, state: "published", publishedAt: new Date().toISOString() };
-  const target = join(dir, `${options.id}.json`);
+  const target = join(dir, `${id}.json`);
   atomic(target, JSON.stringify(published, null, 2) + "\n");
   // Removing the draft after the atomic publication makes readers see either a complete record or no record.
   unlinkSync(draft);
@@ -98,11 +105,13 @@ function publish(repo, options) {
 function readResume(repo, options) {
   const dir = store(repo);
   let id = options.id;
+  if (id) id = resumeId(id);
   if (!id) {
     const entries = readdirSync(dir).filter((name) => name.endsWith(".json") && !name.endsWith(".draft.json")).sort();
     id = entries.at(-1)?.slice(0, -5);
   }
   if (!id) throw new Error("No published resume checkpoints found");
+  id = resumeId(id);
   const path = join(dir, `${id}.json`);
   if (!existsSync(path)) throw new Error(`No published resume found for id: ${id}`);
   const record = JSON.parse(readFileSync(path, "utf8"));

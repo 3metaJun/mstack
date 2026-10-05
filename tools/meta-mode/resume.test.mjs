@@ -55,6 +55,17 @@ test("rejects unsafe paths, missing identity, and unpublishable notes", (t) => {
   assert.match(result.stderr, /Note does not exist/);
 });
 
+test("rejects traversal ids at publish and read boundaries", (t) => {
+  const root = repo(t);
+  assert.equal(run(root, "begin", "--id", "safe", "--note", "note.md").status, 0);
+  let result = run(root, "publish", "--id", "../escape");
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Resume id must contain/);
+  result = run(root, "read", "--id", "../escape");
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Resume id must contain/);
+});
+
 test("does not expose a draft through read", (t) => {
   const root = repo(t);
   assert.equal(run(root, "begin", "--id", "draft-only", "--note", "note.md").status, 0);

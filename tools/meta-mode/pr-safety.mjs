@@ -20,12 +20,29 @@ export class WatchDeadline {
   assert() { if (this.remaining() === 0) throw new DeadlineExceeded(); }
 }
 
+function requiredText(value, key, pattern = null) {
+  if (typeof value !== "string" || !value || value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value)) {
+    throw new TypeError(`invalid landing revision ${key}`);
+  }
+  if (pattern && !pattern.test(value)) throw new TypeError(`invalid landing revision ${key}`);
+  return value;
+}
+
+function oid(value, key) {
+  return requiredText(value, key, /^[0-9a-f]{40,64}$/i).toLowerCase();
+}
+
 export function parseLandingRevision(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("landing revision must be an object");
-  const required = ["owner", "repo", "number", "headRefOid", "baseRefName", "baseRefOid"];
-  for (const key of required) if (typeof value[key] !== "string" && !(key === "number" && Number.isInteger(value[key]))) throw new TypeError(`invalid landing revision ${key}`);
-  if (value.number <= 0) throw new TypeError("invalid landing revision number");
-  return { owner: value.owner, repo: value.repo, number: value.number, headRefOid: value.headRefOid, baseRefName: value.baseRefName, baseRefOid: value.baseRefOid };
+  if (!Number.isInteger(value.number) || value.number <= 0) throw new TypeError("invalid landing revision number");
+  return {
+    owner: requiredText(value.owner, "owner", /^[A-Za-z0-9][A-Za-z0-9_.-]*$/),
+    repo: requiredText(value.repo, "repo", /^[A-Za-z0-9][A-Za-z0-9_.-]*$/),
+    number: value.number,
+    headRefOid: oid(value.headRefOid, "headRefOid"),
+    baseRefName: requiredText(value.baseRefName, "baseRefName"),
+    baseRefOid: oid(value.baseRefOid, "baseRefOid"),
+  };
 }
 
 export function sameLandingRevision(a, b) {
