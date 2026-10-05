@@ -21,6 +21,7 @@
     "model-budget": "node scripts/model-budget.mjs",
     "check-upstream": "node scripts/check-upstream.mjs",
     "check-playbooks": "node tools/meta-mode/check-playbooks.mjs",
+    "audit-worktrees": "node tools/meta-mode/worktree-audit.mjs",
     "check-harness-policy": "node scripts/check-harness-policy.mjs",
     "skill-baseline": "node scripts/skill-baseline.mjs",
     "run-role": "node scripts/run-role.mjs",

@@ -5,6 +5,11 @@
     "mattpocock/skills": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
   },
   "files": {
+    "scripts/worktree-audit.test.mjs": {
+      "upstream": null,
+      "reason": "Focused portability and safety behavior tests for the worktree audit.",
+      "targetDigest": "2b854de22c6029cd6746932b81be93d4eff23a29618d4a7624cf76b7f481b330"
+    },
     "skills/architect/references/design-red-flags.md": {
       "upstream": "pstack",
       "source": "skills/architect/references/design-red-flags.md",
@@ -326,7 +331,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/worktree-cleanup.md",
       "sourceDigest": "fc464dc4121926df1704f483c5feca83717c0a40b4651d3e11bd3aedd89441b6",
-      "targetDigest": "db0c8eeef5dc5054e79c1b3b8215159f48e12a4fb81225d551080f8773fe1b2c"
+      "targetDigest": "7963871a1ba7f31929502a864133fad4e20ac4ba62deafee38470f7a5e4e0332"
     },
     "skills/meta-mode/references/bugbot-triage.md": {
       "upstream": "pstack",
@@ -754,7 +759,7 @@
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "5a2dcf51ad2a816941a116b0e4c9c4e113c9d2a721a15f5ac8ef7a4b1a9afeaf"
+      "targetDigest": "b7efedcdd8565664138d949b97042cad0ebab90da570c8d36976e2dd270d9797"
     },
     "tools/meta-mode/watch-pr/cli.test.ts": {
       "upstream": "pstack",
@@ -840,17 +845,17 @@
       "targetDigest": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
+    "tools/meta-mode/worktree-audit.mjs": {
+      "upstream": null,
+      "reason": "Local cross-platform implementation replacing shell-specific audit behavior.",
+      "targetDigest": "f87b0b438dcd6d23c29512b3cc70af1a35049db841d5069298456bf11818281d"
+    },
     "tools/meta-mode/worktree-audit.sh": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/worktree-audit.sh",
       "sourceDigest": "95b8530f3c0ccada8cabc4b0727c052fbc85c141531375aaace65c427af8aecc",
-      "targetDigest": "68df230b34f10558e021bb6cc9696e4653acc92645a17b35c6b953aa40837fc2",
+      "targetDigest": "6a87d48f5664868537d722e059d4a3807a1283cc0382ec01e7d5f764098dbdbf",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
-    },
-    "tools/meta-mode/worktree-audit.test.sh": {
-      "upstream": null,
-      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "dfc8c11e867f5000a996e8b4aeafc630319964bb1b2946b1a626996dd4919e0f"
     }
   },
   "omitted": {
