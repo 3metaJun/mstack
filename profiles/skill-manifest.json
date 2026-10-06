@@ -364,7 +364,7 @@
     "skills/meta-mode/references/hosts/t3code.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "23a2d8ac8014b525a792f8bcc22ec5129ac6a26eb2dcca4395df8a6b06a27a43"
+      "targetDigest": "4ba5740a7b1a890f404252af59eeb00c645a4f1310b85266ade7f15d4a4d4ef3"
     },
     "skills/meta-mode/SKILL.md": {
       "upstream": "pstack",
