@@ -42,51 +42,7 @@ After installing, run **Restart agent session** from the command palette (web an
 
 ## Invoke a skill from the composer
 
-Type `# Use mstack in T3 Code
-
-[T3 Code](https://github.com/pingdotgg/t3code) is a GUI that runs Codex, Claude Code, Cursor, Grok, OpenCode, Antigravity, Pi, and ACP Registry agents as subprocesses. It does not own skills. Each provider finds its own skills, and T3 lists them in the composer. Installing mstack for a provider is therefore enough; nothing is installed into T3 itself.
-
-This page was checked against the T3 Code source at commit `8f75697` (October 2026), the Grok CLI 1.0.46, and the mstack installer in this repository. T3 changes quickly, so treat the tables as a starting point and use the checks in each section when something does not show up.
-
-## How T3 finds skills
-
-| Provider | Who lists the skills | User roots | Project roots |
-| --- | --- | --- | --- |
-| Codex | Codex app-server (`skills/list`) | Codex's own, `~/.agents/skills` for mstack | Codex's own, `.agents/skills` for mstack |
-| Claude Code | T3 scans the directories | `<config dir>/skills`, where the config dir is the instance's home path, else `CLAUDE_CONFIG_DIR`, else `~/.claude` | `<cwd>/.claude/skills` only |
-| Cursor | T3 scans the directories | `~/.cursor/skills`, `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills` | The same four names under `<cwd>` |
-| Grok | `grok inspect --json` | Grok's own; on Grok CLI 1.0.46 both `~/.agents/skills` and `~/.claude/skills` were reported | Grok's own, not checked |
-| Antigravity | T3 scans the directories | `~/.gemini/config/skills`, `~/.gemini/antigravity-cli/skills`. Not `~/.agents/skills`. | `<cwd>/.gemini/skills`, `<cwd>/.agents/skills`, `<cwd>/.agent/skills` |
-| Pi | Pi (`get_commands`) | Pi's own | Pi's own; approve the project in Pi first |
-| OpenCode | OpenCode, per project directory | OpenCode's own | OpenCode's own |
-| ACP Registry agents | The agent; commands it names with a `$` prefix | Agent-defined | Agent-defined |
-
-"Pi's own" and the other provider-defined cells mean T3 shows whatever the CLI reports. For the paths mstack installs to, see [Harness adapter reference](./harness-adapters.md). Cursor deduplicates by directory name, project roots first, so a copy in `~/.agents/skills` and one in `~/.claude/skills` show up once.
-
-## Install for the providers you use
-
-`~/.agents/skills` is the shared root, so one install covers most of the table:
-
-```bash
-npx @3metajun/mstack --harness codex,claude,pi
-```
-
-- Codex, Pi, OpenCode, and Cursor read the shared copy. Grok read it on 1.0.46.
-- Claude Code needs its own copy in `~/.claude/skills`, which `--harness claude` writes. The installer leaves out the frontmatter `name` there because Claude Code names a skill after its directory.
-- Antigravity does not read `~/.agents/skills`, and it needs the frontmatter `name`, so the Claude copy does not work for it either. Use an `antigravity` harness if your mstack version has one (`npx @3metajun/mstack --help` lists the harnesses). Otherwise install the canonical copy into its directory by overriding the Codex target:
-
-  ```bash
-  HARNESS_SKILLS_CODEX_DIR='~/.gemini/antigravity-cli/skills' \
-    npx @3metajun/mstack --harness codex --dry-run
-  ```
-
-  Drop `--dry-run` once the printed plan looks right. On Windows PowerShell, set `$env:HARNESS_SKILLS_CODEX_DIR` first.
-
-After installing, run **Restart agent session** from the command palette (web and desktop). The conversation continues and the next message starts the agent with the new skills. If a skill is still missing, open **Settings → Providers** and refresh that provider's status.
-
-## Invoke a skill from the composer
-
- to pick a skill. Skills also appear after `/` unless you turned off **Settings → General → Show skills in slash menu**. T3 always inserts `$name`, then rewrites it per provider when the message is sent:
+Type `$` to pick a skill. Skills also appear after `/` unless you turned off **Settings → General → Show skills in slash menu**. T3 always inserts `$name`, then rewrites it per provider when the message is sent:
 
 | Provider | What the agent receives |
 | --- | --- |
