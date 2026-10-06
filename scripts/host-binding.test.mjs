@@ -107,18 +107,46 @@ const verifiedTools = new Set([
   "device_list", "device_open", "device_screenshot", "device_close",
 ]);
 
+function unverifiedHostTools(content) {
+  const identifiers = new Set(content.match(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g) ?? []);
+  return [...identifiers].filter(
+    (identifier) => hostToolPatterns.some((pattern) => pattern.test(identifier)) && !verifiedTools.has(identifier),
+  );
+}
+
+const verifiedFixtures = [
+  ["a verified tool", "Call `t3_thread_launch` and `delegate_task`.", []],
+  ["error codes and fields are ignored", "`model_unavailable` and `fixed_time` and `bindToCurrentThread`", []],
+  ["a bogus thread tool", "Call `t3_thread_bogus` first.", ["t3_thread_bogus"]],
+  ["a bogus preview tool", "Then preview_teleport.", ["preview_teleport"]],
+  ["a bogus device tool", "Then device_reboot_all.", ["device_reboot_all"]],
+  ["known limit, an unlisted orchestration-style misspelling is not caught", "Use watch_pull_requests now.", []],
+  ["a misspelled thread tool next to a good one", "t3_thread_launch then t3_thread_waait", ["t3_thread_waait"]],
+];
+
+for (const [name, text, expected] of verifiedFixtures) {
+  test(`verified-tool check: ${name}`, () => {
+    assert.deepEqual(unverifiedHostTools(text), expected);
+  });
+}
+
 test("every bundled host reference uses only verified tool names", () => {
   const references = files.filter((file) => isHostReference(file.relative));
   assert.ok(references.length >= 3, "expected host references for meta-mode, recall, and create-verification-skill");
   for (const file of references) {
     assert.match(file.relative, /\/hosts\/[a-z0-9-]+\.md$/, file.relative);
-    const identifiers = new Set(file.content.match(/[a-z][a-z0-9]*(?:_[a-z0-9]+)+/g));
-    for (const identifier of identifiers) {
-      if (hostToolPatterns.some((pattern) => pattern.test(identifier))) {
-        assert.ok(verifiedTools.has(identifier), `${file.relative} names unverified tool ${identifier}`);
-      }
-    }
+    assert.deepEqual(unverifiedHostTools(file.content), [], file.relative);
   }
+});
+
+test("the verified-tool check sees the tools the host references actually name", () => {
+  const named = new Set(
+    files
+      .filter((file) => isHostReference(file.relative))
+      .flatMap((file) => file.content.match(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g) ?? [])
+      .filter((identifier) => verifiedTools.has(identifier)),
+  );
+  assert.ok(named.size >= 30, `expected the references to name many verified tools, found ${named.size}`);
 });
 
 test("portable pointers to host references name no host", () => {
