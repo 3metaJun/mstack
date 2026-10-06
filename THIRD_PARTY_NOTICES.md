@@ -54,9 +54,8 @@ These files use portable capability names. They do not copy the upstream
 Cursor-only commands or paths.
 
 The remaining pstack workflow skills are included under their original names.
-The portable bundle renames `poteto-mode` to `meta-mode`, `poteto-help` to
-`meta-help`, and `poteto-agent` to
-`meta-agent`. The source inventory is recorded in `profiles/skills.json`.
+The portable bundle renames `poteto-mode` to `meta-mode` and `poteto-agent` to
+`meta-agent`. The `poteto-help` skill is not included. The source inventory is recorded in `profiles/skills.json`.
 Source commits and renames are recorded in `profiles/upstreams.json`. The
 non-skill upstream artifacts are retained as follows:
 

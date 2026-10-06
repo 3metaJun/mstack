@@ -202,24 +202,6 @@
       "sourceDigest": "3624c8ef16cf2e48deb2a4049e72c6962a9431c8d6c6af90e7bd7ea0375224ec",
       "targetDigest": "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
     },
-    "skills/meta-help/references/prompting.md": {
-      "upstream": "pstack",
-      "source": "skills/poteto-help/references/prompting.md",
-      "sourceDigest": "463f450c44a60afd001a2f69fdf8a5dea174351f339369b12ec3c41515e564d3",
-      "targetDigest": "230e756e5cdfdcadb63145a267c17e56eb59d8b3b805e1884d27c69fb5660f55"
-    },
-    "skills/meta-help/references/recipes.md": {
-      "upstream": "pstack",
-      "source": "skills/poteto-help/references/recipes.md",
-      "sourceDigest": "1872323419a3e5c7783b1933f7a180ca26c25a6e1f4ec83bd65e091ebbfb812b",
-      "targetDigest": "1b58ae71b25c6b0ad64debeb4567c4f6e0aabc5e7881bdb463b624b3a4617389"
-    },
-    "skills/meta-help/SKILL.md": {
-      "upstream": "pstack",
-      "source": "skills/poteto-help/SKILL.md",
-      "sourceDigest": "5fc65e4c30c52edcde690d18904e3a8cf6ba6c2424c672d1a5cb6d29ab28645c",
-      "targetDigest": "ee598f1639882e7f1c10b821f41cc94224bb5d6aa940306d31ae06cc42bfde9a"
-    },
     "skills/meta-mode/playbooks/authoring-a-skill.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/authoring-a-skill.md",
@@ -932,6 +914,24 @@
       "source": "skills/productivity/writing-for-agents/agents/openai.yaml",
       "sourceDigest": "eacb24b2a618cfb81dacb0416f4fdd75ddf3a8060f8ddb99aae1b1e301907e4b",
       "reason": "Upstream UI metadata is specific to its skill packaging; mstack uses its shared frontmatter and per-Harness adapters."
+    },
+    "pstack:skills/poteto-help/references/prompting.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-help/references/prompting.md",
+      "sourceDigest": "463f450c44a60afd001a2f69fdf8a5dea174351f339369b12ec3c41515e564d3",
+      "reason": "Needs the repository README and guide pages, which the default installer does not ship, and has not been exercised by a model in mstack."
+    },
+    "pstack:skills/poteto-help/references/recipes.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-help/references/recipes.md",
+      "sourceDigest": "1872323419a3e5c7783b1933f7a180ca26c25a6e1f4ec83bd65e091ebbfb812b",
+      "reason": "Needs the repository README and guide pages, which the default installer does not ship, and has not been exercised by a model in mstack."
+    },
+    "pstack:skills/poteto-help/SKILL.md": {
+      "upstream": "pstack",
+      "source": "skills/poteto-help/SKILL.md",
+      "sourceDigest": "5fc65e4c30c52edcde690d18904e3a8cf6ba6c2424c672d1a5cb6d29ab28645c",
+      "reason": "Needs the repository README and guide pages, which the default installer does not ship, and has not been exercised by a model in mstack."
     }
   }
 }

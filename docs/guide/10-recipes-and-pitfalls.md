@@ -92,14 +92,6 @@ You get faster, slower, no measurable difference, or inconclusive, with the run 
 
 The fix lands in the repo as architecture, a type, a lint, or a test, so the next agent can't make the mistake.
 
-## Ask how without starting the work
-
-```text
-/meta-help how do i pick a model for each role?
-```
-
-You get an answer, a prompt to send, and a link to the source. Nothing runs until you send that prompt.
-
 ## Keep a run honest while you're away
 
 ```text

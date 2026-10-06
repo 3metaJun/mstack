@@ -54,10 +54,6 @@
       "source": "3624c8ef16cf2e48deb2a4049e72c6962a9431c8d6c6af90e7bd7ea0375224ec",
       "target": "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
     },
-    "meta-help": {
-      "source": "a564a70bc1de5d8fe9e13f46621aa20f9180d0d34476ebee878c8fed19cae476",
-      "target": "ee598f1639882e7f1c10b821f41cc94224bb5d6aa940306d31ae06cc42bfde9a"
-    },
     "meta-mode": {
       "source": "2e09a945cbe289dd85448f4a51eeac8c0c3893904decaab9413a33babf96ca08",
       "target": "08d339fcc5315f9e24bf2f810d3b3505bd98efb6930e30a2a4d4769575197024"
@@ -269,8 +265,8 @@
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/README.md": {
-      "source": "50c28fff5f88d6350856dec1412a85d1e5e7f4a978fd4c1022552b8e0d475ba3",
-      "target": "b6d86e7c913cb0e9549fb355ba9c5bc4bd4259c1986c80ac8dfdc23478aadd47",
+      "source": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b",
+      "target": "234cc31995332fdc898f1814d611b7cbcd6b2c1915e793dbb75883dd31b8c030",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     }
   },
@@ -303,14 +299,14 @@
       "docs/guide/07-overnight.md": "b66d8726a888fa8ed2f1b488fc1ca14ac67eab892ff655878bd09bacdcdefabc",
       "docs/guide/08-principles.md": "cd8f9466703489b9eab7f5b54e8dce6101c212f045dfe7f519f0e7e2fbf60857",
       "docs/guide/09-make-it-yours.md": "bd1031fe054c60f34f4b7450ababf827d48a2bd216ae874587c9f7511f193639",
-      "docs/guide/10-recipes-and-pitfalls.md": "3e0eb2c1f5c7681180e6eea4813ce016143110e519ac5b23e42f6a55237f6e8d",
+      "docs/guide/10-recipes-and-pitfalls.md": "99117ae3a94ae3047caf09efc5e2106c61179abd392f35007c7b82d1aff4dffe",
       "docs/guide/images/design.jpg": "b8ed07427f6a0c37dd8ba97961fc0eb5071efeee6c4a230648bdb7547f6f2a8f",
       "docs/guide/images/overnight.jpg": "4b4405e4df8925c5b3abbe702f681af0f3b1f5f32271b599f95717f578f1a0c8",
       "docs/guide/images/recipes.jpg": "9fa2d51b476635712737795ddef81806efaa0086bb3bfa9f9f45695d9ab0f8e8",
       "docs/guide/images/router.jpg": "525843055a4efd2b10acc50a8652fd02b0834ea733a8a2f895c1eb89036017da",
       "docs/guide/images/understanding.jpg": "b60587e9a9bbe2550e93be9819cf0cd4acf77d90fac769a0c43d82bd8e34e279",
       "docs/guide/images/verification.jpg": "2a76b52007a1cd2866ba67fd47d7d9ef3e1118bb5a09c4665eee8c3f161bd09a",
-      "docs/guide/README.md": "50c28fff5f88d6350856dec1412a85d1e5e7f4a978fd4c1022552b8e0d475ba3"
+      "docs/guide/README.md": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b"
     },
     "meta-mode-tools": {
       "tools/meta-mode/bootstrap.ts": "d9d39f235da5512de6122f1ff28584b3a0120b170f5447a7a5868f7cf187d12a",

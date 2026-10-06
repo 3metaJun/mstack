@@ -5,8 +5,10 @@
     "renames": {
       "poteto-mode": "meta-mode",
       "setup-pstack": "setup-mstack",
-      "poteto-agent": "meta-agent",
-      "poteto-help": "meta-help"
+      "poteto-agent": "meta-agent"
+    },
+    "omitSkills": {
+      "poteto-help": "Needs the repository README and guide pages, which the default installer does not ship, and has not been exercised by a model in mstack."
     },
     "artifacts": {
       "agents": {
@@ -140,12 +142,12 @@
             "to": "## Let the TypeScript rules load themselves\n\n[`typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) has no slash command in your workflow. It loads whenever the agent touches a `.ts` or `.tsx` file and turns the type-system principles into concrete rules: discriminated unions, `unknown` at boundaries, exhaustive variants, schema-derived types."
           },
           {
-            "from": "/poteto-help how do i get meta-mode to stay on every turn?",
-            "to": "/meta-help how do i pick a model for each role?"
+            "from": "## Ask how without starting the work\n\n```text\n/poteto-help how do i get meta-mode to stay on every turn?\n```\n\nYou get an answer, a prompt to send, and a link to the source. Nothing runs until you send that prompt.\n\n",
+            "to": ""
           },
           {
-            "from": "poteto-help",
-            "to": "meta-help"
+            "from": "When you're stuck, or can't tell which skill fits, type [`/poteto-help`](../../skills/poteto-help/SKILL.md) with your question:\n\n```text\n/poteto-help which skill should i use to review this branch?\n```\n\nIt answers, hands you a prompt to send, and links the skill or guide page the answer came from. It doesn't start the work, because a mstack run spends real tokens, so you send the prompt when you're ready. It runs only when you type it.\n\n",
+            "to": ""
           }
         ]
       },

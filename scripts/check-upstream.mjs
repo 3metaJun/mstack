@@ -150,8 +150,9 @@ for (const problem of provenanceProblems) {
 }
 
 const renames = pstack.renames ?? {};
+const omitSkills = pstack.omitSkills ?? {};
 const expected = readdirSync(sourceSkills, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
+  .filter((entry) => entry.isDirectory() && omitSkills[entry.name] === undefined)
   .map((entry) => profilePath(renames[entry.name] ?? entry.name, `skill rename for ${entry.name}`, { allowRoot: false }))
   .sort();
 const targetSkills = resolveInside(targetRoot, "skills", "target skills directory");
@@ -372,7 +373,7 @@ if (strict) artifactProblems += adaptationProblems.length;
     } else {
       const canonicalProblems = [];
       for (const sourceName of readdirSync(sourceSkills, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => entry.isDirectory() && omitSkills[entry.name] === undefined)
         .map((entry) => entry.name)) {
         const targetName = renames[sourceName] ?? sourceName;
         const entry = canonicalSkills[targetName];

@@ -13,13 +13,6 @@ model configuration, and its own autopilot policy.
   issue and Hillclimb playbooks run it.
 - New skill `correct`, which fixes repeated agent mistakes at the highest level
   that works: architecture, types, lint, tests, then docs.
-- New skill `meta-help` (upstream `poteto-help`) with its prompting and recipe
-  references. It was rewritten without Cursor commands, Custom Modes, or the
-  `pstack-models.mdc` rule. It points at the installer, `/setup-mstack`,
-  `~/.config/mstack/models.json`, and the Harness's own loop and pinning
-  features. Upstream's `poteto-help` is typed-only, which mstack cannot enforce
-  because its portable frontmatter has no way to disable model invocation. The
-  description is narrow instead, and the skill answers without starting work.
 - `architect` assumes the next contributor is an agent, and
   `design-red-flags.md` gains four red flags: split ownership, two ways to do
   one task, importable internals, and a hand-synced list.
@@ -39,7 +32,7 @@ model configuration, and its own autopilot policy.
 - `technical-writing` drops its fetch-date source lines. `typescript-best-practices`
   takes the schema-first cast guidance.
 - The upstream guide refresh for `/correct`, `/benchmark-checklist`, prompting
-  tips, `/meta-help`, and the 24 principles. The Cursor-specific wording is
+  tips, and the 24 principles. The `/poteto-help` sections are removed. The Cursor-specific wording is
   rewritten through replacements in `profiles/upstreams.json`. The four guide
   pages that carry mstack's mixed-Harness and verification-contract text were
   merged by hand, and their reviewed digests are recorded in
@@ -47,6 +40,7 @@ model configuration, and its own autopilot policy.
 
 ## Not ported
 
+- Upstream `poteto-help` (and the guide sections that describe it). The skill needs the repository README and guide pages, which the default installer does not ship, and it has not been exercised by a model in mstack. `profiles/upstreams.json` records it under `omitSkills`, and `check-upstream` and `skill-baseline` skip it with that reason.
 - Model slug and `pstack-models.mdc` changes in `arena`, `architect`, `how`,
   `why`, `interrogate`, `reflect`, `setup-mstack`, and the `meta-mode` task
   defaults. mstack reads roles from `~/.config/mstack/models.json`, and the
