@@ -165,31 +165,38 @@ Use `safeParse` when failure is an expected branch. Use the equivalent inference
 Every `as` is a potential runtime crash. Cast only after the type system has verified the claim.
 
 ```ts
+import { z } from "zod";
+
 // Don't
 const user = data as User;
 
-// Do. Validate fields and construct the result without an object cast.
-type User = { id: string; role: "admin" | "member" };
+// Don't
+function isUser(data: unknown): data is User {
+  return typeof data === "object" && data !== null && "id" in data;
+}
+
+// Do
+const userSchema = z.object({ id: z.string(), name: z.string() });
+type User = z.infer<typeof userSchema>;
 
 function parseUser(data: unknown): User {
-  if (typeof data !== "object" || data === null) {
-    throw new Error("expected object");
-  }
-  if (!("id" in data) || typeof data.id !== "string") {
-    throw new Error("expected id");
-  }
-  if (!("role" in data) || (data.role !== "admin" && data.role !== "member")) {
-    throw new Error("expected admin or member role");
-  }
-  return { id: data.id, role: data.role };
+  return userSchema.parse(data);
 }
+```
+
+When the type comes first, annotate the validator with the type it proves. The compiler then rejects a validator that proves less than the type. Remove `name` from the object below and the assignment fails to compile.
+
+```ts
+type User = { id: string; name: string };
+
+const userSchema: z.ZodType<User> = z.object({ id: z.string(), name: z.string() });
 ```
 
 When refactoring an `as` out of existing code, identify why TypeScript can't infer:
 
 - Missing discriminant: add one, switch to a discriminated union.
 - Overly wide source type (e.g. `Record<string, unknown>`): narrow it.
-- Untyped boundary: add a parse function or schema.
+- Untyped boundary: parse with the schema that owns the shape. Add a schema only where none exists.
 - Genuinely inexpressible: use a branded type or `satisfies`.
 
 ## Narrowing hierarchy

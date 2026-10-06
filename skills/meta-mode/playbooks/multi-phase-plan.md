@@ -32,15 +32,15 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 ### Arm the program
 
 - [ ] State the protocol and this plan to the operator, then stop. Start execution only on the operator's explicit go.
-- [ ] On the operator's go, arm a `/goal` with this exact text. "<The plan path, the PR ids in order, the verification rule, who merges, and the done condition.>"
-- [ ] Read these from the active skill installation at program start. Re-read them at every tick.
+- [ ] On the operator's go, write the program objective to `program.md` beside the decision trail (the work directory, or `.audit/<task-slug>-program.md`), uncommitted, and also to the active Harness's goal or objective mechanism when it has one. It names the plan path, the PR ids in order, the verification rule, who merges, and the done condition. A restarted or compacted session recovers the program from it.
+- [ ] Read these from the active skill installation at program start. Re-read them and the program objective at every tick.
   - [ ] `<mstack-skills>/meta-mode/playbooks/<execution playbook>.md`
   - [ ] `<mstack-skills>/swarm/SKILL.md`
   - [ ] For a repository-owned control skill, `git show origin/main:<control skill path>`. For an installed control skill, read `<control skill path>`.
   - [ ] `<mstack-skills>/meta-mode/playbooks/opening-a-pr.md`
   - [ ] `<mstack-skills>/<each other leaf skill the program uses>`
-- [ ] Arm the 30-minute audit tick. In a local session, a real terminal `/loop`. In a cloud root, a cloud-sleeper wake chain. Never leave the cadence to memory.
-- [ ] Use this tick prompt, verbatim. "Re-read the execution playbook from the active skill installation and the armed /goal. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then post a short status message only for tracked changes not reported earlier, such as a PR opened, code-ready head, round started or closed, verdict, merge, stuck agent and action taken, blocker added or cleared, or operator decision. Name those changes without repeating unchanged tables or blockers. With no new change, end the turn without reply text. Either way, append a decision-log row naming the reported items or none."
+- [ ] On the operator's go, arm the audit tick to run every hour with the tick prompt below. Use the active Harness's native loop or scheduled wake (`/loop 1h` where it exists), or a persistent local process with a saved log. Never leave the cadence to memory. The tick ends the recurring wake only when the objective's done condition holds.
+- [ ] Use this tick prompt, verbatim. "Re-read the execution playbook from the active skill installation and the program objective. Audit the operation against both and fix drift in this tick. Probe every active lane and judge progress by side effects only. Stand down a stuck lane and dispatch its replacement now. Then post a short status message only for tracked changes not reported earlier, such as a PR opened, code-ready head, round started or closed, verdict, merge, stuck agent and action taken, blocker added or cleared, or operator decision. Name those changes without repeating unchanged tables or blockers. With no new change, end the turn without reply text. Either way, append a decision-log row naming the reported items or none."
 - [ ] On the operator's hold or stand-down, send every owner a zero-writes order at once.
 
 ### Spawn owners
@@ -54,8 +54,8 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 
 ### PR mechanics, for every PR
 
-- [ ] Resolve the forge once. Default to `gh`; if `command -v origin` succeeds and Origin can resolve the repository, use `origin pr` for every PR operation. Record any fallback to `gh`. Never require `gt`.
-- [ ] Open the PR ready, never draft, with `origin pr create --status open --base <base-branch>` or `gh pr create --base <base-branch>` according to the resolved forge. A stack child targets its parent branch.
+- [ ] Resolve the forge once. Default to `gh`; if `command -v origin` succeeds and Origin can resolve the repository, use `origin pr` for every PR operation the run's built-in PR tool does not cover, as in **Opening a PR**. Record any fallback to `gh`. Never require `gt`.
+- [ ] Open the PR ready, never draft, per **Opening a PR**. Use the run's built-in PR tool when it has one, else `origin pr create --status open --base <base-branch>` or `gh pr create --base <base-branch>` according to the resolved forge. A stack child targets its parent branch.
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run `unslop` before each commit and `no-comments` before review.
 - [ ] Triage every Bugbot and security-reviewer comment per `../references/bugbot-triage.md`.

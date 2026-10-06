@@ -133,7 +133,18 @@ export function buildBaseline(root, sourceRoots) {
     );
     const usedMoves = new Set();
     const usedOmissions = new Set();
+    const omittedSkills = upstreams[name].omitSkills ?? {};
+    const usedSkillOmissions = new Set();
     for (const [sourceSkill, targetSkill] of Object.entries(skills)) {
+      const skillReason = omittedSkills[sourceSkill.split("/").at(-1)];
+      if (skillReason !== undefined) {
+        if (typeof skillReason !== "string" || !skillReason.trim()) throw new Error(`${sourceSkill}: skill omission requires a reason`);
+        for (const source of filesUnder(sourceRoot, sourceSkill)) {
+          manifest.omitted[`${name}:${source}`] = { upstream: name, source, sourceDigest: contentDigest(sourceRoot, source), reason: skillReason };
+        }
+        usedSkillOmissions.add(sourceSkill.split("/").at(-1));
+        continue;
+      }
       if (owners.has(targetSkill)) throw new Error(`Multiple sources own skill ${targetSkill}`);
       owners.add(targetSkill);
       if (!existsSync(inside(sourceRoot, `${sourceSkill}/SKILL.md`))) throw new Error(`${sourceSkill}: missing source SKILL.md`);
@@ -166,6 +177,7 @@ export function buildBaseline(root, sourceRoots) {
     }
     for (const path of Object.keys(spec.moves ?? {})) if (!usedMoves.has(path)) throw new Error(`${path}: stale move rule`);
     for (const path of Object.keys(spec.omit ?? {})) if (!usedOmissions.has(path)) throw new Error(`${path}: stale omission rule`);
+    for (const skill of Object.keys(omittedSkills)) if (!usedSkillOmissions.has(skill)) throw new Error(`${skill}: stale skill omission rule`);
   }
   const expectedSkills = json(root, "profiles/skills.json").skills;
   if (JSON.stringify([...owners].sort()) !== JSON.stringify([...expectedSkills].sort())) throw new Error("Skill sources do not cover the declared skill inventory");

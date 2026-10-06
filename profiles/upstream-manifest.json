@@ -1,102 +1,49 @@
 {
   "source": "https://github.com/cursor/plugins/tree/main/pstack",
-  "commit": "f5bdd6826fd0a0d9cbc4347134c3a74a200b9d9d",
-  "artifacts": {
-    "agents": {
-      "agents/comment-reviewer.md": "c0fd0383008da45fc78cfac17b9007d62c42f87ad1c8d5c2fb658b1fd01f7c82",
-      "agents/meta-agent.md": "98bfec1538a77982d5e5e2534c69de6b64077c172d0a4108fd9da7b36c95b5cb"
-    },
-    "automations": {
-      "automations/benny/FOR_AGENTS.md": "9e86916edf7fdddf3325dac869d947d5cab767ee40f1b5eaf5d16e31f2a5322a",
-      "automations/benny/README.md": "339fa6a5e1b07dbd708e87bc423e31e25ab3ac7e4292b80d3330abe992ee3245",
-      "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
-      "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
-      "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
-      "automations/benny/skills/reproduce-and-fix-issues/SKILL.md": "2cb174442390be10cb7e7767e89bb1e94fda4d014426c40888397ad8286060ff",
-      "automations/benny/skills/setup-benny/SKILL.md": "c5bbca8d97cc6975d34e84c42ac4fd59e04c7f77892e0af534b3e58ca0fd43df",
-      "automations/benny/skills/triage-issue-reports/references/routing.example.md": "e5e53013692568cf69da8e8b302fff929fe2fbc9aec1a4651fd7997e2c7a4025",
-      "automations/benny/skills/triage-issue-reports/SKILL.md": "92a17e4d2927457541b7e903f6def93e79e22f886c4b821c56bb5c9797db4193",
-      "automations/benny/templates/configuration.example.yaml": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
-      "automations/benny/templates/reproduce-automation-prompt.md": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
-      "automations/benny/templates/triage-automation-prompt.md": "e0bba594547834f013ec805915610eb597e7929efe3ffbe85ae00339ee16d474"
-    },
-    "guide": {
-      "docs/guide/01-setup.md": "6786c9090de6092d87836214b690e2b5640ddc7f34b19c0b9e2af794fcc17e7e",
-      "docs/guide/02-meta-mode.md": "c169bbee5eae6ea6b16ea4d3df1442b05031778b20eb9af8cc19c1a7bac5282a",
-      "docs/guide/03-understand.md": "5db58a1fc2cc7bf1843945fcc7d93eba4f73e26fde5cd097d006be641fe5883e",
-      "docs/guide/04-design.md": "216bc41d25e3481333acfffef4ea486ce8dabcc5dfa736d16eb0afd979aa03a1",
-      "docs/guide/05-build-and-clean.md": "40a1d2b189e8a889022934d23dd79c661edbd13ee27b2f496543f8d8d03bac17",
-      "docs/guide/06-verify-and-ship.md": "53a6bc8b3e850e34c4d8b1785a488eb7fbcbfe94ed588aeeaca252a5eb6e442c",
-      "docs/guide/07-overnight.md": "060294d4dbda952e3211e285f75e471c8d454d7705767b42377c4e1963841ad2",
-      "docs/guide/08-principles.md": "4dba3340352310e432905a27dd70552b4e034bb7d37a55dcab59a4b378e59ef1",
-      "docs/guide/09-make-it-yours.md": "04b21905a0a152ea9e57dcbecf25112112a1e7584037feabf501132f2d8cc64c",
-      "docs/guide/10-recipes-and-pitfalls.md": "56b6e1360c070029ac26ec39f00f7c6c587f1203255682808ae93b3176f90746",
-      "docs/guide/images/design.jpg": "b8ed07427f6a0c37dd8ba97961fc0eb5071efeee6c4a230648bdb7547f6f2a8f",
-      "docs/guide/images/overnight.jpg": "4b4405e4df8925c5b3abbe702f681af0f3b1f5f32271b599f95717f578f1a0c8",
-      "docs/guide/images/recipes.jpg": "9fa2d51b476635712737795ddef81806efaa0086bb3bfa9f9f45695d9ab0f8e8",
-      "docs/guide/images/router.jpg": "525843055a4efd2b10acc50a8652fd02b0834ea733a8a2f895c1eb89036017da",
-      "docs/guide/images/understanding.jpg": "b60587e9a9bbe2550e93be9819cf0cd4acf77d90fac769a0c43d82bd8e34e279",
-      "docs/guide/images/verification.jpg": "2a76b52007a1cd2866ba67fd47d7d9ef3e1118bb5a09c4665eee8c3f161bd09a",
-      "docs/guide/README.md": "e76f2e20364a4021707394b0557751e3aa81be2c819b19aaa705de08086515a5"
-    },
-    "meta-mode-tools": {
-      "tools/meta-mode/bootstrap.ts": "d9d39f235da5512de6122f1ff28584b3a0120b170f5447a7a5868f7cf187d12a",
-      "tools/meta-mode/bun.lock": "6413513594536785c3fd52b14934dd52d1ce179ad3ffe99d77535f5b637435a2",
-      "tools/meta-mode/check-plan.mjs": "ddcdb05af01b37d7513b2017d44e29c30bdaa79ca360c5913d701c16dde70907",
-      "tools/meta-mode/orch/orch.test.ts": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
-      "tools/meta-mode/orch/orch.ts": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
-      "tools/meta-mode/orch/store.ts": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
-      "tools/meta-mode/package.json": "c7ac7fd69bb925415cdc15cd636567304ee40f8d665986e45ed8c0ee658f6caf",
-      "tools/meta-mode/watch-pr/cli.test.ts": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
-      "tools/meta-mode/watch-pr/cli.ts": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
-      "tools/meta-mode/watch-pr/fakes.test-helper.ts": "e53e31b7f03068063f53a99a3591b052aaed66e4e2b196b3a364980f60324ab1",
-      "tools/meta-mode/watch-pr/github.test.ts": "0cbce011050522938523e36bb42a260e92b812dcd2076930fa681672ad316b24",
-      "tools/meta-mode/watch-pr/github.ts": "d1bbbafbe8e2c703c84da2029de7f2c4011412512f8cf65a42100f46bcb92c8a",
-      "tools/meta-mode/watch-pr/policy.test.ts": "a9fedb25feefd1f57ef6a662f80c99018690170a3a8070773a08eaf694d1d3d9",
-      "tools/meta-mode/watch-pr/policy.ts": "68d240505852cf23c9b2dea463342e9e61243f486b3cc86c735d140f9ee7be49",
-      "tools/meta-mode/watch-pr/render.ts": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
-      "tools/meta-mode/watch-pr/tsconfig.json": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
-      "tools/meta-mode/watch-pr/types.compile.ts": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
-      "tools/meta-mode/watch-pr/types.ts": "64ba6221e3bfe61bbb292337d199cdec6309455477280efb060203dba34e0e91",
-      "tools/meta-mode/watch-pr/watch-pr": "a17825c7862730dd7c897c1ac076971c0f11d2f9ff8fe37c4a74ebc6db92d549",
-      "tools/meta-mode/worktree-audit.sh": "9f14b5f4f70a6ada93778e49701f854796b11776edccb9f73816ee2a8b8b623c"
-    }
-  },
+  "commit": "2cbf58508f40de470d7490b55c51d71241928fa2",
   "canonicalSkills": {
     "architect": {
-      "source": "897a59beaa3cab107d98c256206e062cc4a5e9421a45b9d462fbded19291fea5",
-      "target": "cc8a035aa7a2aa417676c4e364b86f4a3e2b85748bf2d0916402105b011a1083"
+      "source": "8c46078c04ee70fc4f35a9f82a364e49b78992c43625873c82f0635054dc89bd",
+      "target": "76c299297a79236fa519d401716a6ad1845ecc1a3f4fdff2aa052309261651aa"
     },
     "arena": {
-      "source": "648697e237871e279e66166fd070dc272c73a310ababe7498c89713414ed4a14",
+      "source": "6cc5f63b9212d91d25a10670f8a5eba8665278013ae0e066d18a25f87b710447",
       "target": "f100383e190b806567015d2cbbaf90b9a1b0151ae60b08aa6185fc6eca3c9552"
     },
     "automate-me": {
       "source": "c80a6024fa6bebfa6875975c74293415fa6f729087377998751dc1343c865e75",
       "target": "6ab6c4c4a4b50a7cb182149408bd1758229d4386fbb8b1a66cf6927847b02c27"
     },
+    "benchmark-checklist": {
+      "source": "6a767e788a60428fa14e645ee10fe2e49896e514ff654f668b1d824deb9038e8",
+      "target": "3fc701eecd146557b75c0e7d26929ca5d5469632def12ef032109710ae23c1c0"
+    },
     "blast-radius": {
-      "source": "20cb2945f5fe62055166f745107274af5f19428ca033e53a9b8bc69650d3ded1",
+      "source": "5f02db9101ccf26c20254718f0fcd5c2c7ac5d4292b0e0923d0944ac47237aff",
       "target": "72113714dc5e7ef634a8b220e3a8dacea7b0e82d1f24136c13e04013749ef41a"
     },
     "bro": {
       "source": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
       "target": "8b822d47b9299627f5e4fe42684a031105792c8531443da1ae3423adfa2de96f"
     },
+    "correct": {
+      "source": "bf482bacc972b3f124a4af8bf9364b4b3e280cb5845e44c326ea4f4565e5c904",
+      "target": "b7af9686e96f242ddd7d0c12731dd8c4347f4eff1c6d404dc87403d87076d492"
+    },
     "create-verification-skill": {
       "source": "644f2551403c1bca01a2855b34611b6e7be0ce0dc5b204514c376c0f6a6e6ac4",
       "target": "eca219cac2808714d6aa3090fd3065d1da6a579d432f277aef334f1ca0dfe770"
     },
     "figure-it-out": {
-      "source": "982f2c1024a3a24f6417426ad8e8a3e027fe6210a8a442308fb85073f8f3f6ef",
+      "source": "cd4c13cfc6553c5ff32458ab1f1a72a83548510f0bba77ca8d6c3846f0da09a4",
       "target": "37c25a3c0b354da74e33a2a291fc21e62140304eee2447ed73400bc2759402ec"
     },
     "how": {
-      "source": "06b714dbd830bc829bfb89e33a1c39daf6d72ea412e488ea9d65f5f33b885a0c",
+      "source": "6492ea0d986c9763d649c665fb331a3b555444c486616136b748ca6c945045b5",
       "target": "a3e2acb068e126bad1ddadb4b16bb14154d5687fffc8ce2fe8209660b83c2e4b"
     },
     "interrogate": {
-      "source": "8aef2c35f2282bbc2636e10b4b52fe41ed5d00c86e775e82fbf8771b2b07f9be",
+      "source": "08a284d1c40dcfc49df5e33dcd5edac4dbb94664976eda174f3fdc15aad92873",
       "target": "ab2508809da00eac47444b102cd7d11730f15b2476cd6cd947e330cc08814e78"
     },
     "maintain-verification-skill": {
@@ -108,8 +55,8 @@
       "target": "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
     },
     "meta-mode": {
-      "source": "d5817d996f6da294c86cacb2bd1b0c40c85968844a6afd194fe69efa8654878f",
-      "target": "32363f67837dfe03bc5fd1b58ba940f2cfde2dfe46bce808416ad7cd4f63fd90"
+      "source": "2e09a945cbe289dd85448f4a51eeac8c0c3893904decaab9413a33babf96ca08",
+      "target": "08d339fcc5315f9e24bf2f810d3b3505bd98efb6930e30a2a4d4769575197024"
     },
     "no-comments": {
       "source": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
@@ -139,6 +86,10 @@
       "source": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
       "target": "3013367ce42fabb55799ffbcc51ad20b2ae7ec1b898bad4ac4ceaa2f093edbe1"
     },
+    "principle-explain-the-number": {
+      "source": "5aac99e7ce0bb1b37e2579acf4fe88c32a1456d9d46afd4a57cfe1df9092e89c",
+      "target": "0a5cb3579a30e4da9d1635f5ceb11f773e551ec8626ac9c38b5db3985d3ac26b"
+    },
     "principle-fix-root-causes": {
       "source": "ba4cd38da1dcc8fe5432feb64457cba95594736a9b21b2ebf8f8c52aee068707",
       "target": "2f48a508674c8b9f3339aba95929079af54fb7fbd367b4eb45175388f1e170f9"
@@ -148,7 +99,7 @@
       "target": "e69eea824d81c4bb32cbcdb26513bf964882daeeb647bb99210978e86bec1a49"
     },
     "principle-guard-the-context-window": {
-      "source": "9f60e2c79b35f865cb103462f9128c6760b70f603475d1e535e5930f61840f66",
+      "source": "d2cef147862576e3d709b7afc149d85196245e8338b9c7eef337c95fba412b3e",
       "target": "7a0a9540d4c0e8053ace79628d0a493444a82d1bbe1d8e94c8e561606c3d2912"
     },
     "principle-laziness-protocol": {
@@ -172,15 +123,15 @@
       "target": "4464cc1a0a2366ff8249659c30f525dba6206947f037f07f5931238ed0e96f82"
     },
     "principle-never-block-on-the-human": {
-      "source": "d82bce9ab9193249d1ec0d514202d89602f0fd3d312174d622c2dd222bae5a2e",
+      "source": "f2764bb9338cbfc788c903cf4b9cd0a5f4042d3a04dd6d59cbd525d9beaadd0a",
       "target": "90cd48f4082367fe70fc1659fec5a8d0e76a40cb7f9be4797b4b460cec28a4dd"
     },
     "principle-outcome-oriented-execution": {
-      "source": "beedcaed75572a6a1662d47f16da203c2bd2c9dbffbbd678d4ba187d67b7e670",
+      "source": "10eb91633aa570355ba4bb37088fcade2b22e498df7a58edc749e65bc5a78e2d",
       "target": "922ade1be5f671575b3c93367c3d08c9dbb2f7444a42bacbfb834656724d61ac"
     },
     "principle-prove-it-works": {
-      "source": "ae13d287984a5864312b6286899d4ee2b60f8272b5e5e8fcc586a7c3ea51020b",
+      "source": "ec79a15025bac8d33d62011c54f3b612733fd2a024e623b531b3637aa75070e2",
       "target": "69fe19f428387ffbdf60d81fa6817272f1f88bc30ec7cd7edad408ce607ff39c"
     },
     "principle-redesign-from-first-principles": {
@@ -192,7 +143,7 @@
       "target": "30cc80284a90bb5d94cde5a3533a8a27755832c2c4e638f8e3b97bbf8ba94924"
     },
     "principle-sequence-verifiable-units": {
-      "source": "761390804ee36c32f5338d8db47ec54463d40ff96dbb296dfafabcd5f2593eec",
+      "source": "2ccbbacc56ace5afdfb8670cef19d7bd009fb2a0033b9a741cbdf2b6baf72187",
       "target": "bc512996a3f226d1964444341e3fab1bda7f1b2928b136ab406ac4486150430f"
     },
     "principle-subtract-before-you-add": {
@@ -212,23 +163,23 @@
       "target": "be67c9e064a2b6d2ec52e915c19f6507f9f389a112e9961eb93b3c793b565e70"
     },
     "reflect": {
-      "source": "6a4d4ccaace9ce88c3e268fcbedf3cfd40e527162a5e5aad6de8edbaf5e2b83f",
+      "source": "902cd959ff2a894c44f462b58057afac676fb83fb0c56c2fc3c853db95e02205",
       "target": "5478382b85614482fdf8799c9b0113d0c12c6595ee1003aa62c91f6288b91089"
     },
     "setup-mstack": {
-      "source": "a11137437e12831c73f228f449bdfefab487bf7e2c69a4b306189e8fb1e6ab3e",
+      "source": "388d2a0869504ef9943f34b217d0d7a3ca13fdaaeea2327078104d3efb807ce3",
       "target": "ede1efcab2c6503521faed92ab691df87dd92b48e33c66cc57d72d4ea4c5ff82"
     },
     "show-me-your-work": {
-      "source": "831e85ba3f84f38bf338cd03e6af050fea357752e25a825e334c99f59d7f2077",
+      "source": "bcff5f7f9fd23f92c12b251f9cd6b947e9485e1055cfacb6fdd9cae0789d7550",
       "target": "1464cc0dbe44a03df3250456260de8fdfa8535b80e10abaaf9e5b121637919cd"
     },
     "swarm": {
-      "source": "32440570076df5a124d679e0419e5b03c1d405365bb443552789338427a8ce7b",
-      "target": "c24493812f03e0165cdbb3dd19e16d376742afe3b07f92cc48575f27883ae729"
+      "source": "f1d3a129f80f2e54d134f0216e5d7f6dd5043b3da245e2af38a94946f9f38153",
+      "target": "93f49f135adb52278200670929eef76f03edb6995f5f3c074a690441a38d4e95"
     },
     "tdd": {
-      "source": "011cab0ecc04a3632121efb493ae4d60aa282a9b72c66de74dd8ad7e4313e05a",
+      "source": "eeb868e2dfebee528d730a67d7b17498fac4bb85dec2e38bc5c5176aca4d5d2f",
       "target": "4930d09f2ca2dd47487c66d21d82bd376e35cd70bb8e42bfad5e19506c2ca2df"
     },
     "teach": {
@@ -236,19 +187,19 @@
       "target": "5a85664f8cce57429af0d8c060a20d8740579867f0976f4981032e8855cab2b5"
     },
     "technical-writing": {
-      "source": "6d6d9e625ae412ee8f36df8deb6fd9203d7c6acca776d5ee3cabbb9126f8b84c",
-      "target": "a450d685f477833640054828477fff97e1fd4ffb396a845b512d131b633c1919"
+      "source": "f5c512ffeec70bc4e0dee50f7bb4c26742e1be77967a6e8b15d1921e1c209ceb",
+      "target": "b83d616480d74381acdc5accb65a409c01095b71abc7dc02b6cadc496138dc81"
     },
     "typescript-best-practices": {
       "source": "28f9e61710e205f6f3c5476f333483cff0e988f6a5b639e2faad536344b40c5e",
       "target": "02b41b2cbb0ac43940b8f4df8b54c55f1aac0a68890a9379f9b006b2a8f1f4a0"
     },
     "unslop": {
-      "source": "c6d2572294d933a428211921069e9a248490e9b466ca59437cb4d9de248600ca",
+      "source": "195411d320b5b328f9f642baf59757ed19aaf0931c0838740e0aca273d538dc1",
       "target": "290a10a90e52f080fdf0f225f043088990b5cd8d8b8307c800a91cfeb1568aa4"
     },
     "why": {
-      "source": "222b93789754ba6ee901835137184acdca667f7e47c523bcc85aca86675fb249",
+      "source": "073fb39adb2de6d07a6cfbaf98a35b6397be974ff9fe3bb26dc46f7065a04114",
       "target": "873aedc86d1321093e9a195ac8bff1783241b309a1d33808ab74f181c4b8f22d"
     }
   },
@@ -299,24 +250,85 @@
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "docs/guide/01-setup.md": {
-      "source": "6786c9090de6092d87836214b690e2b5640ddc7f34b19c0b9e2af794fcc17e7e",
-      "target": "b67fd0a7950464e1094225a2f85add0714849c1daab6c5289ad7bbc653baa536",
+      "source": "058974e262eed41d2c24428109127898d3a6c403538570e7add515c4089d0d84",
+      "target": "780ae4284b48e26032e0e70844d918ade5cd6ffebd6c301784c4432d4b7ac980",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/03-understand.md": {
-      "source": "5db58a1fc2cc7bf1843945fcc7d93eba4f73e26fde5cd097d006be641fe5883e",
-      "target": "1fd73edc1cdde214e82b4b116ba3b1d3ec1dcae18e1ef019de99ee12439c3cf1",
+      "source": "c7dce3a9b1f1c0de8c00084453a3a18b69f0ad0c6616592b584e2d19add69ebd",
+      "target": "72e10ba5cac7e7510de58bf4669121f820343304f5050c4bc219dd00668c05f9",
       "reason": "Point session pickup at the portable project-local resume checkpoint."
     },
     "docs/guide/06-verify-and-ship.md": {
-      "source": "53a6bc8b3e850e34c4d8b1785a488eb7fbcbfe94ed588aeeaca252a5eb6e442c",
-      "target": "e99e7108a757eee96397ebb79c6bbbc6f30084a35eb32d98f8de2e2b9c1aad18",
+      "source": "e3a8259f2b2450692e43d607848f5a85a7cee894490452968391079e52a8ac50",
+      "target": "5fd91e770e7805455668b44d4f39f767498dc5ff6d4f10a9cfbe9de9d0631ac5",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/README.md": {
-      "source": "e76f2e20364a4021707394b0557751e3aa81be2c819b19aaa705de08086515a5",
-      "target": "e9c7b7d96995ed268034310e38b36721f3379cabe69d1e135cb9eab54d9ee2ad",
+      "source": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b",
+      "target": "234cc31995332fdc898f1814d611b7cbcd6b2c1915e793dbb75883dd31b8c030",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
+    }
+  },
+  "artifacts": {
+    "agents": {
+      "agents/comment-reviewer.md": "c0fd0383008da45fc78cfac17b9007d62c42f87ad1c8d5c2fb658b1fd01f7c82",
+      "agents/meta-agent.md": "51f3791434b848cf8881d5d3e1cfcde502cf92f694c1d8748a65ca9603b33b3e"
+    },
+    "automations": {
+      "automations/benny/FOR_AGENTS.md": "9e86916edf7fdddf3325dac869d947d5cab767ee40f1b5eaf5d16e31f2a5322a",
+      "automations/benny/README.md": "339fa6a5e1b07dbd708e87bc423e31e25ab3ac7e4292b80d3330abe992ee3245",
+      "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
+      "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
+      "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
+      "automations/benny/skills/reproduce-and-fix-issues/SKILL.md": "2cb174442390be10cb7e7767e89bb1e94fda4d014426c40888397ad8286060ff",
+      "automations/benny/skills/setup-benny/SKILL.md": "c5bbca8d97cc6975d34e84c42ac4fd59e04c7f77892e0af534b3e58ca0fd43df",
+      "automations/benny/skills/triage-issue-reports/references/routing.example.md": "e5e53013692568cf69da8e8b302fff929fe2fbc9aec1a4651fd7997e2c7a4025",
+      "automations/benny/skills/triage-issue-reports/SKILL.md": "92a17e4d2927457541b7e903f6def93e79e22f886c4b821c56bb5c9797db4193",
+      "automations/benny/templates/configuration.example.yaml": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
+      "automations/benny/templates/reproduce-automation-prompt.md": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
+      "automations/benny/templates/triage-automation-prompt.md": "e0bba594547834f013ec805915610eb597e7929efe3ffbe85ae00339ee16d474"
+    },
+    "guide": {
+      "docs/guide/01-setup.md": "058974e262eed41d2c24428109127898d3a6c403538570e7add515c4089d0d84",
+      "docs/guide/02-meta-mode.md": "681343e7135540ecd0125c83209e602c5e646534b89c2a6029cc29d4dc2455fd",
+      "docs/guide/03-understand.md": "c7dce3a9b1f1c0de8c00084453a3a18b69f0ad0c6616592b584e2d19add69ebd",
+      "docs/guide/04-design.md": "83f10b418a0f4d6ec0d7b536918d395fbcdf853f640d5dcbc1f7394a8f3d68ca",
+      "docs/guide/05-build-and-clean.md": "af91971988478ed0e53775d7f14f59e40ef7093b524d21df4f0b7917121b4f23",
+      "docs/guide/06-verify-and-ship.md": "e3a8259f2b2450692e43d607848f5a85a7cee894490452968391079e52a8ac50",
+      "docs/guide/07-overnight.md": "b66d8726a888fa8ed2f1b488fc1ca14ac67eab892ff655878bd09bacdcdefabc",
+      "docs/guide/08-principles.md": "cd8f9466703489b9eab7f5b54e8dce6101c212f045dfe7f519f0e7e2fbf60857",
+      "docs/guide/09-make-it-yours.md": "bd1031fe054c60f34f4b7450ababf827d48a2bd216ae874587c9f7511f193639",
+      "docs/guide/10-recipes-and-pitfalls.md": "99117ae3a94ae3047caf09efc5e2106c61179abd392f35007c7b82d1aff4dffe",
+      "docs/guide/images/design.jpg": "b8ed07427f6a0c37dd8ba97961fc0eb5071efeee6c4a230648bdb7547f6f2a8f",
+      "docs/guide/images/overnight.jpg": "4b4405e4df8925c5b3abbe702f681af0f3b1f5f32271b599f95717f578f1a0c8",
+      "docs/guide/images/recipes.jpg": "9fa2d51b476635712737795ddef81806efaa0086bb3bfa9f9f45695d9ab0f8e8",
+      "docs/guide/images/router.jpg": "525843055a4efd2b10acc50a8652fd02b0834ea733a8a2f895c1eb89036017da",
+      "docs/guide/images/understanding.jpg": "b60587e9a9bbe2550e93be9819cf0cd4acf77d90fac769a0c43d82bd8e34e279",
+      "docs/guide/images/verification.jpg": "2a76b52007a1cd2866ba67fd47d7d9ef3e1118bb5a09c4665eee8c3f161bd09a",
+      "docs/guide/README.md": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b"
+    },
+    "meta-mode-tools": {
+      "tools/meta-mode/bootstrap.ts": "d9d39f235da5512de6122f1ff28584b3a0120b170f5447a7a5868f7cf187d12a",
+      "tools/meta-mode/bun.lock": "6413513594536785c3fd52b14934dd52d1ce179ad3ffe99d77535f5b637435a2",
+      "tools/meta-mode/check-plan.mjs": "4f9432d9989880b6afc2bdda503d5b12a9d07d357ecf31936b7ab5e83bc80523",
+      "tools/meta-mode/orch/orch.test.ts": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
+      "tools/meta-mode/orch/orch.ts": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
+      "tools/meta-mode/orch/store.ts": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
+      "tools/meta-mode/package.json": "c7ac7fd69bb925415cdc15cd636567304ee40f8d665986e45ed8c0ee658f6caf",
+      "tools/meta-mode/watch-pr/cli.test.ts": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "tools/meta-mode/watch-pr/cli.ts": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
+      "tools/meta-mode/watch-pr/fakes.test-helper.ts": "e53e31b7f03068063f53a99a3591b052aaed66e4e2b196b3a364980f60324ab1",
+      "tools/meta-mode/watch-pr/github.test.ts": "0cbce011050522938523e36bb42a260e92b812dcd2076930fa681672ad316b24",
+      "tools/meta-mode/watch-pr/github.ts": "d1bbbafbe8e2c703c84da2029de7f2c4011412512f8cf65a42100f46bcb92c8a",
+      "tools/meta-mode/watch-pr/policy.test.ts": "a9fedb25feefd1f57ef6a662f80c99018690170a3a8070773a08eaf694d1d3d9",
+      "tools/meta-mode/watch-pr/policy.ts": "68d240505852cf23c9b2dea463342e9e61243f486b3cc86c735d140f9ee7be49",
+      "tools/meta-mode/watch-pr/render.ts": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
+      "tools/meta-mode/watch-pr/tsconfig.json": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "tools/meta-mode/watch-pr/types.compile.ts": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "tools/meta-mode/watch-pr/types.ts": "64ba6221e3bfe61bbb292337d199cdec6309455477280efb060203dba34e0e91",
+      "tools/meta-mode/watch-pr/watch-pr": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
+      "tools/meta-mode/worktree-audit.sh": "9f14b5f4f70a6ada93778e49701f854796b11776edccb9f73816ee2a8b8b623c"
     }
   }
 }

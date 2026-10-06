@@ -1,6 +1,6 @@
 ---
 name: meta-agent
-description: Routing target for `/meta-mode` and requests for the mstack workflow. Resume an existing `meta-agent` for the conversation rather than spawning a sibling. Read the `meta-mode` skill's `SKILL.md` in full before any work, including its playbook map.
+description: Routing target for `/meta-mode` and requests for the mstack workflow. Spawn a fresh `meta-agent` for each new task, and resume one only when the new work needs state that lives in that agent, such as its local checkout, its uncommitted changes, or a process it still runs, as meta-mode's Subagents section lists. Read the `meta-mode` skill's `SKILL.md` in full before any work, including its playbook map.
 ---
 
 # Meta subagent
