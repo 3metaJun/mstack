@@ -21,7 +21,14 @@ import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
-import { configuredPath, resolveHarnessRoots, resolveProjectRoots, validateProjectDir } from "./harness-targets.mjs";
+import {
+  configuredPath,
+  resolveHarnessRoots,
+  resolveProjectRoots,
+  validateProjectDir,
+  validateProjectTargets,
+  withoutInvalidOverrides,
+} from "./harness-targets.mjs";
 import { planSkillMigration } from "./install-migration.mjs";
 import { convertAgentMarkdown } from "./agent-format.mjs";
 import {
@@ -130,27 +137,26 @@ if (environment.transport === "ssh") {
 }
 const environmentTargets = environment.targets;
 const environmentArtifacts = environment.artifacts;
+// Project installs ignore user-level overrides as targets, so an invalid one must not block them; the
+// valid ones still count as user roots for the safety checks below.
 const { skills: userTargets, native: nativeTargets, legacy: legacyTargets, sharedRoot, externalClaudeRoot } =
-  resolveHarnessRoots(harnessRegistry, { home: userHome, environmentTargets, environmentName });
+  resolveHarnessRoots(harnessRegistry, {
+    home: userHome,
+    env: projectDir ? withoutInvalidOverrides(harnessRegistry, process.env, userHome) : process.env,
+    environmentTargets,
+    environmentName,
+  });
 const targets = projectDir ? resolveProjectRoots(harnessRegistry, projectDir) : userTargets;
 const discoveryRoots = [...new Set([
   ...Object.values(targets), ...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
 ].map(physicalPathKey))];
 if (projectDir) {
-  // Project files must never mix with user-level skills. Compare physical, case-normalized paths in both
-  // directions so aliases, nesting (<user root>/repo/.agents/skills) and a project that contains a user root
-  // are all refused, while unrelated siblings pass.
-  const userKeys = [...new Set([...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot].map(physicalPathKey))];
-  for (const harness of harnesses) {
-    const targetKey = physicalPathKey(targets[harness]);
-    const overlapping = userKeys.find((userKey) => targetPathsOverlap(targetKey, userKey));
-    if (overlapping) {
-      throw new Error(`--project would overlap a user-level skill root for ${harness}: ${targets[harness]} and ${overlapping}`);
-    }
-  }
-  const projectKey = physicalPathKey(projectDir);
-  const contained = userKeys.find((userKey) => pathIsWithin(projectKey, userKey));
-  if (contained) throw new Error(`--project cannot contain a user-level skill root: ${projectDir} contains ${contained}`);
+  validateProjectTargets({
+    projectDir,
+    targets: Object.fromEntries(harnesses.map((harness) => [harness, targets[harness]])),
+    userRoots: [...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot],
+    packageRoot: repoRoot,
+  });
 }
 
 function artifactEnvironmentPath(name, harness) {

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { configuredPath, resolveHarnessRoots, resolveProjectRoots, validateProjectDir } from "./harness-targets.mjs";
+import { configuredPath, resolveHarnessRoots, resolveProjectRoots, validateProjectDir, withoutInvalidOverrides } from "./harness-targets.mjs";
 
 const repository = resolve(".");
 const registry = JSON.parse(readFileSync(join(repository, "profiles", "harnesses.json"), "utf8"));
@@ -123,6 +123,27 @@ test("project directories must exist, be directories, and stay out of home, the 
   assert.throws(() => validateProjectDir(join(packageRoot, "skills"), options), /inside the mstack package/);
   assert.throws(() => validateProjectDir(join(root, ".harness-skills-backups", "p"), options), /transaction storage/);
   // A repository that merely contains the package, such as one with it in node_modules, is a valid project.
+  assert.equal(validateProjectDir(root, options), root);
+});
+
+test("invalid overrides are dropped for project installs and valid ones are kept", () => {
+  const cleaned = withoutInvalidOverrides(registry, {
+    HARNESS_SKILLS_PI_DIR: "relative",
+    HARNESS_SKILLS_GROK_DIR: "~/grok-explicit",
+    XDG_CONFIG_HOME: "relative-xdg",
+    UNRELATED: "relative",
+  }, home);
+  assert.deepEqual(cleaned, { HARNESS_SKILLS_GROK_DIR: "~/grok-explicit", UNRELATED: "relative" });
+  assert.doesNotThrow(() => resolveHarnessRoots(registry, { home, env: cleaned }));
+});
+
+test("project directories inside discovery roots are refused on the physical path", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-project-roots-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const nested = join(root, ".Agents", "Skills", "repo");
+  mkdirSync(nested, { recursive: true });
+  const options = { packageRoot: join(root, "package"), home: join(root, "home"), cwd: root };
+  assert.throws(() => validateProjectDir(nested, options), /inside a skill discovery root/);
   assert.equal(validateProjectDir(root, options), root);
 });
 

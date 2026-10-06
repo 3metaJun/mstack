@@ -78,8 +78,12 @@ ignore `HARNESS_SKILLS_*_DIR` overrides.
 Rules:
 
 - The directory must exist. The installer refuses your home directory (use a
-  user-level install), anything inside the mstack package, and any path inside
-  `.harness-skills-*` transaction storage.
+  user-level install), anything inside the mstack package, any path inside
+  `.harness-skills-*` transaction storage, and any directory inside a skill
+  discovery root such as `.agents/skills` or `.claude/skills`, because backups
+  there would be scanned as skills. It checks physical paths, so symlinks,
+  junctions and letter case cannot redirect a target, backup or stage directory
+  outside the project or into the package or your user-level skill roots.
 - Skills only. `--artifact` is refused with `--project`: agent roles, tools, the
   guide and session context are user-owned configuration and should not land in a
   repository implicitly. `--migrate` and `--environment` (including SSH) are

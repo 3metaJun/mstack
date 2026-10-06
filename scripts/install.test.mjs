@@ -909,8 +909,8 @@ test("project install refuses overlap with user-level skill roots in either dire
   try {
     const base = ["--harness", "all", "--skill", "bro", "--dry-run"];
     for (const [directory, message] of [
-      [nested, /would overlap a user-level skill root/],
-      [claudeNested, /would overlap a user-level skill root/],
+      [nested, /inside a skill discovery root/],
+      [claudeNested, /inside a skill discovery root/],
       [insideCustom, /would overlap a user-level skill root/],
       [root, /cannot contain a user-level skill root/],
       [home, /cannot be the home directory/],
@@ -943,10 +943,108 @@ test("project overlap check ignores path case on case-insensitive local filesyst
     const shouted = join(home.toUpperCase(), ".AGENTS", "SKILLS", "REPO");
     const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", shouted], env);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /would overlap a user-level skill root/);
+    assert.match(result.stderr, /inside a skill discovery root/);
     const parent = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", root.toUpperCase()], env);
     assert.notEqual(parent.status, 0);
     assert.match(parent.stderr, /cannot contain a user-level skill root/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function linkDirectory(target, link) {
+  try {
+    symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test("project install judges targets and transaction storage by their physical paths", (t) => {
+  const { root, env, project } = projectFixture();
+  const outside = join(root, "outside");
+  mkdirSync(outside);
+  try {
+    const base = ["--harness", "codex,claude", "--skill", "bro", "--replace", "--dry-run", "--project", project];
+    // .agents redirected to the mstack package would make the codex target <package>/skills. Dry run only.
+    if (!linkDirectory(resolve("."), join(project, ".agents"))) {
+      t.skip("the OS refused to create a directory link");
+      return;
+    }
+    let result = run(base, env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /resolves outside the project directory/);
+    rmSync(join(project, ".agents"), { recursive: true, force: true });
+    assert.ok(existsSync(resolve("skills")), "removing the link must not remove package skills");
+
+    // A real .agents whose transaction storage is a link to elsewhere.
+    mkdirSync(join(project, ".agents"));
+    assert.ok(linkDirectory(outside, join(project, ".agents", ".harness-skills-backups")));
+    result = run(base, env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /backups storage resolves outside the project directory/);
+    assert.deepEqual(readdirSync(outside), []);
+
+    // A project directory that is a link into installer transaction storage.
+    const storage = join(root, ".harness-skills-backups", "repo");
+    mkdirSync(storage, { recursive: true });
+    const alias = join(root, "innocent-name");
+    assert.ok(linkDirectory(storage, alias));
+    result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", alias], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /transaction storage/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rejects an uppercase spelling of transaction storage on case-insensitive Windows", { skip: process.platform !== "win32" }, () => {
+  const { root, env } = projectFixture();
+  mkdirSync(join(root, ".harness-skills-backups", "repo"), { recursive: true });
+  try {
+    const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", join(root, ".HARNESS-SKILLS-BACKUPS", "REPO")], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /transaction storage/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rejects directories inside any skill discovery root", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    for (const parts of [
+      [".agents", "skills", "nested"], [".claude", "skills", "nested"], [".cursor", "skills", "nested"],
+      [".codex", "skills", "nested"], [".gemini", "skills", "nested"], [".agent", "skills", "nested"],
+      [".pi", "skills", "nested"], [".opencode", "skills", "nested"], [".agents", "skills", "deep", "nested"],
+    ]) {
+      const nested = join(project, ...parts);
+      mkdirSync(nested, { recursive: true });
+      const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", nested], env);
+      assert.notEqual(result.status, 0, parts.join("/"));
+      assert.match(result.stderr, /inside a skill discovery root/, parts.join("/"));
+    }
+    // A repository merely named like a root parent, or holding a sibling named skills, is fine.
+    const fine = join(project, ".agents", "tools", "skills-like");
+    mkdirSync(fine, { recursive: true });
+    assert.equal(run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", fine], env).status, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install ignores invalid user-level overrides it would not use", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    const bad = { ...env, HARNESS_SKILLS_PI_DIR: "relative", HARNESS_SKILLS_GROK_DIR: "also/relative", CLAUDE_CONFIG_DIR: "relative-config", XDG_CONFIG_HOME: "relative-xdg" };
+    const result = run(["--harness", "codex", "--skill", "bro", "--project", project], bad);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(existsSync(join(project, ".agents", "skills", "bro", "SKILL.md")));
+    // The same override still fails a user-level install.
+    const userLevel = run(["--harness", "pi", "--skill", "bro", "--dry-run"], bad);
+    assert.notEqual(userLevel.status, 0);
+    assert.match(userLevel.stderr, /must be an absolute path/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
