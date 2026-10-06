@@ -20,11 +20,15 @@ Run `node check-playbooks.mjs <project-root>` to validate `.agents/playbooks/` b
 
 `pr-safety.mjs` accepts both GitHub CLI (`gh`) and Origin-style guarded merge arguments; callers retain responsibility for authorization and post-merge readback.
 
-`worktree-audit.mjs` (or its `worktree-audit.sh` compatibility wrapper) can include the latest session that touched a worktree when
-you set `MSTACK_TRANSCRIPTS_DIR` to a directory containing the active Harness's
-workspace transcripts. Leave it unset when transcript history is unavailable;
-the audit reports `-` in the `LAST_CHAT` column and still checks every Git
-worktree.
+`worktree-audit.mjs` (or its `worktree-audit.sh` compatibility wrapper) reports the newest chat that touched each
+worktree in the `LAST_CHAT` column. By default it scans Claude Code `projects` (under `CLAUDE_CONFIG_DIR`, default
+`~/.claude`), Codex `sessions` and `archived_sessions` (under `CODEX_HOME`, default `~/.codex`), and pi sessions (under
+`PI_CODING_AGENT_SESSION_DIR`, or `PI_CODING_AGENT_DIR`, default `~/.pi/agent`), skipping stores that do not exist.
+Set `MSTACK_TRANSCRIPTS_DIR` to scan one directory instead, for example for OpenCode, which has no raw session files to
+read. A worktree path matches as the transcript spells it (forward or back slashes, UNC, either drive-letter case) and
+never as the prefix of a sibling such as `wt-long`. With no transcripts the column is `-` and every Git worktree is
+still checked. A worktree is `safe` only when its HEAD is in `origin/main` or a merged PR carried exactly that HEAD; a
+closed PR, or commits made after a merged one, leave it in `review`.
 
 Resume checkpoints are project-local and Git-bound. They are stored under
 `<git-common-dir>/mstack/resume/<worktree-key>/`, so each worktree has its own

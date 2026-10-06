@@ -193,3 +193,23 @@ test("lastChats matches a path as a transcript spells it, and nothing that merel
     assert.equal(lastChats([directory], [path]).has(path), expected, `${path} in ${text}`);
   });
 });
+
+// A squash merge leaves the worktree's commits outside origin/main, so the PR is the only evidence they landed.
+// That evidence only covers the commit the PR carried: a closed PR landed nothing, and later commits are not in it.
+test("a PR vouches for a worktree only when it merged exactly the worktree's HEAD", (t) => {
+  const { root, repo, worktree } = fixture(t);
+  writeFileSync(join(worktree, "work.txt"), "unmerged work\n");
+  git(worktree, "add", "work.txt");
+  git(worktree, "commit", "-q", "-m", "work");
+  const head = git(worktree, "rev-parse", "HEAD").trim();
+  const bucketFor = (pr) => {
+    const listPrs = () => (pr ? [{ headRefName: "audit-worktree", ...pr }] : []);
+    const env = { MSTACK_TRANSCRIPTS_DIR: join(root, "no-transcripts") };
+    return audit(repo, env, { listPrs })[0].bucket;
+  };
+  assert.equal(bucketFor(null), "review");
+  assert.equal(bucketFor({ number: 7, state: "MERGED", headRefOid: head }), "safe");
+  assert.equal(bucketFor({ number: 7, state: "MERGED", headRefOid: "0".repeat(40) }), "review");
+  assert.equal(bucketFor({ number: 7, state: "CLOSED", headRefOid: head }), "review");
+  assert.equal(bucketFor({ number: 7, state: "OPEN", headRefOid: head }), "hold-open-pr");
+});
