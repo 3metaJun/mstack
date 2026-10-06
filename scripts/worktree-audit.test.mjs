@@ -90,9 +90,8 @@ test("matches a Windows path that a JSONL transcript stores with doubled backsla
   const { root, repo, worktree } = fixture(t);
   const transcripts = join(root, "transcripts");
   mkdirSync(transcripts);
-  // JSON.stringify of `H:\x\wt` writes `H:\\x\\wt`; build that spelling regardless of the host separator.
-  const windowsSpelling = worktree.replaceAll("\\", "/").replaceAll("/", "\\\\");
-  writeFileSync(join(transcripts, "windows.jsonl"), `{"cwd":"${windowsSpelling}"}\n`);
+  // JSON.stringify spells the path the way a Harness records it on this host: `H:\\x\\wt` on Windows, unchanged elsewhere.
+  writeFileSync(join(transcripts, "windows.jsonl"), `${JSON.stringify({ cwd: worktree })}\n`);
   assert.equal(runAudit(repo, transcripts).bucket, "verify-recent-chat");
 });
 
@@ -182,6 +181,18 @@ test("lastChats matches a path as a transcript spells it, and nothing that merel
     ["/work/wt", "cwd: /work/wt\n", true],
     ["/work/wt", '{"cwd":"/work/wt-long"}', false],
     ["/work/wt", '{"cwd":"/work/wt.old/src"}', false],
+    // A longer path that merely ends with the worktree path is another directory.
+    ["/work/wt", '{"cwd":"/other/work/wt"}', false],
+    ["/work/wt", '{"cwd":"/other/work/wt/src"}', false],
+    ["/work/wt", '{"cwd":"X:/work/wt"}', false],
+    ["C:/Users/dev/wt", '{"cwd":"XC:/Users/dev/wt"}', false],
+    ["C:/Users/dev/wt", '{"cwd":"X:\\\\C:\\\\Users\\\\dev\\\\wt"}', false],
+    ["//server/share/wt", '{"cwd":"\\\\\\\\other\\\\server\\\\share\\\\wt"}', false],
+    ["/work/wt", '{"cmd":"ls\\n/work/wt"}', true],
+    ["/work/wt", '{"cmd":"ls ./a /work/wt"}', true],
+    ["/work/wt", "cwd=/work/wt\n", true],
+    ["/work/wt", "(/work/wt/src)", true],
+    ["/work/wt", "/work/wt", true],
     ["/work/a\"b", '{"cwd":"/work/a\\"b"}', true],
     ["/work/工作 tree", '{"cwd":"/work/工作 tree"}', true],
   ];

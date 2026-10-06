@@ -39,7 +39,7 @@ test("the shipped skeleton passes, checked or not", () => {
 });
 
 test("a plan saved with a UTF-8 byte-order mark passes, with or without frontmatter", () => {
-  for (const plan of [`﻿${skeleton}`, `﻿---\ntitle: Plan\n---\n${skeleton}`]) {
+  for (const plan of [`\uFEFF${skeleton}`, `\uFEFF---\ntitle: Plan\n---\n${skeleton}`]) {
     const result = run(plan);
     assert.equal(result.code, 0, result.out);
   }
@@ -93,3 +93,16 @@ for (const [name, open, inner, close] of [
     assert.match(rejected.out, /mid-sentence colon/);
   });
 }
+
+// CommonMark allows at most three spaces before a fence. Four make an indented code block, so the line is
+// not a fence delimiter: it neither opens a fence that hides the prose after it nor closes one.
+test("a fence indented four spaces does not open an example", () => {
+  const result = run(`${skeleton}\n    ~~~yaml\nmessage: “code”\n    ~~~\n`);
+  assert.equal(result.code, 1);
+  assert.match(result.out, /curly quote/);
+});
+
+test("a closing delimiter indented four spaces does not close the example", () => {
+  const result = run(`${skeleton}\n\`\`\`yaml\nmessage: “code”\n    \`\`\`\nstill inside: “code”\n\`\`\`\n`);
+  assert.equal(result.code, 0, result.out);
+});

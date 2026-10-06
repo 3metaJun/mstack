@@ -34,7 +34,7 @@ if (!file) {
 	process.exit(2);
 }
 
-const raw = fs.readFileSync(file, "utf8").replace(/^﻿/, "").split(/\r?\n/);
+const raw = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "").split(/\r?\n/);
 const problems = [];
 const fail = (line, message) => problems.push(`${file}:${line}: ${message}`);
 
@@ -44,14 +44,14 @@ if (raw[0] === "---") {
 }
 
 const lines = [];
-// A fence opens with three or more backticks or tildes and closes on the same character, at least as
+// A fence opens with three or more backticks or tildes, indented at most three spaces, and closes on the same character, at least as
 // many, with nothing after it. Anything else inside is example text, so a shorter inner fence or a
 // fence of the other kind does not end it.
 let fence = null;
 for (let i = start; i < raw.length; i++) {
 	const text = raw[i];
 	const n = i + 1;
-	const delimiter = text.match(/^[ \t]*(`{3,}|~{3,})(.*)$/);
+	const delimiter = text.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
 	let code = fence !== null;
 	if (fence !== null) {
 		if (delimiter && delimiter[1][0] === fence[0] && delimiter[1].length >= fence.length && /^[ \t]*$/.test(delimiter[2])) fence = null;

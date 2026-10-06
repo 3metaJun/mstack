@@ -96,8 +96,9 @@ export function defaultTranscriptRoots({ env = process.env, home = homedir() } =
     .filter((root) => existsSync(root));
 }
 
-// A transcript names a worktree up to a path boundary (a separator, a quote, whitespace, or the end of
-// a JSON string), never a bare prefix, so `/x/wt` does not inherit a chat that ran in `/x/wt-long`.
+// A transcript names a worktree as a whole path token. It must end at a path boundary (a separator, a quote,
+// whitespace, or the end of a JSON string) and begin at one (the start of the text, whitespace, a quote, or
+// an opening bracket), so `/x/wt` inherits neither a chat in `/x/wt-long` nor one in `/other/x/wt`.
 // Git on Windows prints `C:/x/wt` while a session records `C:\x\wt` (`C:\\x\\wt` once JSON-escaped),
 // so a Windows or UNC path is searched in both separator spellings and both drive-letter cases.
 const PATH_BOUNDARIES = ["/", "\\", '"', "'", " ", "\t", "\n", "\r"];
@@ -113,6 +114,30 @@ function transcriptNeedles(path) {
     ...PATH_BOUNDARIES.map((end) => JSON.stringify(spelling + end).slice(1, -1)),
     JSON.stringify(spelling).slice(1),
   ]).map((needle) => Buffer.from(needle));
+}
+
+const START_BOUNDARIES = new Set([..." \t\n\r\"'`=(,;<>|[{"].map((char) => char.charCodeAt(0)));
+// The Windows verbatim prefix may sit in front of a drive path, plain or JSON-escaped.
+const VERBATIM_PREFIXES = ["\\\\?\\", "\\\\\\\\?\\\\", "//?/"].map((prefix) => Buffer.from(prefix));
+function startsPathToken(text, at) {
+  if (at === 0) return true;
+  const previous = text[at - 1];
+  if (START_BOUNDARIES.has(previous)) return true;
+  // A JSON-escaped newline, tab or return: an odd run of backslashes before the letter.
+  if ([0x6e, 0x72, 0x74].includes(previous)) {
+    let slashes = 0;
+    while (at - 2 - slashes >= 0 && text[at - 2 - slashes] === 0x5c) slashes++;
+    if (slashes % 2 === 1) return true;
+  }
+  return VERBATIM_PREFIXES.some((prefix) => at >= prefix.length && text.subarray(at - prefix.length, at).equals(prefix) && startsPathToken(text, at - prefix.length));
+}
+function namesPath(text, forms) {
+  return forms.some((form) => {
+    for (let at = text.indexOf(form); at !== -1; at = text.indexOf(form, at + 1)) {
+      if (startsPathToken(text, at)) return true;
+    }
+    return false;
+  });
 }
 
 function* transcriptFiles(root) {
@@ -137,7 +162,7 @@ export function lastChats(roots, paths) {
         if (!needles.some(([path]) => mtime > (latest.get(path) ?? 0))) continue;
         const text = readFileSync(file);
         for (const [path, forms] of needles) {
-          if (mtime > (latest.get(path) ?? 0) && forms.some((form) => text.includes(form))) latest.set(path, mtime);
+          if (mtime > (latest.get(path) ?? 0) && namesPath(text, forms)) latest.set(path, mtime);
         }
       } catch { /* a transcript may disappear during a scan */ }
     }
