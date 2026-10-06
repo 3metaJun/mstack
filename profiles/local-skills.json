@@ -1,0 +1,5 @@
+{
+  "skills": {
+    "mstack-help": "mstack-only entry skill that routes setup and usage questions; no upstream skill covers this repository."
+  }
+}

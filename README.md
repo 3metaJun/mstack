@@ -116,7 +116,7 @@ claude plugin install mstack@mstack
 Plugin skills are namespaced, for example `/mstack:meta-mode`, and the agents
 appear as `mstack:meta-agent` and `mstack:comment-reviewer`. Run
 `claude plugin details mstack` to see the inventory and its projected token
-cost; the 53 skill descriptions add about 3,100 tokens to every session.
+cost; the 54 skill descriptions add about 3,200 tokens to every session.
 `claude plugin marketplace update mstack` picks up new releases, because the
 plugin `version` tracks the npm version.
 
@@ -495,8 +495,9 @@ target directory and restores backups if a commit fails.
 
 ## Included skills
 
-The current bundle contains 53 skills. It includes the 50 entries in the
-portable pstack tree and three skills adapted from `mattpocock/skills`:
+The current bundle contains 54 skills. It includes the 50 entries in the
+portable pstack tree, three skills adapted from `mattpocock/skills`, and the
+local `mstack-help` skill:
 
 - Engineering principles for boundaries, domain modelling, idempotence,
   verification, sequencing, and type safety.
@@ -508,6 +509,9 @@ portable pstack tree and three skills adapted from `mattpocock/skills`:
   in the current harness.
 - `benchmark-checklist` and `correct` for vetting a measured number and for
   fixing repeated agent mistakes at the repository level.
+- `mstack-help` for questions about installing, setting up, and using mstack. It
+  answers and hands back a prompt to send without starting the work. Its source
+  is recorded in `profiles/local-skills.json` because no upstream skill covers it.
 
 The bundle includes the pstack workflow and principle names. `meta-mode` is the
 portable replacement for pstack's `poteto-mode`; it describes capabilities and
@@ -542,7 +546,7 @@ To check the complete skill trees against both pinned upstreams, run:
 npm run skill-baseline -- --check --source /path/to/pstack --matt-source /path/to/mattpocock-skills
 ```
 
-This checks every file in all 53 skill trees, including references, playbooks,
+This checks every file in all 54 skill trees, including references, playbooks,
 and scripts. It also checks tools moved out of skill directories. Local
 additions and intentional upstream omissions are recorded explicitly. Both
 source checkouts must be clean and at their pinned commits. `npm test` checks

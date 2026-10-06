@@ -48,6 +48,15 @@ function json(root, path) {
   return JSON.parse(readFileSync(inside(root, path), "utf8"));
 }
 
+// Skills written for mstack with no upstream counterpart, mapped to the reason they are local.
+function localSkillReasons(root) {
+  const path = "profiles/local-skills.json";
+  if (!existsSync(inside(root, path))) return {};
+  const skills = json(root, path).skills;
+  if (!record(skills)) throw new Error(`${path}: expected a skills object mapping each local skill to its reason`);
+  return skills;
+}
+
 function targetFiles(root, profiles) {
   const options = { excludeDependencies: true };
   const files = new Set(filesUnder(root, "skills", options));
@@ -179,11 +188,19 @@ export function buildBaseline(root, sourceRoots) {
     for (const path of Object.keys(spec.omit ?? {})) if (!usedOmissions.has(path)) throw new Error(`${path}: stale omission rule`);
     for (const skill of Object.keys(omittedSkills)) if (!usedSkillOmissions.has(skill)) throw new Error(`${skill}: stale skill omission rule`);
   }
+  const localSkills = localSkillReasons(root);
+  for (const [skill, reason] of Object.entries(localSkills)) {
+    if (typeof reason !== "string" || !reason.trim()) throw new Error(`${skill}: local skill requires a reason`);
+    if (owners.has(skill)) throw new Error(`${skill}: local skill is also owned by an upstream source`);
+    if (!existsSync(inside(root, `skills/${skill}/SKILL.md`))) throw new Error(`${skill}: local skill is missing SKILL.md`);
+    owners.add(skill);
+  }
   const expectedSkills = json(root, "profiles/skills.json").skills;
   if (JSON.stringify([...owners].sort()) !== JSON.stringify([...expectedSkills].sort())) throw new Error("Skill sources do not cover the declared skill inventory");
   for (const path of targetFiles(root, profiles)) {
     if (path.startsWith("skills/") && !owners.has(path.split("/")[1])) throw new Error(`${path}: no upstream skill owner`);
-    manifest.files[path] ??= { upstream: null, reason: "Local portability guidance or implementation; review alongside its owning skill.", targetDigest: contentDigest(root, path) };
+    const reason = localSkills[path.split("/")[1]] ?? "Local portability guidance or implementation; review alongside its owning skill.";
+    manifest.files[path] ??= { upstream: null, reason, targetDigest: contentDigest(root, path) };
   }
   manifest.files = Object.fromEntries(Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b, "en")));
   manifest.omitted = Object.fromEntries(Object.entries(manifest.omitted).sort(([a], [b]) => a.localeCompare(b, "en")));

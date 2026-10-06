@@ -8,7 +8,7 @@
       "poteto-agent": "meta-agent"
     },
     "omitSkills": {
-      "poteto-help": "Needs the repository README and guide pages, which the default installer does not ship, and has not been exercised by a model in mstack."
+      "poteto-help": "Links to repository pages the default installer does not ship. The local mstack-help skill replaces it and points at public URLs for those pages."
     },
     "artifacts": {
       "agents": {

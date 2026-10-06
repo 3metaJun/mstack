@@ -168,6 +168,23 @@ test("moved target inventories exclude installed dependencies but reject linked 
   assert.equal(readFileSync(join(f.target, "profiles/skill-manifest.json"), "utf8"), before);
 });
 
+test("a declared local skill is recorded as a local addition and an undeclared one is rejected", (t) => {
+  const f = fixture(t);
+  json(f.target, "profiles/skills.json", { skills: ["diagnosis", "helper", "meta-mode"] });
+  write(f.target, "skills/helper/SKILL.md", "# Helper\n\nLocal entry skill.\n");
+  const undeclared = f.run(...f.sources, "--write");
+  assert.notEqual(undeclared.status, 0);
+  assert.match(undeclared.stderr, /helper\/SKILL.md: no upstream skill owner|Skill sources do not cover/);
+  json(f.target, "profiles/local-skills.json", { skills: { helper: "No upstream skill covers this repository." } });
+  const recorded = JSON.parse(f.record());
+  assert.deepEqual(recorded.files["skills/helper/SKILL.md"].upstream, null);
+  assert.equal(recorded.files["skills/helper/SKILL.md"].reason, "No upstream skill covers this repository.");
+  json(f.target, "profiles/local-skills.json", { skills: { diagnosis: "Duplicates an upstream skill." } });
+  const duplicate = f.run(...f.sources, "--write");
+  assert.notEqual(duplicate.status, 0);
+  assert.match(duplicate.stderr, /diagnosis: local skill is also owned by an upstream source/);
+});
+
 test("refresh refuses to bless a deleted source-mapped file and preserves the previous manifest", (t) => {
   const f = fixture(t);
   const before = f.record();
