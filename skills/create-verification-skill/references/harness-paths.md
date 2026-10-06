@@ -62,6 +62,9 @@ Discover capabilities before proving the contract:
 - For an API or service, use the repository's integration client or an HTTP
   client with structured assertions.
 
+A host that provides its own browser or simulator tools has a file under
+`hosts/`, named for the host. Read it when you run inside that host.
+
 Record the actual driver and any missing capabilities in the run evidence.
 Keep tool-specific setup in its installed driver skill. A unit test or HTTP
 response cannot replace a required UI interaction.

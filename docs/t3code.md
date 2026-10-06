@@ -109,24 +109,28 @@ T3 reads `t3.json` at the repository root. An invalid file is ignored as a whole
 
 ## Orchestration overlap
 
-When a provider session has the app's `t3-code` MCP server, T3 adds its own instructions to the first prompt or system prompt. They cover delegation (`orchestrator_capabilities`, `delegate_task`, `task_status`, `task_cancel`), launching threads (`t3_thread_launch`, `create_threads`), scheduling (`schedule_task`), and pull requests (`link_pull_request`, `watch_pull_request`, `unwatch_pull_request`). Two mstack features do the same job outside T3's view.
+When a provider session has the app's `t3-code` MCP server, T3 adds its own instructions to the first prompt or system prompt. They cover delegation (`orchestrator_capabilities`, `delegate_task`, `task_status`, `task_cancel`), launching threads (`t3_thread_launch`, `create_threads`), scheduling (`schedule_task`), and pull requests (`link_pull_request`, `watch_pull_request`, `unwatch_pull_request`). Without a binding, three mstack features would do the same jobs outside T3's view: `run-role` children, the `watch-pr` watcher under `/loop`, and transcript-file history.
 
-**Child agents.** `run-role` starts a provider CLI with `execFile` or `spawnSync`. T3 does not know about that process, so it has no entry in T3's agent views, `task_status` cannot see it, and T3's docs say Stop also stops the subagents T3 delegated, which does not cover processes an agent started itself. I did not check whether interrupting a turn also kills a `run-role` child that is still running. Inside T3:
+**How mstack binds to T3.** The skills stay portable and name capabilities. Where a playbook delegates, watches a pull request, schedules a wake, reads history, or collects browser evidence, it tells an agent on a host with native primitives to read that host's reference first. For T3 these are `references/hosts/t3code.md` in `meta-mode`, `recall`, and `create-verification-skill`. Each maps the capability to the T3 tool and lists the limits and the rules that do not change. The agent applies a reference only when the `t3-code` tools are present in the session, probing `orchestrator_capabilities` once if they are not listed, and otherwise follows the generic text unchanged. `scripts/validate.mjs` fails when a T3 tool name appears anywhere under `skills/` outside a `references/hosts/` directory. The references were checked against the T3 source at the commit named above, not against a running T3.
 
-- Prefer the provider's native subagent tools for same-provider work they can run with the chosen model, and `delegate_task` for cross-provider work you want T3 to track. T3's own instructions say the same.
-- Take provider instance and model names from `orchestrator_capabilities`. T3 lists its own catalog, which can differ from the names in `~/.config/mstack/models.json`.
-- Use `run-role` when the `t3-code` tools are not available in the session, or for a harness T3 does not run. Expect its output in the transcript only.
+**Child agents.** `run-role` starts a provider CLI with `execFile` or `spawnSync`. T3 does not know about that process, so it has no entry in T3's agent views, `task_status` cannot see it, and T3's docs say Stop also stops the subagents T3 delegated, which does not cover processes an agent started itself. I did not check whether interrupting a turn also kills a `run-role` child that is still running. Inside T3 the `meta-mode` reference sends delegation through T3 instead:
 
-**Pull request watching.** The `babysit` playbook runs `bun "<meta-mode-tools>/watch-pr/watch-pr"` under `/loop`. T3's `watch_pull_request` polls the pull request every two minutes and wakes the agent when a check fails, required checks pass, someone else comments, or the branch conflicts. Running both gives two wake sources for one PR.
+- Prefer the provider's native subagent tools for same-provider work they can run with the chosen model, and `delegate_task` for models they lack or cross-provider work you want T3 to track. T3's own instructions say the same.
+- Take provider instance and model names from `orchestrator_capabilities`, and pass them in `delegate_task`'s `target`. T3 lists its own catalog, which can differ from the names in `~/.config/mstack/models.json`.
+- Every round is a new `delegate_task` call with the full brief and its own `clientRequestId`. A child cannot run with broader permissions than its parent.
+- `run-role` remains the path when the `t3-code` tools are not available in the session, or for a harness T3 does not run. Expect its output in the transcript only.
 
-- When `watch_pull_request` is available, use it instead of the Bun watcher loop and end the turn; T3 wakes the agent. Handle existing comments first, because only comments posted after the call wake it.
+**Pull request watching.** The `babysit` playbook otherwise runs `bun "<meta-mode-tools>/watch-pr/watch-pr"` under `/loop`. T3's `watch_pull_request` polls the pull request every two minutes and wakes the agent when a check fails, required checks pass, someone else comments, or the branch conflicts. Running both would give two wake sources for one PR, so the reference replaces the watcher and loop and keeps every stop condition.
+
+- The agent arms `watch_pull_request` and ends the turn; T3 wakes it. It handles existing comments first, because only comments posted after the call wake it.
 - A wake is news and not a merge decision. The mstack rule stays: do not merge or arm auto-merge unless the user asked.
-- T3's watch ends when the PR merges or closes, after 8 failed reads in a row, after 10 wakes that bring only comments, or when the user presses Stop. Call `unwatch_pull_request` before handing the work back.
+- T3's watch ends when the PR merges or closes, after 8 failed reads in a row, after 10 wakes that bring only comments, or when the user presses Stop. A merge ends it without a wake, so `shipping` still confirms a merge with `gh pr view`. The agent calls `unwatch_pull_request` before handing the work back.
+- A delegated child cannot watch a pull request, because its parent owns it. An owner agent that T3 delegated therefore keeps the portable watcher or reports back to its parent.
 - `watch-pr --status-only` is still a fine one-shot status read. T3 reports its own wake events, not the watcher's `READY`, `WAITING`, `ADVANCE`, or `COMPLETE` verdicts, so where `babysit` names a verdict, follow the T3 wake message instead.
 
 T3 also tells the agent to call `link_pull_request` for every PR it creates. That works alongside `file-pr`; the link is how T3 shows PR status on the thread.
 
-For long unattended work, the `autonomous-run` playbook picks "the wake mechanism exposed by the active harness". In T3 that can be `schedule_task`, which keeps the schedule in T3's scheduler.
+**Scheduling, history, and evidence.** For long unattended work, the `autonomous-run`, `autopilot-full`, and `multi-phase-plan` playbooks pick "the wake mechanism exposed by the active harness". In T3 that is `schedule_task`, which keeps the schedule in T3's scheduler; see [Run work while you sleep](./guide/07-overnight.md). `recall` and `session-pickup` can search and read T3 threads with `t3_thread_search` and `t3_thread_read`. These cover T3's own thread store, not provider transcript files, so the bundled history helper is still needed for threads run outside T3. `create-verification-skill` can use the `preview_*` browser tools and the `device_*` simulator tools as drivers and evidence sources.
 
 ## T3's own safety rules
 

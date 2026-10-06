@@ -33,6 +33,7 @@ Walk through what each line buys you:
 - "fresh worktree off `<base>`" keeps the run from colliding with anything else you have open.
 - "don't ask me before committing" pre-answers the permission the agent would otherwise block on.
 - A Harness loop or background job is the wake mechanism. The [Autonomous run playbook](../../skills/meta-mode/playbooks/autonomous-run.md) uses the active Harness's native mechanism when it has one, or a persistent local process with a saved log as its fallback.
+- On a host with its own scheduler, the schedule can live there instead of in a session loop. In T3 Code the agent uses `schedule_task`, which runs even when no turn is active and posts each run back into the same thread. The prompt must be self-contained and carry the finish condition, because the run sees nothing else. Pause it with `update_scheduled_task` and `enabled: false`, and delete it when the finish condition holds. The [T3 Code page](../t3code.md#orchestration-overlap) lists what else changes there.
 - The escape hatch lets it stop at a genuine dead end and write up why, which beats eight hours of creative goal reinterpretation.
 
 Because you'll review this work after stepping away, `/meta-mode` routes it through [`/figure-it-out`](../../skills/figure-it-out/SKILL.md), which designs the run's phases before any code and wires in the decision log.

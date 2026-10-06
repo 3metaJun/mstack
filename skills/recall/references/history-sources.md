@@ -140,6 +140,13 @@ Official references: [skills](https://pi.dev/docs/latest/skills),
 [environment variables](https://pi.dev/docs/latest/environment-variables),
 and [RPC mode](https://pi.dev/docs/latest/rpc).
 
+## Host-native history
+
+A host that keeps its own thread store and exposes search and read tools for it
+has a file under `hosts/`, named for the host. Read it when you run inside that
+host. It adds a source beside the harness entries above, does not replace them,
+and without the tools this section does not apply.
+
 ## Shared project records
 
 Repository history, pull requests, issues, documentation, project chat, and

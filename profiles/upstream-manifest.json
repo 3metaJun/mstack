@@ -56,7 +56,7 @@
     },
     "meta-mode": {
       "source": "2e09a945cbe289dd85448f4a51eeac8c0c3893904decaab9413a33babf96ca08",
-      "target": "08d339fcc5315f9e24bf2f810d3b3505bd98efb6930e30a2a4d4769575197024"
+      "target": "1bd904d7163d624d390c09e7bd1079bb5dcf3435828ee72fa34882e06f347c52"
     },
     "no-comments": {
       "source": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
@@ -263,6 +263,11 @@
       "source": "e3a8259f2b2450692e43d607848f5a85a7cee894490452968391079e52a8ac50",
       "target": "5fd91e770e7805455668b44d4f39f767498dc5ff6d4f10a9cfbe9de9d0631ac5",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
+    },
+    "docs/guide/07-overnight.md": {
+      "source": "b66d8726a888fa8ed2f1b488fc1ca14ac67eab892ff655878bd09bacdcdefabc",
+      "target": "b7e45bde8b8e383ca2eeaf97296da9d409a7b13214c26a9f815ff83f4ed1a67e",
+      "reason": "Offer a host scheduler as an alternative to a session loop for unattended runs."
     },
     "docs/guide/README.md": {
       "source": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b",

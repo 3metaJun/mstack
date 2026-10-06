@@ -126,7 +126,9 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 ## Subagents
 
 Use the active Harness's documented delegation mechanism for workers spawned by a
-playbook. Routed skills such as `how`, `why`, `interrogate`, `reflect`, and
+playbook. On a host with native delegation, PR-watching, or scheduling
+primitives, read its file under `references/hosts/` first; otherwise continue
+below. Routed skills such as `how`, `why`, `interrogate`, `reflect`, and
 `swarm` define their own worker roles and review rules. Keep worker prompts and
 results in the format that the active Harness supports.
 
