@@ -11,6 +11,17 @@ export const DEFAULT_ROLES = [
   "operator",
 ];
 
+// Hosts wrap harnesses and choose a provider instance per delegation, so they
+// are override layers, not entries in profiles/harnesses.json.
+export const HOST_KEYS = ["t3code"];
+
+// Lowest to highest. Entries accept only these effort values.
+export const EFFORT_LADDER = ["low", "medium", "high", "xhigh", "max"];
+
+const ALIASES = ["auto", "inherit-parent"];
+const ENTRY_FIELDS = ["provider", "model", "effort"];
+const EFFORT_SUFFIX = new RegExp(`^(.*\\S) \\((${EFFORT_LADDER.join("|")})\\)$`);
+
 export function readModelConfig(path) {
   if (!existsSync(path)) return { roles: Object.fromEntries(DEFAULT_ROLES.map((role) => [role, "inherit-parent"])), overrides: {} };
   return JSON.parse(decodeText(readFileSync(path)));
@@ -20,13 +31,77 @@ export function isValidModel(model) {
   return typeof model === "string" && model.trim() === model && model.length > 0 && !model.includes("\0");
 }
 
-function validateRoleValue(role, model, path, errors) {
-  if (role === "reviewer" && Array.isArray(model)) {
-    if (!model.length || model.some((entry) => !isValidModel(entry)) || new Set(model).size !== model.length) {
-      errors.push(`${path} must be a non-empty list of unique model strings without surrounding whitespace or NUL characters`);
+export function isAlias(entry) {
+  return ALIASES.includes(entry);
+}
+
+// Normalizes one role entry to { provider?, model, effort? }. A string is one
+// opaque model name, except that a trailing ` (<effort>)` is read as the effort
+// and a host entry `<provider>/<model>` splits at the first slash. Returns
+// { error } when the entry is malformed for the given scope.
+export function parseRoleEntry(entry, { host = false } = {}) {
+  if (typeof entry === "string") {
+    if (!isValidModel(entry)) return { error: "must be a non-empty string without surrounding whitespace or NUL characters" };
+    if (isAlias(entry)) return { model: entry };
+    const suffix = EFFORT_SUFFIX.exec(entry);
+    if (host && !suffix && /\s\([^()]*\)$/.test(entry)) {
+      return { error: `effort must be one of ${EFFORT_LADDER.join(", ")}` };
     }
-  } else if (!isValidModel(model)) {
-    errors.push(`${path} must be a non-empty string without surrounding whitespace or NUL characters`);
+    const body = suffix ? suffix[1] : entry;
+    const effort = suffix ? { effort: suffix[2] } : {};
+    if (!host) return { model: body, ...effort };
+    const slash = body.indexOf("/");
+    if (slash <= 0 || slash === body.length - 1) return { error: "must be <provider>/<model> with an optional (<effort>) suffix" };
+    return { provider: body.slice(0, slash), model: body.slice(slash + 1), ...effort };
+  }
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return { error: "must be a model string or an object with provider, model and effort" };
+  const unknown = Object.keys(entry).filter((field) => !ENTRY_FIELDS.includes(field));
+  if (unknown.length) return { error: `has unknown field ${unknown.join(", ")}` };
+  if (!isValidModel(entry.model) || isAlias(entry.model)) {
+    return { error: "model must be a concrete model name; write inherit-parent or auto as a plain string" };
+  }
+  if (entry.provider !== undefined && (!isValidModel(entry.provider) || /[\s/]/.test(entry.provider))) {
+    return { error: "provider must be a non-empty provider id without whitespace or slashes" };
+  }
+  if (host && entry.provider === undefined) return { error: "provider is required for a host entry" };
+  if (entry.effort !== undefined && !EFFORT_LADDER.includes(entry.effort)) {
+    return { error: `effort must be one of ${EFFORT_LADDER.join(", ")}` };
+  }
+  return {
+    ...(entry.provider === undefined ? {} : { provider: entry.provider }),
+    model: entry.model,
+    ...(entry.effort === undefined ? {} : { effort: entry.effort }),
+  };
+}
+
+// Canonical text of a parsed entry, used to detect duplicate panel members.
+export function entryKey({ provider, model, effort }) {
+  return `${provider === undefined ? "" : `${provider}/`}${model}${effort === undefined ? "" : ` (${effort})`}`;
+}
+
+// The value a Harness CLI receives for `--model`. Provider and effort are for
+// hosts that expose them; a CLI keeps its own effort setting.
+export function harnessModel(entry) {
+  const parsed = parseRoleEntry(entry);
+  if (parsed.error) throw new Error(`Invalid model entry: ${parsed.error}`);
+  return parsed.model;
+}
+
+function validateRoleValue(role, value, path, errors, host) {
+  const entries = role === "reviewer" && Array.isArray(value) ? value : [value];
+  const keys = [];
+  let valid = true;
+  for (const entry of entries) {
+    const parsed = parseRoleEntry(entry, { host });
+    if (parsed.error) {
+      valid = false;
+      errors.push(`${path} ${parsed.error}`);
+    } else keys.push(entryKey(parsed));
+  }
+  if (role === "reviewer" && Array.isArray(value)) {
+    if (!value.length || !valid || new Set(keys).size !== keys.length) {
+      errors.push(`${path} must be a non-empty list of unique model entries without surrounding whitespace or NUL characters`);
+    }
   }
 }
 
@@ -36,26 +111,27 @@ export function validateModelConfig(config, harnesses) {
     errors.push("configuration must be an object");
     return errors;
   }
+  const scopes = [...harnesses, ...HOST_KEYS];
   if (!config.roles || typeof config.roles !== "object" || Array.isArray(config.roles)) {
     errors.push("roles must be an object");
   } else {
     for (const [role, model] of Object.entries(config.roles)) {
       if (!role.trim()) errors.push("role names must not be empty");
-      validateRoleValue(role, model, `roles.${role || "<empty>"}`, errors);
+      validateRoleValue(role, model, `roles.${role || "<empty>"}`, errors, false);
     }
   }
   if (config.overrides !== undefined && (!config.overrides || typeof config.overrides !== "object" || Array.isArray(config.overrides))) {
     errors.push("overrides must be an object");
   }
-  for (const [harness, overrides] of Object.entries(config.overrides ?? {})) {
-    if (!harnesses.includes(harness)) errors.push(`overrides.${harness} names an unsupported harness`);
+  for (const [scope, overrides] of Object.entries(config.overrides ?? {})) {
+    if (!scopes.includes(scope)) errors.push(`overrides.${scope} names an unsupported harness`);
     if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) {
-      errors.push(`overrides.${harness} must be an object`);
+      errors.push(`overrides.${scope} must be an object`);
       continue;
     }
     for (const [role, model] of Object.entries(overrides)) {
-      if (!Object.hasOwn(config.roles ?? {}, role)) errors.push(`overrides.${harness}.${role} has no role default`);
-      validateRoleValue(role, model, `overrides.${harness}.${role}`, errors);
+      if (!Object.hasOwn(config.roles ?? {}, role)) errors.push(`overrides.${scope}.${role} has no role default`);
+      validateRoleValue(role, model, `overrides.${scope}.${role}`, errors, HOST_KEYS.includes(scope));
     }
   }
   if (config.sessionHook !== undefined && typeof config.sessionHook !== "boolean") {
@@ -64,9 +140,9 @@ export function validateModelConfig(config, harnesses) {
   if (config.budgets !== undefined) {
     if (!config.budgets || typeof config.budgets !== "object" || Array.isArray(config.budgets)) {
       errors.push("budgets must be an object keyed by Harness");
-    } else for (const [harness, budget] of Object.entries(config.budgets)) {
-      if (!harnesses.includes(harness)) errors.push(`budgets.${harness} names an unsupported harness`);
-      if (!["unlimited", "large", "medium", "small"].includes(budget)) errors.push(`budgets.${harness} must be unlimited, large, medium, or small`);
+    } else for (const [scope, budget] of Object.entries(config.budgets)) {
+      if (!scopes.includes(scope)) errors.push(`budgets.${scope} names an unsupported harness`);
+      if (!["unlimited", "large", "medium", "small"].includes(budget)) errors.push(`budgets.${scope} must be unlimited, large, medium, or small`);
     }
   }
   return errors;

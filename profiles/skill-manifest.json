@@ -364,7 +364,7 @@
     "skills/meta-mode/references/hosts/t3code.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "4ba5740a7b1a890f404252af59eeb00c645a4f1310b85266ade7f15d4a4d4ef3"
+      "targetDigest": "04ecfbd4eefbbe27ff3f37b70dbc040e338af570a4511362abb7d3258c4c0a66"
     },
     "skills/meta-mode/SKILL.md": {
       "upstream": "pstack",
@@ -578,11 +578,16 @@
       "sourceDigest": "36efa48cc4ec2ba6f8131651aae24c6321682b098ed47a1069a7509462bf4a84",
       "targetDigest": "5478382b85614482fdf8799c9b0113d0c12c6595ee1003aa62c91f6288b91089"
     },
+    "skills/setup-mstack/references/hosts/t3code.md": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "7680cb5289b88c6b663e2c9f7ea56285d89238e02b30ffec5501191d99fbebb0"
+    },
     "skills/setup-mstack/SKILL.md": {
       "upstream": "pstack",
       "source": "skills/setup-pstack/SKILL.md",
       "sourceDigest": "125dd0c8f588782cfb271efae8f97a0719e43e79f56b3495c095f460bcee6389",
-      "targetDigest": "ede1efcab2c6503521faed92ab691df87dd92b48e33c66cc57d72d4ea4c5ff82"
+      "targetDigest": "ccc9c0c029bc15fcce99a3983cf0c9d461f480d704227fb814396958cb8ffa7a"
     },
     "skills/show-me-your-work/references/decision-log-template.tsv": {
       "upstream": "pstack",

@@ -381,6 +381,15 @@ string. The `reviewer` role also accepts a non-empty list of unique model string
 A Harness override replaces the role's whole value. Use `/setup-mstack` to choose
 names reported by your Harness; existing string configurations remain valid.
 
+An entry can also be an object, `{ "provider": "<instance id>", "model": "<model>", "effort": "<max|xhigh|high|medium|low>" }`,
+or the string `<provider>/<model> (<effort>)`. A host that picks a provider instance
+and exposes effort per model, such as T3 Code, reads these from `overrides.t3code`
+(see [Use mstack in T3 Code](./docs/t3code.md)); it is a host layer, not a Harness.
+`run-role` passes a CLI only the entry's `model`: `provider` and `effort` are
+ignored with a warning, and the CLI keeps its own effort setting. The budget
+script sets `effort` from a catalog's explicit `efforts` list instead of rewriting
+name suffixes.
+
 `inherit-parent` requests the current chat model. Native delegation can use its
 documented inheritance mechanism, but `run-role` starts a new CLI process and
 requires `--parent-model <known-parent-model>` for that value. `auto` omits the

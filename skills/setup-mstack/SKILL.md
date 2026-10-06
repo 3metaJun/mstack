@@ -20,6 +20,8 @@ portable so the same role names work in every supported Harness.
    selection, which may differ from the current session.
 
 Do not write a model name that the current Harness did not report as available.
+On a host that lists provider instances and per-model effort options, read
+`references/hosts/<host>.md` first; it replaces the name-based budget rules below.
 
 ## Select a reasoning budget
 

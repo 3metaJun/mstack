@@ -110,3 +110,130 @@ test("invalid options, catalogs and budget metadata fail without modifying confi
     assert.equal(readFileSync(f.file, "utf8"), invalid);
   }
 });
+
+const ladder = ["low", "medium", "high", "xhigh", "max"];
+const entry = (provider, model, efforts) => ({ provider, model, ...(efforts ? { efforts } : {}) });
+function hostFixture(t, config, models) {
+  const f = fixture(t, config, models);
+  const run = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", f.file, "--catalog", f.catalog, "--harness", "t3code", "--budget", budget, ...flags], { encoding: "utf8" });
+  return { ...f, run };
+}
+
+test("explicit effort options set the entry's effort instead of rewriting names", (t) => {
+  const rows = [
+    // [budget, exposed efforts, implementer (object form), reviewer (string form)]
+    ["unlimited", ladder, "high", "max"],
+    ["large", ladder, "xhigh", "xhigh"],
+    ["medium", ladder, "high", "high"],
+    ["small", ladder, "medium", "medium"],
+    ["large", ["low", "medium", "high", "max"], "high", "high"],
+    ["medium", ["low", "max"], "low", "low"],
+    ["small", ["off", "minimal", "low", "medium", "ultracode"], "medium", "medium"],
+    ["small", ["off", "low", "ultracode"], "low", "low"],
+  ];
+  for (const [budget, efforts, implementer, reviewer] of rows) {
+    const f = hostFixture(t, {
+      roles: { implementer: "inherit-parent", reviewer: "inherit-parent" },
+      overrides: { t3code: { implementer: { provider: "codex", model: "gpt-5.6-sol", effort: "high" }, reviewer: "claude_work/claude-opus-5-5 (max)" } },
+      extra: { keep: true },
+    }, [entry("codex", "gpt-5.6-sol", efforts), entry("claude_work", "claude-opus-5-5", efforts)]);
+    const label = `${budget} ${efforts}`;
+    const result = f.run(budget, "--apply");
+    assert.equal(result.status, 0, `${label}: ${result.stdout}${result.stderr}`);
+    const saved = JSON.parse(readFileSync(f.file, "utf8"));
+    // The object form stays an object and the string form stays a string.
+    assert.deepEqual(saved.overrides.t3code.implementer, { provider: "codex", model: "gpt-5.6-sol", effort: implementer }, label);
+    assert.equal(saved.overrides.t3code.reviewer, `claude_work/claude-opus-5-5 (${reviewer})`, label);
+    assert.equal(saved.budgets.t3code, budget);
+    assert.equal(saved.extra.keep, true);
+    assert.deepEqual(saved.roles, { implementer: "inherit-parent", reviewer: "inherit-parent" });
+  }
+});
+
+test("effort budgets leave aliases and other scopes alone, and a repeat apply is a no-op", (t) => {
+  const f = hostFixture(t, {
+    roles: { implementer: "worker-high", judge: "inherit-parent", explorer: "auto" },
+    overrides: { codex: { implementer: "codex-custom" }, t3code: { judge: "inherit-parent", explorer: "auto", implementer: "codex/gpt-5.6-sol (low)" } },
+  }, [entry("codex", "gpt-5.6-sol", ladder)]);
+  assert.equal(f.run("small", "--apply").status, 0);
+  const saved = JSON.parse(readFileSync(f.file, "utf8"));
+  assert.deepEqual(saved.overrides.t3code, { judge: "inherit-parent", explorer: "auto", implementer: "codex/gpt-5.6-sol (medium)" });
+  assert.deepEqual(saved.overrides.codex, { implementer: "codex-custom" });
+  assert.equal(saved.roles.implementer, "worker-high");
+  const mtime = statSync(f.file).mtimeMs;
+  assert.equal(f.run("small", "--apply").status, 0);
+  assert.equal(statSync(f.file).mtimeMs, mtime);
+});
+
+test("a host role that falls back to a provider-less default is refused until it is set", (t) => {
+  const f = hostFixture(t, { roles: { implementer: "worker-high" } }, [entry("codex", "gpt-5.6-sol", ladder)]);
+  const before = readFileSync(f.file, "utf8");
+  const result = f.run("small", "--apply");
+  assert.equal(result.status, 1);
+  assert.match(JSON.parse(result.stdout).unresolved[0].reason, /overrides\.t3code\.implementer/);
+  assert.equal(readFileSync(f.file, "utf8"), before);
+});
+
+test("effort budgets refuse every write when a target is not exposed or the model is unknown", (t) => {
+  const rows = [
+    ["no option at or below the target", [entry("codex", "gpt-5.6-sol", ["xhigh", "max"])], "small", /no effort option at or below medium/],
+    ["only non-ladder options", [entry("codex", "gpt-5.6-sol", ["off", "ultracode"])], "small", /no effort option/],
+    ["model exposes no effort", [entry("codex", "gpt-5.6-sol")], "large", /no effort option/],
+    ["unknown model", [entry("codex", "other-model", ladder)], "large", /not in the catalog/],
+    ["unknown provider instance", [entry("codex_two", "gpt-5.6-sol", ladder)], "large", /not in the catalog/],
+    ["unlimited with a stored effort the model lacks", [entry("codex", "gpt-5.6-sol", ["low", "medium"])], "unlimited", /does not expose effort high/],
+  ];
+  for (const [label, catalog, budget, reason] of rows) {
+    const f = hostFixture(t, {
+      roles: { implementer: "inherit-parent", reviewer: "inherit-parent" },
+      overrides: { t3code: { implementer: "codex/gpt-5.6-sol (high)", reviewer: "inherit-parent" } },
+    }, catalog);
+    const before = readFileSync(f.file, "utf8");
+    const result = f.run(budget, "--apply");
+    assert.equal(result.status, 1, label);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.applied, false, label);
+    assert.match(report.unresolved[0].reason, reason, label);
+    assert.equal(readFileSync(f.file, "utf8"), before, label);
+  }
+});
+
+test("effort mapping that collapses panel entries refuses the write, while distinct models are a valid panel", (t) => {
+  const catalog = [entry("codex", "gpt-5.6-sol", ladder), entry("claude_work", "claude-opus-5-5", ladder)];
+  const collapsed = hostFixture(t, {
+    roles: { reviewer: "inherit-parent" },
+    overrides: { t3code: { reviewer: ["codex/gpt-5.6-sol (max)", { provider: "codex", model: "gpt-5.6-sol", effort: "low" }] } },
+  }, catalog);
+  const before = readFileSync(collapsed.file, "utf8");
+  const refused = collapsed.run("medium", "--apply");
+  assert.equal(refused.status, 1);
+  assert.match(JSON.parse(refused.stdout).unresolved[0].reason, /collapses reviewer entries/);
+  assert.equal(readFileSync(collapsed.file, "utf8"), before);
+  const distinct = hostFixture(t, {
+    roles: { reviewer: "inherit-parent" },
+    overrides: { t3code: { reviewer: ["codex/gpt-5.6-sol (max)", "claude_work/claude-opus-5-5 (max)", "inherit-parent"] } },
+  }, catalog);
+  assert.equal(distinct.run("medium", "--apply").status, 0);
+  assert.deepEqual(JSON.parse(readFileSync(distinct.file, "utf8")).overrides.t3code.reviewer,
+    ["codex/gpt-5.6-sol (high)", "claude_work/claude-opus-5-5 (high)", "inherit-parent"]);
+});
+
+test("name-suffix catalogs keep working beside effort catalogs, and a malformed effort catalog is rejected", (t) => {
+  const f = fixture(t, { roles: { implementer: "grok-4.7-max-fast", reviewer: { provider: "p", model: "m" } } }, [
+    "grok-4.7-high-fast", entry("p", "m", ladder),
+  ]);
+  const result = f.run("medium", "--apply");
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(f.file, "utf8")).overrides.pi, { implementer: "grok-4.7-high-fast", reviewer: { provider: "p", model: "m", effort: "high" } });
+  const before = readFileSync(f.file, "utf8");
+  for (const bad of [
+    [{ provider: "p", model: "m", efforts: "high" }], [{ provider: "p", model: "m", efforts: ["high", "high"] }],
+    [{ provider: "p", model: "m", extra: 1 }], [{ provider: "p/q", model: "m" }], [{ provider: "p", model: "auto" }], [{ model: "" }],
+  ]) {
+    writeFileSync(f.catalog, JSON.stringify(bad));
+    const rejected = f.run("medium", "--apply");
+    assert.notEqual(rejected.status, 0, JSON.stringify(bad));
+    assert.match(rejected.stderr, /catalog/);
+    assert.equal(readFileSync(f.file, "utf8"), before);
+  }
+});
