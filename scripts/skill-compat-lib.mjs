@@ -15,11 +15,15 @@
 const T3_SKILL_NAME = /^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/;
 const PLAIN_SCALAR_FIELDS = ["name", "description"];
 // Indicators that can never start a plain scalar (quote and block forms are handled separately).
-const ALWAYS_INDICATORS = new Set(["[", "]", "{", "}", ",", "&", "*", "!", "%", "@", "`"]);
+// A `|` or `>` is a block header only on the key's own line; on a continuation line it is invalid.
+const ALWAYS_INDICATORS = new Set(["[", "]", "{", "}", ",", "&", "*", "!", "%", "@", "`", "|", ">"]);
 // `-`, `?` and `:` are indicators only when followed by a separator.
 const CONDITIONAL_INDICATORS = /^[-?:]([ \t]|$)/;
 // Block scalar header: indentation and chomping indicators only, then an optional comment.
 const BLOCK_HEADER = /^[|>](?:[1-9][+-]?|[+-][1-9]?)?(?:[ \t]+#.*)?$/;
+// YAML 1.2 double-quoted escapes. A backslash before a newline is a line continuation.
+const SIMPLE_ESCAPES = '0abtnvfre \t"/\\N_LP\n';
+const HEX_ESCAPES = { x: 2, u: 4, U: 8 };
 const COMMENT_TAIL = /^(?:[ \t]+#.*)?[ \t]*$/;
 const BLANK_OR_COMMENT_LINE = /^[ \t]*(?:#.*)?$/;
 const QUOTE_REMEDY = "quote the value";
@@ -46,8 +50,18 @@ function inspectQuoted(text) {
   const quote = text[0];
   let close = -1;
   for (let i = 1; i < text.length && close === -1; i++) {
-    if (quote === '"' && text[i] === "\\") i++;
-    else if (text[i] === quote) {
+    if (quote === '"' && text[i] === "\\") {
+      const escape = text[i + 1];
+      if (escape === undefined) break; // unterminated
+      const digits = HEX_ESCAPES[escape];
+      if (digits !== undefined) {
+        if (!new RegExp(`^[0-9a-fA-F]{${digits}}$`).test(text.slice(i + 2, i + 2 + digits))) {
+          return { problem: `has an invalid escape \\${escape} (needs ${digits} hex digits)` };
+        }
+        i += 1 + digits;
+      } else if (SIMPLE_ESCAPES.includes(escape)) i++;
+      else return { problem: `has an invalid escape \\${escape}; double-quoted YAML allows only the YAML 1.2 escapes` };
+    } else if (text[i] === quote) {
       if (quote === "'" && text[i + 1] === "'") i++;
       else close = i;
     }
@@ -59,6 +73,21 @@ function inspectQuoted(text) {
   }
   const inner = text.slice(1, close);
   return { value: quote === "'" ? inner.replaceAll("''", "'") : inner };
+}
+
+/** Checks a block scalar header and that its body is indented under the (indent 0) key. */
+function inspectBlock({ first, continuation }) {
+  if (!BLOCK_HEADER.test(first)) return { problem: `has an invalid block scalar header ${first}` };
+  if (continuation.length === 0) return { problem: "has an empty block scalar body" };
+  const indicators = first.match(/^[|>]([1-9+-]*)/)[1];
+  const explicit = Number(indicators.match(/[1-9]/)?.[0] ?? 0);
+  const indents = continuation.map((line) => line.match(/^ */)[0].length);
+  // Without an indentation indicator YAML takes the first body line's indent.
+  const required = explicit || indents[0];
+  if (indents.some((indent) => indent < Math.max(required, 1))) {
+    return { problem: `has a block scalar body line indented less than ${Math.max(required, 1)} space(s)` };
+  }
+  return {};
 }
 
 function inspectPlain(lines) {
@@ -84,9 +113,7 @@ function inspectField(field) {
   const lines = [field.first, ...field.continuation].filter((line) => trimSeparators(line) !== "");
   if (lines.length === 0) return { problem: "is empty or comment-only (YAML null)" };
   const head = trimSeparators(lines[0]);
-  if (/^[|>]/.test(head)) {
-    return BLOCK_HEADER.test(head) ? {} : { problem: `has an invalid block scalar header ${head}` };
-  }
+  if (/^[|>]/.test(field.first)) return inspectBlock(field);
   if (/^["']/.test(head)) return inspectQuoted(lines.map(trimSeparators).join("\n"));
   return inspectPlain(lines);
 }
