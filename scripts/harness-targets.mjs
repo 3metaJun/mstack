@@ -68,6 +68,8 @@ export function withoutInvalidOverrides(registry, env, home = homedir()) {
 // Every target and its transaction storage must physically stay inside the project, away from the mstack
 // package, and out of user-level skill roots. Compare physical paths so symlinks and junctions cannot
 // redirect a write, and check both directions so nesting is caught either way.
+// Returns `assertProjectPath(label, path)`, the single boundary check. The installer calls it again on
+// every concrete transaction path (stage, backup, failed) because a link can sit below the storage roots.
 export function validateProjectTargets({ projectDir, targets, userRoots, packageRoot }) {
   const projectKey = physicalPathKey(projectDir);
   const packageKey = packageRoot ? physicalPathKey(packageRoot) : undefined;
@@ -88,6 +90,7 @@ export function validateProjectTargets({ projectDir, targets, userRoots, package
   }
   const contained = userKeys.find((userKey) => pathIsWithin(projectKey, userKey));
   if (contained) throw new Error(`--project cannot contain a user-level skill root: ${projectDir} contains ${contained}`);
+  return check;
 }
 
 // Project roots come only from the registry's `project` path; user-scope overrides never apply.

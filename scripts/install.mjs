@@ -150,14 +150,12 @@ const targets = projectDir ? resolveProjectRoots(harnessRegistry, projectDir) : 
 const discoveryRoots = [...new Set([
   ...Object.values(targets), ...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
 ].map(physicalPathKey))];
-if (projectDir) {
-  validateProjectTargets({
-    projectDir,
-    targets: Object.fromEntries(harnesses.map((harness) => [harness, targets[harness]])),
-    userRoots: [...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot],
-    packageRoot: repoRoot,
-  });
-}
+const assertProjectPath = projectDir ? validateProjectTargets({
+  projectDir,
+  targets: Object.fromEntries(harnesses.map((harness) => [harness, targets[harness]])),
+  userRoots: [...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot],
+  packageRoot: repoRoot,
+}) : undefined;
 
 function artifactEnvironmentPath(name, harness) {
   const byArtifact = environmentArtifacts[name];
@@ -534,6 +532,8 @@ function transactionPath(item, category) {
       throw new Error(`Transaction storage would be discoverable as skills: ${path}; choose non-nested skill targets`);
     }
   }
+  // A link below the storage root (for example .harness-skills-stage/skills) can still point elsewhere.
+  assertProjectPath?.(`${category} path`, path);
   return path;
 }
 
@@ -684,6 +684,7 @@ try {
 
   for (const [index, item] of plan.entries()) {
     if (item.kind === "retired") continue;
+    assertProjectPath?.("skill root", dirname(item.target));
     mkdirSync(dirname(item.target), { recursive: true });
     const staged = item.kind === "artifact" ? stagingPath(item.target, transactionId, index) : transactionPath(item, "stage");
     mkdirSync(dirname(staged), { recursive: true });
@@ -702,6 +703,7 @@ try {
 
   for (const item of plan) {
     const { harness, target } = item;
+    assertProjectPath?.("skill root", dirname(target));
     if (existsSync(target) && !replace) {
       throw new Error(`Refusing to replace ${target} without --replace`);
     }

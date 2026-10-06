@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -140,11 +140,32 @@ test("invalid overrides are dropped for project installs and valid ones are kept
 test("project directories inside discovery roots are refused on the physical path", (t) => {
   const root = mkdtempSync(join(tmpdir(), "mstack-project-roots-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const nested = join(root, ".Agents", "Skills", "repo");
+  const nested = join(root, ".agents", "skills", "repo");
   mkdirSync(nested, { recursive: true });
   const options = { packageRoot: join(root, "package"), home: join(root, "home"), cwd: root };
   assert.throws(() => validateProjectDir(nested, options), /inside a skill discovery root/);
   assert.equal(validateProjectDir(root, options), root);
+});
+
+// Case folding only applies where the platform treats paths as case-insensitive, so probe the real
+// temporary filesystem instead of assuming from the platform name.
+function caseInsensitiveTemporaryFilesystem(directory) {
+  const probe = join(directory, "CaseProbe");
+  writeFileSync(probe, "x", "utf8");
+  return existsSync(join(directory, "caseprobe"));
+}
+
+test("mixed-case discovery roots are refused where the filesystem folds case", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-project-case-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  if (!caseInsensitiveTemporaryFilesystem(root) || !["win32", "darwin"].includes(process.platform)) {
+    t.skip("the temporary filesystem or platform treats path case as significant");
+    return;
+  }
+  const nested = join(root, ".Agents", "Skills", "repo");
+  mkdirSync(nested, { recursive: true });
+  const options = { packageRoot: join(root, "package"), home: join(root, "home"), cwd: root };
+  assert.throws(() => validateProjectDir(nested, options), /inside a skill discovery root/);
 });
 
 for (const explicit of [false, true]) {

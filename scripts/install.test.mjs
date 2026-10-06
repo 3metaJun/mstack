@@ -935,8 +935,21 @@ test("project install refuses overlap with user-level skill roots in either dire
   }
 });
 
-test("project overlap check ignores path case on case-insensitive local filesystems", { skip: process.platform !== "win32" }, () => {
+// The installer folds case by platform (win32, darwin); probe the real temporary filesystem as well.
+function foldsPathCase(directory) {
+  if (!["win32", "darwin"].includes(process.platform)) return false;
+  const probe = join(directory, "CaseProbe");
+  writeFileSync(probe, "x", "utf8");
+  return existsSync(join(directory, "caseprobe"));
+}
+
+test("project overlap check ignores path case on case-insensitive local filesystems", (t) => {
   const { root, env, home } = projectFixture();
+  if (!foldsPathCase(root)) {
+    rmSync(root, { recursive: true, force: true });
+    t.skip("path case is significant on this platform or temporary filesystem");
+    return;
+  }
   const nested = join(home, ".agents", "skills", "repo");
   mkdirSync(nested, { recursive: true });
   try {
@@ -999,8 +1012,37 @@ test("project install judges targets and transaction storage by their physical p
   }
 });
 
-test("project install rejects an uppercase spelling of transaction storage on case-insensitive Windows", { skip: process.platform !== "win32" }, () => {
+test("project install validates the concrete transaction paths below a link inside storage", (t) => {
+  const { root, env, project } = projectFixture();
+  const outside = join(root, "outside");
+  mkdirSync(outside);
+  try {
+    for (const category of ["stage", "backups", "failed"]) {
+      rmSync(join(project, ".agents"), { recursive: true, force: true });
+      mkdirSync(join(project, ".agents", `.harness-skills-${category}`), { recursive: true });
+      // Storage root is real; the per-skills-directory level below it links to an external directory.
+      if (!linkDirectory(outside, join(project, ".agents", `.harness-skills-${category}`, "skills"))) {
+        t.skip("the OS refused to create a directory link");
+        return;
+      }
+      const result = run(["--harness", "codex", "--skill", "bro", "--replace", "--project", project], env);
+      assert.notEqual(result.status, 0, category);
+      assert.match(result.stderr, new RegExp(`${category} path resolves outside the project directory`), category);
+      assert.deepEqual(readdirSync(outside), [], category);
+      assert.equal(existsSync(join(project, ".agents", "skills")), false, category);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rejects an uppercase spelling of transaction storage on case-insensitive filesystems", (t) => {
   const { root, env } = projectFixture();
+  if (!foldsPathCase(root)) {
+    rmSync(root, { recursive: true, force: true });
+    t.skip("path case is significant on this platform or temporary filesystem");
+    return;
+  }
   mkdirSync(join(root, ".harness-skills-backups", "repo"), { recursive: true });
   try {
     const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", join(root, ".HARNESS-SKILLS-BACKUPS", "REPO")], env);
