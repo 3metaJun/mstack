@@ -2,20 +2,46 @@
 // scanners drop a skill whose frontmatter fails YAML parsing, and T3's composer
 // only forms a skill chip for names matching the pattern below. Keep these
 // checks dependency-free: they flag only plain scalars that are invalid YAML.
+//
+// YAML separation whitespace is space and tab only, so every check below uses
+// [ \t] and never \s (which also matches NBSP and other Unicode spaces that are
+// ordinary plain-scalar text).
 
 const T3_SKILL_NAME = /^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/;
 const PLAIN_SCALAR_FIELDS = ["name", "description"];
-// YAML indicators that cannot start a plain scalar (quote and block forms are handled earlier).
-const LEADING_INDICATORS = new Set(["[", "{", "&", "*", "!", "%", "@", "`"]);
+// Indicators that can never start a plain scalar (quote and block forms are handled earlier).
+const ALWAYS_INDICATORS = new Set(["[", "]", "{", "}", ",", "&", "*", "!", "%", "@", "`"]);
+// `-`, `?` and `:` are indicators only when followed by a separator.
+const CONDITIONAL_INDICATORS = /^[-?:]([ \t]|$)/;
 
-function fieldValue(frontmatter, field) {
-  return frontmatter.match(new RegExp(`^${field}:[ \\t]*(.*)$`, "m"))?.[1]?.trim();
+const trimSeparators = (text) => text.replace(/^[ \t]+|[ \t]+$/g, "");
+
+/** Reads a top-level field: its same-line value and any indented continuation lines. */
+function readField(lines, field) {
+  const start = lines.findIndex((line) => new RegExp(`^${field}:([ \\t]|$)`).test(line));
+  if (start === -1) return undefined;
+  let first = trimSeparators(lines[start].slice(field.length + 1));
+  if (first.startsWith("#")) first = ""; // the whole remainder is a comment
+  const continuation = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.trim() === "") continue;
+    if (!/^[ \t]/.test(line)) break;
+    continuation.push(line);
+  }
+  return { first, continuation };
 }
 
-function plainScalarProblem(value) {
-  if (LEADING_INDICATORS.has(value[0])) return `starts with YAML indicator ${value[0]}`;
-  if (/:(\s|$)/.test(value)) return "contains ': ' (invalid in a plain YAML scalar)";
-  if (/\s#/.test(value)) return "contains ' #' (starts a YAML comment)";
+function plainScalarProblem(field) {
+  const lines = [field.first, ...field.continuation].filter((line) => trimSeparators(line) !== "");
+  if (lines.length === 0) return undefined;
+  const head = trimSeparators(lines[0]);
+  if (ALWAYS_INDICATORS.has(head[0]) || CONDITIONAL_INDICATORS.test(head)) {
+    return `starts with YAML indicator ${head[0]}`;
+  }
+  for (const line of lines) {
+    if (/:([ \t]|$)/.test(trimSeparators(line))) return "contains ': ' (invalid in a plain YAML scalar)";
+    if (/(^|[ \t])#/.test(line)) return "contains ' #' (starts a YAML comment)";
+  }
   return undefined;
 }
 
@@ -24,14 +50,15 @@ function plainScalarProblem(value) {
  * Quoted and block scalars are accepted as written.
  */
 export function skillCompatProblems(frontmatter) {
+  const lines = frontmatter.split(/\r?\n/);
   const problems = [];
-  for (const field of PLAIN_SCALAR_FIELDS) {
-    const raw = fieldValue(frontmatter, field);
-    if (!raw || /^["'|>]/.test(raw)) continue;
-    const problem = plainScalarProblem(raw);
-    if (problem) problems.push(`${field} ${problem}; quote it`);
+  for (const fieldName of PLAIN_SCALAR_FIELDS) {
+    const field = readField(lines, fieldName);
+    if (!field || /^["'|>]/.test(field.first)) continue;
+    const problem = plainScalarProblem(field);
+    if (problem) problems.push(`${fieldName} ${problem}; quote it`);
   }
-  const name = fieldValue(frontmatter, "name")?.replace(/^(["'])(.*)\1$/, "$2");
+  const name = readField(lines, "name")?.first.replace(/^(["'])(.*)\1$/, "$2");
   if (name && (!T3_SKILL_NAME.test(name) || !/[a-zA-Z]/.test(name))) {
     problems.push(`name ${name} does not match the T3 skill chip pattern ${T3_SKILL_NAME}`);
   }
