@@ -32,7 +32,7 @@ The hook ships with the plugin only. `npx @3metajun/mstack --harness claude` cop
 The note carries the same stance as `/meta-mode`:
 
 - Reversible work proceeds without asking. You see the result and correct it.
-- Irreversible or externally visible actions stop for you: force-pushes, deploys, data deletion, messages to customers.
+- Irreversible actions stop for you: force-pushes, deploys, data deletion, messages to customers.
 - Your own instructions win. `CLAUDE.md`, `AGENTS.md`, and what you type in the session override the note.
 
 ## Turn the hook off

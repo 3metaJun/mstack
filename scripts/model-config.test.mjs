@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { validateModelConfig } from "./model-config-lib.mjs";
+import { readModelConfig, validateModelConfig } from "./model-config-lib.mjs";
 
 const harnesses = ["codex", "claude", "opencode", "pi"];
 const runRole = resolve("scripts/run-role.mjs");
@@ -185,4 +185,15 @@ test("fanout executes every configured model and retains attributed output after
   const success = run(args, runRole, { ...env, MSTACK_MODEL_TEST_FAIL: "no" });
   assert.equal(success.status, 0, success.stderr);
   assert.deepEqual(JSON.parse(success.stdout).map((entry) => entry.status), [0, 0]);
+});
+
+test("readModelConfig accepts the BOM and UTF-16 LE files that Windows tools write", (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "mstack-config-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const json = '{"roles":{"reviewer":"m1"},"overrides":{}}';
+  for (const [name, bytes] of [["utf8-bom", Buffer.from(`\uFEFF${json}`, "utf8")], ["utf16", Buffer.from(`\uFEFF${json}`, "utf16le")]]) {
+    const file = join(dir, `${name}.json`);
+    writeFileSync(file, bytes);
+    assert.equal(readModelConfig(file).roles.reviewer, "m1", name);
+  }
 });
