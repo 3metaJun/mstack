@@ -3,6 +3,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateArtifactOverrides } from "./install-paths.mjs";
 import { validatePluginAgents, validatePluginHooks } from "./claude-package-lib.mjs";
+import { skillCompatProblems } from "./skill-compat-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
@@ -86,6 +87,7 @@ for (const skill of actual) {
   const description = frontmatter[1].match(/^description:\s*(.+)$/m)?.[1]?.trim();
   if (name !== skill) errors.push(`${skill}: frontmatter name is ${name ?? "missing"}`);
   if (!description) errors.push(`${skill}: missing description`);
+  for (const problem of skillCompatProblems(frontmatter[1])) errors.push(`${skill}: ${problem}`);
   for (const match of content.matchAll(/\[[^\]]+\]\((?!https?:|#)([^)]+)\)/g)) {
     const linked = resolve(dirname(path), match[1]);
     if (!existsSync(linked)) errors.push(`${skill}: broken relative link ${match[1]}`);
