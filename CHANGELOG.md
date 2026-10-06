@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.8.0 - 2026-10-06
+
+### Changes
+
+- Sync pstack from f5bdd68 to 2cbf585. Add `benchmark-checklist`, `correct` and
+  `principle-explain-the-number` (53 skills). Subagents are fresh by default,
+  autopilot audit ticks run hourly, `architect` screens designs for agent
+  mistakes, `perf-issue` and `hillclimb` follow the performance mantras, and the
+  Opening a PR playbook prefers the run's built-in PR tool. The upstream model
+  slug and Cursor rule edits are not ported. `poteto-help` is skipped because it
+  needs repository docs that the installer does not ship.
+- Keep autopilots restart-safe without `/goal`: on the operator's go the root
+  writes a program objective (queue, order, verification rule, who merges, done
+  condition) to a saved `program.md` or the Harness goal mechanism, and every
+  hourly tick re-reads it. `check-plan.mjs` requires the objective and hourly
+  cadence in program checklists, outside fenced examples.
+- Add a Claude Code SessionStart hook to the plugin (`hooks/hooks.json`,
+  `scripts/session-hook.mjs`). It routes multi-file or unknown-cause work to
+  `meta-mode` on startup, resume, clear and compact. Turn it off with
+  `"sessionHook": false` in `~/.config/mstack/models.json`. The installer path
+  ships no hook. `readModelConfig` now reads UTF-8 BOM and UTF-16 LE files.
+  Plugin validation checks the hook, its context file and agent paths.
+- Harden `check-plan.mjs`: strip a UTF-8 BOM, parse fences like CommonMark
+  (at most three spaces of indent), and require a box under each program task
+  and under Close the program.
+- Harden `worktree-audit`: scan Claude, Codex (`CODEX_HOME`) and pi session
+  stores, match Windows, UNC and JSON-escaped path spellings without matching
+  sibling paths, and mark a worktree safe only when its HEAD is in `origin/main`
+  or exactly matches a PR merged into `main`.
+- Add `docs/guide/12-claude-code-routing.md`.
+
+### Upgrade notes
+
+Reinstall skills to receive the new and updated skills. The hook ships with the
+Claude Code plugin only and needs `node` on PATH; the plugin and the installer
+should not both be active on one machine. Plans that already use the old
+`/goal` and 30-minute tick wording fail `check-plan` until they name the program
+objective and the hourly cadence. Effort-level agent variants were evaluated and
+not added: the Codex agent conversion rejects an `effort` field and a
+Claude-only generated copy would be dead code.
+
+### Verification
+
+Each of the three pull requests was reviewed with pi (provider relay-gpt, model
+GPT-6.1-SOL) until its last round returned no P0 or P1 findings, and Node 18/22
+CI passed on Linux, macOS and Windows with the package and pinned-source checks.
+`claude plugin validate . --strict` passed for the hook PR on Claude Code
+2.1.289. The hourly program-objective flow was not exercised through a real
+restart.
+
 ## 0.7.0 - 2026-10-03
 
 ### Changes
