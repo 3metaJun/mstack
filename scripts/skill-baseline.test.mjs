@@ -245,6 +245,45 @@ test("local checks reject a declared local skill that an upstream source owns", 
   assert.match(result.stderr, /diagnosis: declared local skill is also owned by an upstream source/);
 });
 
+test("local checks reject a manifest that reclassifies an upstream-mapped file as local", (t) => {
+  const f = localFixture(t);
+  const original = readFileSync(join(f.target, "profiles/skill-manifest.json"), "utf8");
+  const forge = (path, declare) => {
+    const manifest = JSON.parse(original);
+    manifest.files[path] = { upstream: null, reason: "Forged as local.", targetDigest: manifest.files[path].targetDigest };
+    json(f.target, "profiles/skill-manifest.json", manifest);
+    json(f.target, "profiles/local-skills.json", {
+      skills: { helper: "No upstream skill covers this repository.", ...declare },
+    });
+    return f.run("--check");
+  };
+  const matt = forge("skills/diagnosis/SKILL.md", {});
+  assert.notEqual(matt.status, 0);
+  assert.match(matt.stderr, /skills\/diagnosis\/SKILL.md: recorded as local but a profile maps it to an upstream source/);
+  const declared = forge("skills/diagnosis/SKILL.md", { diagnosis: "Forged as local." });
+  assert.notEqual(declared.status, 0);
+  assert.match(declared.stderr, /diagnosis: declared local skill is also owned by an upstream source/);
+  const renamed = forge("skills/meta-mode/SKILL.md", { "meta-mode": "Forged as local." });
+  assert.notEqual(renamed.status, 0);
+  assert.match(renamed.stderr, /skills\/meta-mode\/SKILL.md: recorded as local but a profile maps it/);
+  assert.match(renamed.stderr, /meta-mode: declared local skill is also owned by an upstream source/);
+  json(f.target, "profiles/skill-manifest.json", JSON.parse(original));
+  json(f.target, "profiles/local-skills.json", { skills: { helper: "No upstream skill covers this repository." } });
+  const restored = f.run("--check");
+  assert.equal(restored.status, 0, restored.stderr);
+});
+
+test("local checks reject a manifest that reclassifies a single-file move target as local", (t) => {
+  const f = movedFixture(t);
+  const manifest = JSON.parse(readFileSync(join(f.target, "profiles/skill-manifest.json"), "utf8"));
+  assert.equal(manifest.files["tools/logger/log.mjs"].upstream, "pstack");
+  manifest.files["tools/logger/log.mjs"] = { upstream: null, reason: "Forged as local.", targetDigest: manifest.files["tools/logger/log.mjs"].targetDigest };
+  json(f.target, "profiles/skill-manifest.json", manifest);
+  const result = f.run("--check");
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /tools\/logger\/log.mjs: recorded as local but a profile maps it to an upstream source/);
+});
+
 test("refresh refuses to bless a deleted source-mapped file and preserves the previous manifest", (t) => {
   const f = fixture(t);
   const before = f.record();
