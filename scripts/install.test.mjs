@@ -898,6 +898,60 @@ test("project install refuses unsupported combinations and unsafe directories be
   }
 });
 
+test("project install refuses overlap with user-level skill roots in either direction and allows siblings", () => {
+  const { root, env, project, home } = projectFixture();
+  const nested = join(home, ".agents", "skills", "repo");
+  const claudeNested = join(home, ".claude", "skills", "repo");
+  const sibling = join(root, "home-sibling");
+  const customRoot = env.HARNESS_SKILLS_PI_DIR;
+  const insideCustom = join(customRoot, "repo");
+  for (const directory of [nested, claudeNested, sibling, insideCustom]) mkdirSync(directory, { recursive: true });
+  try {
+    const base = ["--harness", "all", "--skill", "bro", "--dry-run"];
+    for (const [directory, message] of [
+      [nested, /would overlap a user-level skill root/],
+      [claudeNested, /would overlap a user-level skill root/],
+      [insideCustom, /would overlap a user-level skill root/],
+      [root, /cannot contain a user-level skill root/],
+      [home, /cannot be the home directory/],
+    ]) {
+      const result = run([...base, "--project", directory], env);
+      assert.notEqual(result.status, 0, directory);
+      assert.match(result.stderr, message, directory);
+    }
+    // A user root nested in the project target counts too: the custom Pi root sits under the project here.
+    const aliasEnv = { ...env, HARNESS_SKILLS_PI_DIR: join(project, ".agents", "skills", "pi") };
+    const containing = run([...base, "--project", project], aliasEnv);
+    assert.notEqual(containing.status, 0);
+    assert.match(containing.stderr, /would overlap a user-level skill root|cannot contain a user-level skill root/);
+    for (const allowed of [project, sibling]) {
+      const result = run([...base, "--project", allowed], env);
+      assert.equal(result.status, 0, `${allowed}: ${result.stderr}`);
+    }
+    assert.deepEqual(readdirSync(project), []);
+    assert.deepEqual(readdirSync(sibling), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project overlap check ignores path case on case-insensitive local filesystems", { skip: process.platform !== "win32" }, () => {
+  const { root, env, home } = projectFixture();
+  const nested = join(home, ".agents", "skills", "repo");
+  mkdirSync(nested, { recursive: true });
+  try {
+    const shouted = join(home.toUpperCase(), ".AGENTS", "SKILLS", "REPO");
+    const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", shouted], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /would overlap a user-level skill root/);
+    const parent = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", root.toUpperCase()], env);
+    assert.notEqual(parent.status, 0);
+    assert.match(parent.stderr, /cannot contain a user-level skill root/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 function findFile(root, name) {
   const entries = readdirSync(root, { withFileTypes: true });
   for (const entry of entries) {

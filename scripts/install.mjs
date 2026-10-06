@@ -137,13 +137,20 @@ const discoveryRoots = [...new Set([
   ...Object.values(targets), ...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
 ].map(physicalPathKey))];
 if (projectDir) {
-  // A symlinked project directory could alias the home skill roots, which is a user-level install.
-  const userKeys = new Set([...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot].map(physicalPathKey));
+  // Project files must never mix with user-level skills. Compare physical, case-normalized paths in both
+  // directions so aliases, nesting (<user root>/repo/.agents/skills) and a project that contains a user root
+  // are all refused, while unrelated siblings pass.
+  const userKeys = [...new Set([...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot].map(physicalPathKey))];
   for (const harness of harnesses) {
-    if (userKeys.has(physicalPathKey(targets[harness]))) {
-      throw new Error(`--project resolves ${harness} to a user-level skill root: ${targets[harness]}`);
+    const targetKey = physicalPathKey(targets[harness]);
+    const overlapping = userKeys.find((userKey) => targetPathsOverlap(targetKey, userKey));
+    if (overlapping) {
+      throw new Error(`--project would overlap a user-level skill root for ${harness}: ${targets[harness]} and ${overlapping}`);
     }
   }
+  const projectKey = physicalPathKey(projectDir);
+  const contained = userKeys.find((userKey) => pathIsWithin(projectKey, userKey));
+  if (contained) throw new Error(`--project cannot contain a user-level skill root: ${projectDir} contains ${contained}`);
 }
 
 function artifactEnvironmentPath(name, harness) {
