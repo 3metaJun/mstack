@@ -13,8 +13,8 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const script = join(repoRoot, "scripts", "session-hook.mjs");
 const context = readFileSync(join(repoRoot, "hooks", "session-start-context.md"), "utf8").trim();
 
-function sandbox(t) {
-  const root = mkdtempSync(join(tmpdir(), "mstack-hook 测试-"));
+function sandbox(t, prefix = "mstack-hook 测试-") {
+  const root = mkdtempSync(join(tmpdir(), prefix));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   return root;
 }
@@ -103,7 +103,7 @@ test("the shipped plugin hook and agents validate", () => {
 });
 
 test("plugin hook validation rejects broken references", (t) => {
-  const root = sandbox(t);
+  const root = sandbox(t, "mstack-validate-");
   for (const path of [".claude-plugin", "hooks", "agents", "scripts"]) cpSync(join(repoRoot, path), join(root, path), { recursive: true });
   const hooksPath = join(root, "hooks", "hooks.json");
   const original = JSON.parse(readFileSync(hooksPath, "utf8"));
