@@ -6,8 +6,9 @@
 mstack packages portable engineering skills for Codex, Claude Code, OpenCode,
 pi, Grok, and Antigravity. One canonical `skills/` tree feeds every supported
 harness. Cursor reads the shared `~/.agents/skills` copy, and T3 Code lists
-the skills its providers discover. The installer adapts harness metadata at install time, so skill instructions do not
-contain harness-specific paths or commands.
+the skills its providers discover. The installer adapts harness metadata at
+install time, so skill instructions do not contain harness-specific paths or
+commands.
 
 ![mstack portable engineering skills across Codex, Claude Code, OpenCode, pi, Grok, and Antigravity](https://raw.githubusercontent.com/3metaJun/mstack/main/.github/assets/social-preview.png)
 
