@@ -1,6 +1,7 @@
 {
   "codex": {
     "directoryVariable": "HARNESS_SKILLS_CODEX_DIR",
+    "project": [".agents", "skills"],
     "fallback": [".agents", "skills"],
     "runtime": {
       "command": "codex",
@@ -11,6 +12,7 @@
   },
   "claude": {
     "directoryVariable": "HARNESS_SKILLS_CLAUDE_DIR",
+    "project": [".claude", "skills"],
     "configVariable": "CLAUDE_CONFIG_DIR",
     "configFallback": ".claude",
     "suffix": ["skills"],
@@ -23,6 +25,7 @@
   },
   "opencode": {
     "directoryVariable": "HARNESS_SKILLS_OPENCODE_DIR",
+    "project": [".agents", "skills"],
     "sharedSkills": true,
     "configVariable": "XDG_CONFIG_HOME",
     "configFallback": ".config",
@@ -37,6 +40,7 @@
   },
   "pi": {
     "directoryVariable": "HARNESS_SKILLS_PI_DIR",
+    "project": [".agents", "skills"],
     "sharedSkills": true,
     "configVariable": "PI_CODING_AGENT_DIR",
     "configFallback": ".pi/agent",
@@ -50,6 +54,7 @@
   },
   "antigravity": {
     "directoryVariable": "HARNESS_SKILLS_ANTIGRAVITY_DIR",
+    "project": [".agents", "skills"],
     "fallback": [".gemini", "antigravity-cli", "skills"],
     "runtime": {
       "command": "agy",
@@ -61,6 +66,7 @@
   },
   "grok": {
     "directoryVariable": "HARNESS_SKILLS_GROK_DIR",
+    "project": [".agents", "skills"],
     "sharedSkills": true,
     "fallback": [".grok", "skills"],
     "runtime": {

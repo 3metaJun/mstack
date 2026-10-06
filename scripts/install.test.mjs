@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  lstatSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -759,6 +760,335 @@ test("rejects artifact sources outside the repository", () => {
     assert.match(result.stderr, /source must stay within the repository/);
   } finally {
     rmSync(fixture_.root, { recursive: true, force: true });
+  }
+});
+
+function projectFixture() {
+  const { root, env } = fixture();
+  const project = join(root, "repo with spaces");
+  mkdirSync(project);
+  const home = join(root, "home");
+  mkdirSync(home);
+  env.HOME = home;
+  env.USERPROFILE = home;
+  return { root, env, project, home };
+}
+
+test("project install writes per-harness project roots, shares one copy, and ignores user overrides", () => {
+  const { root, env, project, home } = projectFixture();
+  try {
+    const result = run(["--harness", "all", "--project", project, "--skill", "show-me-your-work"], env);
+    assert.equal(result.status, 0, result.stderr);
+    const shared = join(project, ".agents", "skills", "show-me-your-work");
+    const claude = join(project, ".claude", "skills", "show-me-your-work");
+    assert.deepEqual(readdirSync(project).sort(), [".agents", ".claude"]);
+    assert.deepEqual(readdirSync(join(project, ".agents")).sort(), ["skills"]);
+    assert.equal(result.stdout.match(/shared show-me-your-work: .* \(codex, opencode, pi, antigravity, grok\)/)?.length, 1);
+    assert.match(readFileSync(join(shared, "SKILL.md"), "utf8"), /^name: /m);
+    const claudeFrontmatter = readFileSync(join(claude, "SKILL.md"), "utf8").split(/\r?\n---\r?\n/)[0];
+    assert.doesNotMatch(claudeFrontmatter, /^name:/m);
+    assert.match(claudeFrontmatter, /^compatibility:/m);
+    assert.ok(existsSync(join(shared, ".mstack-install.json")));
+    assert.equal(lstatSync(shared).isSymbolicLink(), false);
+    for (const variable of ["CODEX", "CLAUDE", "OPENCODE", "PI", "ANTIGRAVITY", "GROK"]) {
+      assert.equal(existsSync(env[`HARNESS_SKILLS_${variable}_DIR`]), false, variable);
+    }
+    assert.deepEqual(readdirSync(home), []);
+    assert.match(result.stdout, /commit the skill directories deliberately or gitignore them/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install maps a single harness to its own root", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    for (const [harness, parts] of Object.entries({
+      codex: [".agents", "skills"], claude: [".claude", "skills"], opencode: [".agents", "skills"],
+      pi: [".agents", "skills"], antigravity: [".agents", "skills"], grok: [".agents", "skills"],
+    })) {
+      const result = run(["--harness", harness, "--project", project, "--skill", "bro", "--dry-run"], env);
+      assert.equal(result.status, 0, `${harness}: ${result.stderr}`);
+      assert.ok(result.stdout.includes(`${harness}: ${join(project, ...parts)}`), harness);
+    }
+    assert.deepEqual(readdirSync(project), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project dry-run prints the plan and replace backups outside the skill roots", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    assert.equal(run(["--harness", "codex,claude", "--project", project, "--skill", "bro"], env).status, 0);
+    const conflict = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--dry-run"], env);
+    assert.equal(conflict.status, 2);
+    assert.match(conflict.stdout, /conflict: bro/);
+
+    const dry = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--replace", "--dry-run"], env);
+    assert.equal(dry.status, 0, dry.stderr);
+    assert.ok(dry.stdout.includes(`project: ${project}`));
+    assert.match(dry.stdout, /replace with backup: bro/);
+    assert.ok(dry.stdout.includes(join(project, ".agents", ".harness-skills-backups", "skills")));
+    assert.ok(dry.stdout.includes(join(project, ".claude", ".harness-skills-backups", "skills")));
+
+    writeFileSync(join(project, ".agents", "skills", "bro", "marker.txt"), "old", "utf8");
+    const real = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--replace"], env);
+    assert.equal(real.status, 0, real.stderr);
+    assert.equal(existsSync(join(project, ".agents", "skills", "bro", "marker.txt")), false);
+    assert.equal(readFileSync(findFile(join(project, ".agents", ".harness-skills-backups"), "marker.txt"), "utf8"), "old");
+    assert.equal(findFile(join(project, ".agents", "skills"), "marker.txt"), undefined);
+    assert.equal(findFile(join(project, ".claude", "skills"), ".harness-skills-backups"), undefined);
+    assert.equal(readdirSync(join(project, ".agents", "skills")).includes(".harness-skills-backups"), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rolls back earlier targets when a later one fails", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    assert.equal(run(["--harness", "codex,claude", "--project", project, "--skill", "bro"], env).status, 0);
+    writeFileSync(join(project, ".agents", "skills", "bro", "marker.txt"), "old codex", "utf8");
+    writeFileSync(join(project, ".claude", "skills", "bro", "marker.txt"), "old claude", "utf8");
+    // A file where the Claude backup directory must go makes the second commit fail after Codex committed.
+    mkdirSync(join(project, ".claude", ".harness-skills-backups"));
+    writeFileSync(join(project, ".claude", ".harness-skills-backups", "skills"), "block", "utf8");
+    const result = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--replace"], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Rollback results:/);
+    assert.match(result.stderr, /restored original/);
+    assert.equal(readFileSync(join(project, ".agents", "skills", "bro", "marker.txt"), "utf8"), "old codex");
+    assert.equal(readFileSync(join(project, ".claude", "skills", "bro", "marker.txt"), "utf8"), "old claude");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install refuses unsupported combinations and unsafe directories before writing", () => {
+  const { root, env, project, home } = projectFixture();
+  const file = join(root, "plain-file");
+  const transaction = join(root, ".harness-skills-backups", "repo");
+  writeFileSync(file, "x", "utf8");
+  mkdirSync(transaction, { recursive: true });
+  try {
+    const base = ["--harness", "codex", "--skill", "bro", "--dry-run"];
+    for (const [extra, message] of [
+      [["--project", project, "--artifact", "agents"], /--artifact is not supported with --project/],
+      [["--project", project, "--artifact", "all"], /--artifact is not supported with --project/],
+      [["--project", project, "--migrate", "--replace"], /cannot be combined with --project/],
+      [["--project", project, "--environment", "fleet-ssh"], /cannot be combined with --environment/],
+      [["--project"], /--project requires a directory/],
+      [["--project", "--replace"], /--project requires a directory/],
+      [["--project", join(root, "missing")], /existing directory/],
+      [["--project", file], /must name a directory/],
+      [["--project", home], /cannot be the home directory/],
+      [["--project", join(resolve("."), "scripts")], /inside the mstack package/],
+      [["--project", resolve(".")], /inside the mstack package/],
+      [["--project", transaction], /transaction storage/],
+    ]) {
+      const result = run([...base, ...extra], env);
+      assert.notEqual(result.status, 0, extra.join(" "));
+      assert.match(result.stderr, message, extra.join(" "));
+    }
+    assert.deepEqual(readdirSync(project), []);
+    assert.deepEqual(readdirSync(home), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install refuses overlap with user-level skill roots in either direction and allows siblings", () => {
+  const { root, env, project, home } = projectFixture();
+  const nested = join(home, ".agents", "skills", "repo");
+  const claudeNested = join(home, ".claude", "skills", "repo");
+  const sibling = join(root, "home-sibling");
+  const customRoot = env.HARNESS_SKILLS_PI_DIR;
+  const insideCustom = join(customRoot, "repo");
+  for (const directory of [nested, claudeNested, sibling, insideCustom]) mkdirSync(directory, { recursive: true });
+  try {
+    const base = ["--harness", "all", "--skill", "bro", "--dry-run"];
+    for (const [directory, message] of [
+      [nested, /inside a skill discovery root/],
+      [claudeNested, /inside a skill discovery root/],
+      [insideCustom, /would overlap a user-level skill root/],
+      [root, /cannot contain a user-level skill root/],
+      [home, /cannot be the home directory/],
+    ]) {
+      const result = run([...base, "--project", directory], env);
+      assert.notEqual(result.status, 0, directory);
+      assert.match(result.stderr, message, directory);
+    }
+    // A user root nested in the project target counts too: the custom Pi root sits under the project here.
+    const aliasEnv = { ...env, HARNESS_SKILLS_PI_DIR: join(project, ".agents", "skills", "pi") };
+    const containing = run([...base, "--project", project], aliasEnv);
+    assert.notEqual(containing.status, 0);
+    assert.match(containing.stderr, /would overlap a user-level skill root|cannot contain a user-level skill root/);
+    for (const allowed of [project, sibling]) {
+      const result = run([...base, "--project", allowed], env);
+      assert.equal(result.status, 0, `${allowed}: ${result.stderr}`);
+    }
+    assert.deepEqual(readdirSync(project), []);
+    assert.deepEqual(readdirSync(sibling), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// The installer folds case by platform (win32, darwin); probe the real temporary filesystem as well.
+function foldsPathCase(directory) {
+  if (!["win32", "darwin"].includes(process.platform)) return false;
+  const probe = join(directory, "CaseProbe");
+  writeFileSync(probe, "x", "utf8");
+  return existsSync(join(directory, "caseprobe"));
+}
+
+test("project overlap check ignores path case on case-insensitive local filesystems", (t) => {
+  const { root, env, home } = projectFixture();
+  if (!foldsPathCase(root)) {
+    rmSync(root, { recursive: true, force: true });
+    t.skip("path case is significant on this platform or temporary filesystem");
+    return;
+  }
+  const nested = join(home, ".agents", "skills", "repo");
+  mkdirSync(nested, { recursive: true });
+  try {
+    const shouted = join(home.toUpperCase(), ".AGENTS", "SKILLS", "REPO");
+    const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", shouted], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /inside a skill discovery root/);
+    const parent = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", root.toUpperCase()], env);
+    assert.notEqual(parent.status, 0);
+    assert.match(parent.stderr, /cannot contain a user-level skill root/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function linkDirectory(target, link) {
+  try {
+    symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test("project install judges targets and transaction storage by their physical paths", (t) => {
+  const { root, env, project } = projectFixture();
+  const outside = join(root, "outside");
+  mkdirSync(outside);
+  try {
+    const base = ["--harness", "codex,claude", "--skill", "bro", "--replace", "--dry-run", "--project", project];
+    // .agents redirected to the mstack package would make the codex target <package>/skills. Dry run only.
+    if (!linkDirectory(resolve("."), join(project, ".agents"))) {
+      t.skip("the OS refused to create a directory link");
+      return;
+    }
+    let result = run(base, env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /resolves outside the project directory/);
+    rmSync(join(project, ".agents"), { recursive: true, force: true });
+    assert.ok(existsSync(resolve("skills")), "removing the link must not remove package skills");
+
+    // A real .agents whose transaction storage is a link to elsewhere.
+    mkdirSync(join(project, ".agents"));
+    assert.ok(linkDirectory(outside, join(project, ".agents", ".harness-skills-backups")));
+    result = run(base, env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /backups storage resolves outside the project directory/);
+    assert.deepEqual(readdirSync(outside), []);
+
+    // A project directory that is a link into installer transaction storage.
+    const storage = join(root, ".harness-skills-backups", "repo");
+    mkdirSync(storage, { recursive: true });
+    const alias = join(root, "innocent-name");
+    assert.ok(linkDirectory(storage, alias));
+    result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", alias], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /transaction storage/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install validates the concrete transaction paths below a link inside storage", (t) => {
+  const { root, env, project } = projectFixture();
+  const outside = join(root, "outside");
+  mkdirSync(outside);
+  try {
+    for (const category of ["stage", "backups", "failed"]) {
+      rmSync(join(project, ".agents"), { recursive: true, force: true });
+      mkdirSync(join(project, ".agents", `.harness-skills-${category}`), { recursive: true });
+      // Storage root is real; the per-skills-directory level below it links to an external directory.
+      if (!linkDirectory(outside, join(project, ".agents", `.harness-skills-${category}`, "skills"))) {
+        t.skip("the OS refused to create a directory link");
+        return;
+      }
+      const result = run(["--harness", "codex", "--skill", "bro", "--replace", "--project", project], env);
+      assert.notEqual(result.status, 0, category);
+      assert.match(result.stderr, new RegExp(`${category} path resolves outside the project directory`), category);
+      assert.deepEqual(readdirSync(outside), [], category);
+      assert.equal(existsSync(join(project, ".agents", "skills")), false, category);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rejects an uppercase spelling of transaction storage on case-insensitive filesystems", (t) => {
+  const { root, env } = projectFixture();
+  if (!foldsPathCase(root)) {
+    rmSync(root, { recursive: true, force: true });
+    t.skip("path case is significant on this platform or temporary filesystem");
+    return;
+  }
+  mkdirSync(join(root, ".harness-skills-backups", "repo"), { recursive: true });
+  try {
+    const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", join(root, ".HARNESS-SKILLS-BACKUPS", "REPO")], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /transaction storage/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rejects directories inside any skill discovery root", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    for (const parts of [
+      [".agents", "skills", "nested"], [".claude", "skills", "nested"], [".cursor", "skills", "nested"],
+      [".codex", "skills", "nested"], [".gemini", "skills", "nested"], [".agent", "skills", "nested"],
+      [".pi", "skills", "nested"], [".opencode", "skills", "nested"], [".agents", "skills", "deep", "nested"],
+    ]) {
+      const nested = join(project, ...parts);
+      mkdirSync(nested, { recursive: true });
+      const result = run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", nested], env);
+      assert.notEqual(result.status, 0, parts.join("/"));
+      assert.match(result.stderr, /inside a skill discovery root/, parts.join("/"));
+    }
+    // A repository merely named like a root parent, or holding a sibling named skills, is fine.
+    const fine = join(project, ".agents", "tools", "skills-like");
+    mkdirSync(fine, { recursive: true });
+    assert.equal(run(["--harness", "codex", "--skill", "bro", "--dry-run", "--project", fine], env).status, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install ignores invalid user-level overrides it would not use", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    const bad = { ...env, HARNESS_SKILLS_PI_DIR: "relative", HARNESS_SKILLS_GROK_DIR: "also/relative", CLAUDE_CONFIG_DIR: "relative-config", XDG_CONFIG_HOME: "relative-xdg" };
+    const result = run(["--harness", "codex", "--skill", "bro", "--project", project], bad);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(existsSync(join(project, ".agents", "skills", "bro", "SKILL.md")));
+    // The same override still fails a user-level install.
+    const userLevel = run(["--harness", "pi", "--skill", "bro", "--dry-run"], bad);
+    assert.notEqual(userLevel.status, 0);
+    assert.match(userLevel.stderr, /must be an absolute path/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

@@ -47,6 +47,54 @@ skills and failed replacements must stay outside discovery roots because
 OpenCode also scans hidden subdirectories. Artifact backups stay beside the
 artifact target. The installer prints each backup path and retains its contents.
 
+### Install into a project
+
+Some harnesses read project skills only from the working directory, which matters
+when an app starts agents in per-thread git worktrees such as
+[T3 Code](docs/t3code.md#project-install-for-t3-worktrees). `--project` copies
+skills into an existing local repository instead of the user directories:
+
+```bash
+npx @3metajun/mstack --harness codex,claude,pi --project /path/to/repo --dry-run
+npx @3metajun/mstack --harness codex,claude,pi --project /path/to/repo
+```
+
+| Harness | Project root under `<repo>` | Reads it from |
+| --- | --- | --- |
+| Codex | `.agents/skills/` | the working directory up to the repository root |
+| OpenCode | `.agents/skills/` | the working directory up to the git worktree root (also reads `.opencode/skills/`) |
+| pi | `.agents/skills/` | the working directory up to the repository root |
+| Grok | `.agents/skills/` | every directory between the working directory and the repository root |
+| Antigravity (`agy`) | `.agents/skills/` | the working directory (also reads `.gemini/skills/` and `.agent/skills/`) |
+| Claude Code | `.claude/skills/` | the working directory only |
+
+Codex, OpenCode, pi, Grok and Antigravity share one copy per skill in
+`.agents/skills/`. Cursor reads that directory and `.claude/skills/` too, so it
+needs no target of its own. Claude gets the same adapter output as at user level
+(no frontmatter `name`). Project installs copy and never link, keep the
+installer's staging, locking, rollback and `--replace` backup behavior, and
+ignore `HARNESS_SKILLS_*_DIR` overrides.
+
+Rules:
+
+- The directory must exist. The installer refuses your home directory (use a
+  user-level install), anything inside the mstack package, any path inside
+  `.harness-skills-*` transaction storage, and any directory inside a skill
+  discovery root such as `.agents/skills` or `.claude/skills`, because backups
+  there would be scanned as skills. It checks physical paths, so symlinks,
+  junctions and letter case cannot redirect a target, backup or stage directory
+  outside the project or into the package or your user-level skill roots.
+- Skills only. `--artifact` is refused with `--project`: agent roles, tools, the
+  guide and session context are user-owned configuration and should not land in a
+  repository implicitly. `--migrate` and `--environment` (including SSH) are
+  refused too.
+- `--replace` backups go to `<repo>/.agents/.harness-skills-backups/` and
+  `<repo>/.claude/.harness-skills-backups/`, beside the skill roots and never under
+  them. Delete them when you no longer need them, and add `.harness-skills-*` to
+  `.gitignore`.
+- Commit the installed skills deliberately, or gitignore them. A new git worktree
+  holds only committed files, so uncommitted project skills do not appear in it.
+
 ## Use with Claude Code and Claude Desktop
 
 Claude Code and the Code tab of the Claude desktop app share one skill system,

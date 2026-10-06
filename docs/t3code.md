@@ -82,6 +82,23 @@ By default T3 creates a worktree for a thread at:
 - `LAST_CHAT` scans Claude Code, Codex, and pi transcripts only. Threads run through Cursor, Grok, OpenCode, or Antigravity, and T3's own thread history, are not read, so those worktrees can look idle. Set `MSTACK_TRANSCRIPTS_DIR` to scan one directory instead.
 - Treat its `safe` bucket as a report. T3 has its own cleanup under **Settings → Storage** that removes only T3-managed worktrees without running sessions or uncommitted work. I did not check how T3 reacts when a worktree it manages is removed with `git worktree remove`, so use T3's cleanup or thread deletion for those.
 
+## Project install for T3 worktrees
+
+A user-level install is the simplest route. When a provider should find mstack only for one repository, or Claude and Antigravity need a copy in the thread's own directory, install into the project:
+
+```bash
+npx @3metajun/mstack --harness codex,claude,pi --project /path/to/repo --dry-run
+npx @3metajun/mstack --harness codex,claude,pi --project /path/to/repo
+```
+
+This copies the skills into `<repo>/.agents/skills` (Codex, Pi, OpenCode, Grok, Antigravity) and `<repo>/.claude/skills` (Claude Code). Cursor reads both. The README has the [per-harness table](../README.md#install-into-a-project) and the rules: skills only, existing directory required, `--replace` backups under `.harness-skills-backups/` beside the skill roots.
+
+- **Commit it or ignore it, on purpose.** T3 creates a worktree with `git worktree add` from a ref (`GitVcsDriverCore.ts` in T3 commit `8f75697`). A new worktree therefore holds only what is committed at that ref. Project skills you installed but did not commit exist in the main checkout and are missing from a fresh T3 thread. If the team should share them, commit them to the base branch before starting threads. If they are personal, add `.agents/skills/`, `.claude/skills/` and `.harness-skills-*` to `.gitignore` (or `.git/info/exclude`) and install again in each worktree, or keep using the user-level install.
+- **An existing thread's worktree** has its own copy of the tree. Run the installer with `--project <worktree path>` to add skills there, then restart the agent session.
+- **Precedence.** For Claude, a user copy beats a project copy of the same name. Cursor deduplicates by name with project roots first. Re-run the install after updating mstack, with `--replace`, to refresh a project copy.
+- **Pi** still needs the project approved in Pi before it lists project skills.
+- Not checked in a live T3 thread: that OpenCode, Pi, and Grok list `.agents/skills` from a worktree cwd. The paths come from their documentation.
+
 ## A `t3.json` setup script
 
 T3 reads `t3.json` at the repository root. An invalid file is ignored as a whole, including its icon and scripts. For a project that uses mstack, a worktree starts from the committed tree, so skills and `.harness/` files are already there. The one gap is usually dependencies and gitignored files. This recipe installs dependencies before the agent starts and makes new threads default to worktrees:

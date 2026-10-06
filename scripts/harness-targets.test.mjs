@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { configuredPath, resolveHarnessRoots } from "./harness-targets.mjs";
+import { configuredPath, resolveHarnessRoots, resolveProjectRoots, validateProjectDir, withoutInvalidOverrides } from "./harness-targets.mjs";
 
 const repository = resolve(".");
 const registry = JSON.parse(readFileSync(join(repository, "profiles", "harnesses.json"), "utf8"));
@@ -80,6 +80,92 @@ test("configured paths expand home and reject relative overrides at the common b
   assert.throws(() => configuredPath("relative", "", "override", home), /override must be an absolute path/);
   assert.throws(() => resolveHarnessRoots(registry, { home, env: { HARNESS_SKILLS_PI_DIR: "relative" } }), /HARNESS_SKILLS_PI_DIR must be an absolute path/);
   assert.throws(() => resolveHarnessRoots(registry, { home, env: {}, environmentTargets: { pi: "relative" }, environmentName: "example" }), /example.pi must be an absolute path/);
+});
+
+test("project roots come from the registry and ignore user-scope variables", () => {
+  const project = resolve("fixture-project");
+  const roots = resolveProjectRoots(registry, project);
+  assert.deepEqual(roots, {
+    codex: join(project, ".agents", "skills"),
+    claude: join(project, ".claude", "skills"),
+    opencode: join(project, ".agents", "skills"),
+    pi: join(project, ".agents", "skills"),
+    antigravity: join(project, ".agents", "skills"),
+    grok: join(project, ".agents", "skills"),
+  });
+  for (const [harness, config] of Object.entries(registry)) {
+    assert.deepEqual(config.project, [harness === "claude" ? ".claude" : ".agents", "skills"], harness);
+  }
+  assert.throws(() => resolveProjectRoots({ codex: { project: ["..", "skills"] } }, project), /no safe project skill root/);
+  assert.throws(() => resolveProjectRoots({ codex: { project: ["a/b"] } }, project), /no safe project skill root/);
+  assert.throws(() => resolveProjectRoots({ codex: {} }, project), /no safe project skill root/);
+});
+
+test("project directories must exist, be directories, and stay out of home, the package, and transaction storage", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-project-dir-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const fakeHome = join(root, "home");
+  const packageRoot = join(root, "package");
+  const project = join(root, "project");
+  const file = join(root, "file");
+  for (const directory of [fakeHome, packageRoot, join(packageRoot, "skills"), project, join(root, ".harness-skills-backups", "p")]) {
+    mkdirSync(directory, { recursive: true });
+  }
+  writeFileSync(file, "x", "utf8");
+  const options = { packageRoot, home: fakeHome, cwd: root };
+  assert.equal(validateProjectDir(project, options), project);
+  assert.equal(validateProjectDir("project", options), project);
+  assert.throws(() => validateProjectDir(join(root, "missing"), options), /existing directory/);
+  assert.throws(() => validateProjectDir(file, options), /must name a directory/);
+  assert.throws(() => validateProjectDir(fakeHome, options), /home directory/);
+  assert.throws(() => validateProjectDir("~", options), /home directory/);
+  assert.throws(() => validateProjectDir(packageRoot, options), /inside the mstack package/);
+  assert.throws(() => validateProjectDir(join(packageRoot, "skills"), options), /inside the mstack package/);
+  assert.throws(() => validateProjectDir(join(root, ".harness-skills-backups", "p"), options), /transaction storage/);
+  // A repository that merely contains the package, such as one with it in node_modules, is a valid project.
+  assert.equal(validateProjectDir(root, options), root);
+});
+
+test("invalid overrides are dropped for project installs and valid ones are kept", () => {
+  const cleaned = withoutInvalidOverrides(registry, {
+    HARNESS_SKILLS_PI_DIR: "relative",
+    HARNESS_SKILLS_GROK_DIR: "~/grok-explicit",
+    XDG_CONFIG_HOME: "relative-xdg",
+    UNRELATED: "relative",
+  }, home);
+  assert.deepEqual(cleaned, { HARNESS_SKILLS_GROK_DIR: "~/grok-explicit", UNRELATED: "relative" });
+  assert.doesNotThrow(() => resolveHarnessRoots(registry, { home, env: cleaned }));
+});
+
+test("project directories inside discovery roots are refused on the physical path", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-project-roots-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const nested = join(root, ".agents", "skills", "repo");
+  mkdirSync(nested, { recursive: true });
+  const options = { packageRoot: join(root, "package"), home: join(root, "home"), cwd: root };
+  assert.throws(() => validateProjectDir(nested, options), /inside a skill discovery root/);
+  assert.equal(validateProjectDir(root, options), root);
+});
+
+// Case folding only applies where the platform treats paths as case-insensitive, so probe the real
+// temporary filesystem instead of assuming from the platform name.
+function caseInsensitiveTemporaryFilesystem(directory) {
+  const probe = join(directory, "CaseProbe");
+  writeFileSync(probe, "x", "utf8");
+  return existsSync(join(directory, "caseprobe"));
+}
+
+test("mixed-case discovery roots are refused where the filesystem folds case", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-project-case-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  if (!caseInsensitiveTemporaryFilesystem(root) || !["win32", "darwin"].includes(process.platform)) {
+    t.skip("the temporary filesystem or platform treats path case as significant");
+    return;
+  }
+  const nested = join(root, ".Agents", "Skills", "repo");
+  mkdirSync(nested, { recursive: true });
+  const options = { packageRoot: join(root, "package"), home: join(root, "home"), cwd: root };
+  assert.throws(() => validateProjectDir(nested, options), /inside a skill discovery root/);
 });
 
 for (const explicit of [false, true]) {
