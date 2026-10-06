@@ -106,6 +106,14 @@ names the skill. Uploaded skills cannot reach the `meta-mode-tools` artifact, so
 use the plugin or the installer in Claude Code for orchestration and PR
 watching.
 
+## Use with T3 Code
+
+[T3 Code](https://github.com/pingdotgg/t3code) lists the skills each provider
+finds, so installing mstack for the providers you run in it is enough. See
+[Use mstack in T3 Code](docs/t3code.md) for where each provider looks, how
+`$skill` mentions are rewritten, worktree paths, and where T3's own delegation
+and PR watching overlap with `run-role` and `babysit`.
+
 ## Install optional artifacts
 
 The same installer can copy the portable artifacts that accompany the skills.
