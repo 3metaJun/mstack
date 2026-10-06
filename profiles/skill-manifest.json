@@ -715,8 +715,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/check-plan.mjs",
       "sourceDigest": "4f5118edf719b481983dc87dfadd5b4b5473d05aad04a7ba65191ff9c73faf1b",
-      "targetDigest": "ddcdb05af01b37d7513b2017d44e29c30bdaa79ca360c5913d701c16dde70907",
+      "targetDigest": "ae99ad15b22971829cf2f2517c862d695546411813a307bba55674b6b94a1445",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
+    },
+    "tools/meta-mode/check-plan.test.mjs": {
+      "upstream": null,
+      "reason": "Local portability guidance or implementation; review alongside its owning skill.",
+      "targetDigest": "773d1e6582d8245d38c8d2deeff585ce0a9e9e9b293ba8d69f1c7b0e176a315b"
     },
     "tools/meta-mode/check-playbooks.mjs": {
       "upstream": null,
@@ -764,7 +769,7 @@
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "62e8431ec27bffa8ec911f6286ad183d16b6f451de34f53dd5ea63de5acd0088"
+      "targetDigest": "9ac94be27aff564f37c373a8c3e0a802496fe9c052f0b28d67ed1893a0d597e8"
     },
     "tools/meta-mode/resume.mjs": {
       "upstream": null,
@@ -863,7 +868,7 @@
     "tools/meta-mode/worktree-audit.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "ee7946ec0558ddeeb7466003d120124c6c884218f05d51e920c90d4fc010c20c"
+      "targetDigest": "bf0c68c18cc096e4463a65c8b57eefcff9dd2ad9701ec1864764e90df5842665"
     },
     "tools/meta-mode/worktree-audit.sh": {
       "upstream": "pstack",
