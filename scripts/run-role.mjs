@@ -80,7 +80,8 @@ const models = selectedModels.map((model) => {
   return parentModel;
 });
 const definition = harnessRegistry[harness].runtime;
-if (!definition?.command || !Array.isArray(definition.headlessArgs) || !Array.isArray(definition.modelArgs)) {
+if (!definition?.command || !Array.isArray(definition.headlessArgs) || !Array.isArray(definition.modelArgs) ||
+    (definition.promptArgs !== undefined && !Array.isArray(definition.promptArgs))) {
   throw new Error(`Harness ${harness} has no runtime command definition`);
 }
 
@@ -89,7 +90,8 @@ const cwd = environmentCwd(environment, harness, options["--cwd"]);
 const plans = models.map((model) => {
   const commandArgs = [...definition.headlessArgs];
   if (model !== "auto") commandArgs.push(...definition.modelArgs.map((part) => part.replace("{model}", model)));
-  commandArgs.push(prompt);
+  // promptArgs holds a flag that takes the prompt as its value (agy --print, grok --single), so it must sit directly before the prompt.
+  commandArgs.push(...(definition.promptArgs ?? []), prompt);
   if (options["--read-only"]) commandArgs.push(...(definition.readOnlyArgs ?? []));
   const invocation = environment.transport === "ssh"
     ? buildSshInvocation(environment, definition.command, commandArgs, cwd)

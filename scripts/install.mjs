@@ -56,11 +56,12 @@ function valueAfter(flag) {
 }
 
 if (args.includes("--help") || !args.includes("--harness")) {
-  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|all> [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace]
+  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|antigravity|grok|all> [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace]
 
 Installs canonical skills and optional artifacts into user-level harness directories.
 Artifacts: ${validArtifacts.join(", ")} (use --artifact all for installable artifacts).
-Codex, OpenCode and pi share ~/.agents/skills by default. Claude uses directory-based names.
+Codex, OpenCode, pi and Grok share ~/.agents/skills by default. Antigravity reads only its own
+~/.gemini/antigravity-cli/skills. Claude uses directory-based names.
 Use --migrate --replace to back up recognized legacy copies outside skill discovery roots.
 Existing directories are preserved unless --replace is supplied.`);
   process.exit(args.includes("--help") ? 0 : 1);

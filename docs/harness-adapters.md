@@ -11,6 +11,9 @@ to the official documentation used for each entry.
 | Claude Code | `~/.claude/skills/` | `.claude/skills/` | `name`, `description`, `license`, `compatibility`, `metadata`, and Claude invocation fields |
 | OpenCode | `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.claude/skills/` | `.opencode/skills/` | `license`, `compatibility`, and `metadata` |
 | pi | `~/.agents/skills/`, `~/.pi/agent/skills/` | `.pi/skills/` | `license`, `compatibility`, `metadata`, `allowed-tools`, and `disable-model-invocation` |
+| Antigravity (`agy`) | `~/.gemini/config/skills/`, `~/.gemini/antigravity-cli/skills/` | `.gemini/skills/`, `.agents/skills/`, `.agent/skills/` | `name` (required) and `description`; other fields are not documented |
+| Grok | `~/.grok/skills/`, `~/.agents/skills/`, `~/.claude/skills/`, `~/.cursor/skills/` | `.grok/skills/`, `.agents/skills/`, `.claude/skills/`, `.cursor/skills/` | `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`, `user-invocable`, and `disable-model-invocation` |
+| Cursor | `~/.cursor/skills/`, `~/.agents/skills/` | `.cursor/skills/`, `.agents/skills/`, `.claude/skills/` | Agent Skills fields |
 
 Sources:
 
@@ -18,6 +21,15 @@ Sources:
 - [Claude Code skills](https://code.claude.com/docs/en/skills)
 - [OpenCode skills](https://opencode.ai/docs/skills)
 - [pi skills](https://pi.dev/docs/latest/skills)
+- Antigravity: the `agy` 1.2.16 CLI and T3 Code's skill discovery for it,
+  [`AntigravitySkills.ts`](https://github.com/pingdotgg/t3code/blob/main/apps/server/src/provider/Drivers/AntigravitySkills.ts)
+  and the [Antigravity provider guide](https://github.com/pingdotgg/t3code/blob/main/docs/user/providers-antigravity.md).
+  Antigravity publishes no skill-path reference, so the roots above come from
+  that implementation.
+- Grok: the Grok Build user guide shipped with the CLI (`docs/user-guide/08-skills.md`
+  under the Grok home directory), checked against `grok inspect --json` on 1.0.46,
+  which listed skills from `~/.agents/skills/`.
+- [Cursor skills](https://cursor.com/docs/context/skills)
 
 The canonical tree keeps the Agent Skills fields that all supported Harnesses
 can read. Claude Code accepts `metadata` but does not act on its contents, so
@@ -25,8 +37,15 @@ can read. Claude Code accepts `metadata` but does not act on its contents, so
 the `compatibility` field instead. OpenCode and pi retain `metadata` because
 their official references support it.
 
-mstack installs one canonical copy in `~/.agents/skills/` for Codex, OpenCode
-and pi. Claude output omits frontmatter `name`; Claude's documented fallback
+mstack installs one canonical copy in `~/.agents/skills/` for Codex, OpenCode,
+pi and Grok. Cursor reads that directory as well, so it needs no installer
+target. Antigravity does not read `~/.agents/skills/` (the agent treats
+`.agents/skills/` only as a project directory), so its harness has its own
+canonical copy under `~/.gemini/antigravity-cli/skills/`. Antigravity requires
+the `name` field and a file named `SKILL.md`, which the canonical skills already
+satisfy, so `adapters/antigravity.json` and `adapters/grok.json` are empty. Grok
+also scans `~/.claude/skills/`; skills with the same name collapse to one entry.
+Claude output omits frontmatter `name`; Claude's documented fallback
 uses the directory name, so `/meta-mode` keeps its name. OpenCode requires an
 explicit name before registration and skips the Claude copy. This behavior
 was checked with OpenCode 1.18.30 using a named Claude control skill and an

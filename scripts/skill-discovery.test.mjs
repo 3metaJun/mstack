@@ -46,15 +46,49 @@ test("all harnesses install two canonical skills and two directory-named Claude 
     ".agents/skills/show-me-your-work/SKILL.md",
     ".claude/skills/meta-mode/SKILL.md",
     ".claude/skills/show-me-your-work/SKILL.md",
+    ".gemini/antigravity-cli/skills/meta-mode/SKILL.md",
+    ".gemini/antigravity-cli/skills/show-me-your-work/SKILL.md",
   ]);
   for (const skill of ["meta-mode", "show-me-your-work"]) {
-    assert.match(installedText(root, ".agents/skills", skill), new RegExp(`^name: ${skill}\\r?$`, "m"));
+    for (const directory of [".agents/skills", ".gemini/antigravity-cli/skills"]) {
+      assert.match(installedText(root, directory, skill), new RegExp(`^name: ${skill}\\r?$`, "m"));
+    }
     const claude = installedText(root, ".claude/skills", skill);
     assert.doesNotMatch(claude.split(/^---\s*$/m)[1], /^name:/m);
     assert.match(claude, /^description:/m);
   }
   assert.equal(existsSync(join(root, ".pi/agent/skills")), false);
   assert.equal(existsSync(join(root, ".config/opencode/skills")), false);
+  assert.equal(existsSync(join(root, ".grok/skills")), false);
+});
+
+test("Grok shares the default copy while Antigravity keeps its own native root", (t) => {
+  const { root, env } = fixture(t);
+  succeeded(run(["--harness", "grok", "--skill", "meta-mode"], env));
+  assert.deepEqual(skillFiles(root), [".agents/skills/meta-mode/SKILL.md"]);
+  assert.equal(existsSync(join(root, ".grok/skills")), false);
+  succeeded(run(["--harness", "antigravity", "--skill", "meta-mode"], env));
+  assert.deepEqual(skillFiles(root), [
+    ".agents/skills/meta-mode/SKILL.md",
+    ".gemini/antigravity-cli/skills/meta-mode/SKILL.md",
+  ]);
+  const shared = installedText(root, ".agents/skills", "meta-mode");
+  assert.equal(installedText(root, ".gemini/antigravity-cli/skills", "meta-mode"), shared);
+  const refreshed = run(["--harness", "codex,opencode,pi,grok", "--skill", "meta-mode", "--replace"], env);
+  succeeded(refreshed);
+  assert.match(refreshed.stdout, /shared meta-mode: .* \(codex, opencode, pi, grok\)/);
+  assert.deepEqual(skillFiles(join(root, ".agents/skills")), ["meta-mode/SKILL.md"]);
+});
+
+test("explicit Grok and Antigravity roots override their defaults", (t) => {
+  const { root, env } = fixture(t);
+  env.HARNESS_SKILLS_GROK_DIR = join(root, "custom-grok/skills");
+  env.HARNESS_SKILLS_ANTIGRAVITY_DIR = join(root, "custom-antigravity/skills");
+  succeeded(run(["--harness", "grok,antigravity", "--skill", "meta-mode"], env));
+  assert.deepEqual(skillFiles(root), [
+    "custom-antigravity/skills/meta-mode/SKILL.md",
+    "custom-grok/skills/meta-mode/SKILL.md",
+  ]);
 });
 
 test("repeat replacement and a pi-only refresh keep one current shared copy", (t) => {
@@ -67,8 +101,9 @@ test("repeat replacement and a pi-only refresh keep one current shared copy", (t
   writeFileSync(canonical, `${readFileSync(canonical, "utf8")}\nStale local marker\n`);
   succeeded(run(["--harness", "pi", "--skill", "meta-mode", "--replace"], env));
   assert.equal(readFileSync(canonical, "utf8"), expected);
-  for (const directory of [".agents/skills", ".claude/skills", ".pi/agent/skills", ".config/opencode/skills"]) {
-    assert.deepEqual(skillFiles(join(root, directory)), directory.startsWith(".agents") || directory.startsWith(".claude") ? ["meta-mode/SKILL.md"] : []);
+  for (const directory of [".agents/skills", ".claude/skills", ".gemini/antigravity-cli/skills", ".pi/agent/skills", ".config/opencode/skills", ".grok/skills"]) {
+    const installed = [".agents", ".claude", ".gemini"].some((prefix) => directory.startsWith(prefix));
+    assert.deepEqual(skillFiles(join(root, directory)), installed ? ["meta-mode/SKILL.md"] : []);
   }
 });
 
@@ -80,6 +115,8 @@ test("artifact-only installation preserves native harness roots", (t) => {
     ".claude/agents/meta-agent.md",
     ".config/opencode/agents/meta-agent.md",
     ".pi/agent/agents/meta-agent.md",
+    ".gemini/antigravity-cli/agents/meta-agent.md",
+    ".grok/agents/meta-agent.md",
   ]) assert.equal(existsSync(join(root, file)), true, file);
   assert.equal(existsSync(join(root, ".agents")), false);
 });
@@ -109,6 +146,7 @@ test("dry run reports shared destinations without creating files", (t) => {
   succeeded(result);
   assert.ok(result.stdout.includes(join(root, ".agents/skills/meta-mode")), result.stdout);
   assert.ok(result.stdout.includes(join(root, ".claude/skills/meta-mode")), result.stdout);
+  assert.ok(result.stdout.includes(join(root, ".gemini/antigravity-cli/skills/meta-mode")), result.stdout);
   assert.deepEqual(readdirSync(root), []);
 });
 
@@ -116,12 +154,12 @@ test("optional tools coalesce for all harnesses and resolve relative to a pi ski
   const { root, env } = fixture(t);
   const result = run(["--harness", "all", "--no-skills", "--artifact", "meta-mode-tools"], env);
   succeeded(result);
-  assert.match(result.stdout, /Installed 0 skill copies and 2 artifact copies/);
+  assert.match(result.stdout, /Installed 0 skill copies and 3 artifact copies/);
   const expected = readFileSync(resolve("tools/meta-mode/package.json"), "utf8");
-  for (const directory of [".agents/tools/meta-mode", ".claude/tools/meta-mode"]) {
+  for (const directory of [".agents/tools/meta-mode", ".claude/tools/meta-mode", ".gemini/antigravity-cli/tools/meta-mode"]) {
     assert.equal(readFileSync(join(root, directory, "package.json"), "utf8"), expected);
   }
-  for (const directory of [".pi/agent/tools", ".config/opencode/tools"]) {
+  for (const directory of [".pi/agent/tools", ".config/opencode/tools", ".grok/tools"]) {
     assert.equal(existsSync(join(root, directory)), false, directory);
   }
   succeeded(run(["--harness", "pi", "--skill", "meta-mode", "--artifact", "meta-mode-tools", "--replace"], env));

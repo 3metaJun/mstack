@@ -5,20 +5,26 @@
       "codex": "C:\\path\\to\\Fleet\\codex\\skills",
       "claude": "C:\\path\\to\\Fleet\\claude\\skills",
       "opencode": "C:\\path\\to\\Fleet\\opencode\\skills",
-      "pi": "C:\\path\\to\\Fleet\\pi\\agent\\skills"
+      "pi": "C:\\path\\to\\Fleet\\pi\\agent\\skills",
+      "antigravity": "C:\\path\\to\\Fleet\\antigravity\\skills",
+      "grok": "C:\\path\\to\\Fleet\\grok\\skills"
     },
     "artifacts": {
       "agents": {
         "codex": "C:\\path\\to\\Fleet\\codex\\agents",
         "claude": "C:\\path\\to\\Fleet\\shared\\agents",
         "opencode": "C:\\path\\to\\Fleet\\shared\\agents",
-        "pi": "C:\\path\\to\\Fleet\\shared\\agents"
+        "pi": "C:\\path\\to\\Fleet\\shared\\agents",
+        "antigravity": "C:\\path\\to\\Fleet\\antigravity\\agents",
+        "grok": "C:\\path\\to\\Fleet\\grok\\agents"
       },
       "meta-mode-tools": {
         "codex": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
         "claude": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
         "opencode": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
-        "pi": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode"
+        "pi": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
+        "antigravity": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode",
+        "grok": "C:\\path\\to\\Fleet\\shared\\tools\\meta-mode"
       }
     }
   },
@@ -31,20 +37,26 @@
       "codex": "/home/dev/.agents/skills",
       "claude": "/home/dev/.claude/skills",
       "opencode": "/home/dev/.agents/skills",
-      "pi": "/home/dev/.agents/skills"
+      "pi": "/home/dev/.agents/skills",
+      "antigravity": "/home/dev/.gemini/antigravity-cli/skills",
+      "grok": "/home/dev/.agents/skills"
     },
     "artifacts": {
       "agents": {
         "codex": "/home/dev/.codex/agents",
         "claude": "/home/dev/.claude/agents",
         "opencode": "/home/dev/.config/opencode/agents",
-        "pi": "/home/dev/.pi/agent/agents"
+        "pi": "/home/dev/.pi/agent/agents",
+        "antigravity": "/home/dev/.gemini/antigravity-cli/agents",
+        "grok": "/home/dev/.grok/agents"
       },
       "meta-mode-tools": {
         "codex": "/home/dev/.agents/tools/meta-mode",
         "claude": "/home/dev/.claude/tools/meta-mode",
         "opencode": "/home/dev/.agents/tools/meta-mode",
-        "pi": "/home/dev/.agents/tools/meta-mode"
+        "pi": "/home/dev/.agents/tools/meta-mode",
+        "antigravity": "/home/dev/.gemini/antigravity-cli/tools/meta-mode",
+        "grok": "/home/dev/.agents/tools/meta-mode"
       }
     }
   }

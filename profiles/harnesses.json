@@ -47,5 +47,28 @@
       "modelArgs": ["--model", "{model}"],
       "readOnlyArgs": ["--tools", "read,grep,find,ls"]
     }
+  },
+  "antigravity": {
+    "directoryVariable": "HARNESS_SKILLS_ANTIGRAVITY_DIR",
+    "fallback": [".gemini", "antigravity-cli", "skills"],
+    "runtime": {
+      "command": "agy",
+      "headlessArgs": ["--output-format", "text"],
+      "promptArgs": ["--print"],
+      "modelArgs": ["--model", "{model}"],
+      "readOnlyArgs": ["--mode", "plan"]
+    }
+  },
+  "grok": {
+    "directoryVariable": "HARNESS_SKILLS_GROK_DIR",
+    "sharedSkills": true,
+    "fallback": [".grok", "skills"],
+    "runtime": {
+      "command": "grok",
+      "headlessArgs": ["--output-format", "plain"],
+      "promptArgs": ["--single"],
+      "modelArgs": ["--model", "{model}"],
+      "readOnlyArgs": ["--tools", "read_file,list_dir,grep", "--disallowed-tools", "search_tool,use_tool"]
+    }
   }
 }
