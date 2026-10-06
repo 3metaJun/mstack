@@ -111,7 +111,7 @@
     "skills/create-verification-skill/references/hosts/t3code.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "2c4e9481ad5ae405238c699edbd9b46e09008eef76ed0642a9a9bda8bb81840e"
+      "targetDigest": "6c044eb60006fa393d5ef9264a9bca7a95bd7cf6ff6217e2dedb8b02483ab7c7"
     },
     "skills/create-verification-skill/SKILL.md": {
       "upstream": "pstack",
@@ -325,7 +325,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/shipping.md",
       "sourceDigest": "19f3f6803a7bbe9ff04f624b03e3b55f07ac0a05e991aa00d5fe51239b920b2a",
-      "targetDigest": "27d6533b62463c04e8e119e0659d36d21da794648c5b69d48d71faba52f7fd51"
+      "targetDigest": "bd144d61ab82bb3cf4b0a2c9bc0310e8fdfa98e74baccce3528d5141895c5796"
     },
     "skills/meta-mode/playbooks/trace-forensics.md": {
       "upstream": "pstack",
@@ -364,7 +364,7 @@
     "skills/meta-mode/references/hosts/t3code.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "6058408e634c54f1615010c7b22d760f2bc6df4547ff2a157bba885d2a35543a"
+      "targetDigest": "23a2d8ac8014b525a792f8bcc22ec5129ac6a26eb2dcca4395df8a6b06a27a43"
     },
     "skills/meta-mode/SKILL.md": {
       "upstream": "pstack",

@@ -3,7 +3,7 @@
 const HOST_TOOL_PATTERNS = [
   [
     "T3 Code orchestration tool",
-    /\b(?:orchestrator_capabilities|delegate_task|task_status|task_cancel|create_threads|request_secret|schedule_task|run_scheduled_task_now|(?:list|update|delete)_scheduled_task|(?:link|unlink|unwatch|watch)_pull_request|list_thread_pull_requests|html_(?:preview|render))\b/,
+    /\b(?:orchestrator_capabilities|delegate_task|task_status|task_cancel|create_threads|request_secret|schedule_task|run_scheduled_task_now|list_scheduled_tasks|(?:update|delete)_scheduled_task|(?:link|unlink|unwatch|watch)_pull_request|list_thread_pull_requests|html_(?:preview|render))\b/,
   ],
   ["T3 Code thread tool", /\bt3_[a-z]+(?:_[a-z]+)+\b/],
   ["T3 Code preview tool", /\bpreview_[a-z]+(?:_[a-z]+)*\b/],

@@ -124,7 +124,7 @@ When a provider session has the app's `t3-code` MCP server, T3 adds its own inst
 
 - The agent arms `watch_pull_request` and ends the turn; T3 wakes it. It handles existing comments first, because only comments posted after the call wake it.
 - A wake is news and not a merge decision. The mstack rule stays: do not merge or arm auto-merge unless the user asked.
-- T3's watch ends when the PR merges or closes, after 8 failed reads in a row, after 10 wakes that bring only comments, or when the user presses Stop. A merge ends it without a wake, so `shipping` still confirms a merge with `gh pr view`. The agent calls `unwatch_pull_request` before handing the work back.
+- T3's watch ends when the PR merges or closes, after 8 failed reads in a row, after 10 wakes that bring only comments, or when the user presses Stop. A merge ends it silently (a close does wake the agent), so a turn ended on a green wake is never woken by the merge. While `shipping` or an owner waits for an armed merge, the reference adds a bounded `schedule_task` confirmation wake that polls the merge state and is deleted once the PR merges or the run stops; without `schedule_task` it keeps the portable watcher. The agent calls `unwatch_pull_request` before handing the work back.
 - A delegated child cannot watch a pull request, because its parent owns it. An owner agent that T3 delegated therefore keeps the portable watcher or reports back to its parent.
 - `watch-pr --status-only` is still a fine one-shot status read. T3 reports its own wake events, not the watcher's `READY`, `WAITING`, `ADVANCE`, or `COMPLETE` verdicts, so where `babysit` names a verdict, follow the T3 wake message instead.
 

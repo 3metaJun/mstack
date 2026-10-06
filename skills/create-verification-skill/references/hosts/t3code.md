@@ -49,6 +49,8 @@ device this run booted, so Cleanup stops only what the run created.
 
 ## Not available
 
-If neither toolset is attached, report the browser or simulator path as blocked,
-as the main workflow requires. A unit test or an HTTP response does not replace
-a required UI interaction.
+If neither toolset is attached, try the applicable portable or repository-owned
+driver first, as [harness-paths.md](../harness-paths.md) describes. Declare the
+interaction blocked only when no available driver can perform it, as the main
+workflow requires. A unit test or an HTTP response does not replace a required UI
+interaction.

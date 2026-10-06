@@ -20,6 +20,9 @@ const leaks = [
   ["schedule_task", "Arm schedule_task hourly."],
   ["run_scheduled_task_now", "Run run_scheduled_task_now."],
   ["update_scheduled_task", "update_scheduled_task enabled=false"],
+  ["delete_scheduled_task", "Then delete_scheduled_task."],
+  ["list_scheduled_tasks", "Check list_scheduled_tasks first."],
+  ["t3_thread_wait", "t3_thread_wait for the run."],
   ["request_secret", "Ask with request_secret."],
   ["create_threads", "create_threads for a batch."],
   ["t3_thread_launch", "t3_thread_launch with a worktree."],
@@ -106,6 +109,13 @@ const verifiedTools = new Set([
   "preview_recording_start", "preview_recording_stop",
   "device_list", "device_open", "device_screenshot", "device_close",
 ]);
+
+test("every verified tool name is rejected outside a host reference", () => {
+  for (const tool of verifiedTools) {
+    const problems = hostBindingProblems("skills/meta-mode/playbooks/babysit.md", `Call ${tool} now.`);
+    assert.equal(problems.length, 1, `${tool} slips past the gate`);
+  }
+});
 
 function unverifiedHostTools(content) {
   const identifiers = new Set(content.match(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g) ?? []);
