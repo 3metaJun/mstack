@@ -8,11 +8,12 @@ import {
   readdirSync,
   rmSync,
   lstatSync,
+  linkSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { localPathKey, pathFoldsCase, pathIsWithin, stagingPath, targetPathsOverlap } from "./install-paths.mjs";
@@ -84,8 +85,9 @@ test("detects overlapping install targets", () => {
   assert.equal(targetPathsOverlap(join("root", "skills", "meta-mode"), join("root", "skills", "setup-mstack")), false);
 });
 
-// Case folding follows the filesystem, not the OS: `foldsCase` stands in for the probe so each row runs the
-// same on every host. Windows is the exception and always folds.
+// Case folding follows the filesystem, not the OS: `foldsCase(directory)` stands in for the probe and says
+// whether names directly inside that directory fold, so each row runs the same on every host. Windows is the
+// exception and always folds.
 const caseFoldingCases = [
   { name: "case-sensitive macOS volume keeps Repo and repo apart", platform: "darwin", foldsCase: () => false, folds: false },
   { name: "case-insensitive macOS volume folds", platform: "darwin", foldsCase: () => true, folds: true },
@@ -93,9 +95,9 @@ const caseFoldingCases = [
   { name: "case-sensitive Linux volume keeps case", platform: "linux", foldsCase: () => false, folds: false },
   { name: "Windows folds without consulting the probe", platform: "win32", foldsCase: () => false, folds: true },
   {
-    name: "each path is judged by its own volume",
+    name: "each directory is judged on its own",
     platform: "darwin",
-    foldsCase: (path) => path.startsWith(resolve("sensitive")) ? false : true,
+    foldsCase: (directory) => !directory.startsWith(resolve("sensitive")),
     folds: true,
     sensitiveFolds: false,
   },
@@ -117,24 +119,58 @@ for (const { name, platform, foldsCase, folds, sensitiveFolds = folds } of caseF
   });
 }
 
-test("detects case folding from the real filesystem", () => {
+test("a case-insensitive mount inside a case-sensitive project keeps the project prefix", () => {
+  const project = resolve("work", "Project");
+  const mount = join(project, ".agents");
+  const options = {
+    platform: "linux",
+    foldsCase: (directory) => directory === mount || directory.startsWith(`${mount}${sep}`),
+  };
+  const target = join(mount, "Skills", "Meta-Mode");
+  assert.equal(localPathKey(target, options), join(mount, "skills", "meta-mode"));
+  assert.equal(pathIsWithin(project, target, options), true);
+  assert.equal(targetPathsOverlap(project, target, options), true);
+  // The mount point's own name lives in the case-sensitive parent, so a different spelling is another entry.
+  assert.notEqual(localPathKey(join(project, ".AGENTS"), options), localPathKey(mount, options));
+});
+
+test("detects case folding from the real filesystem without writing", () => {
   const empty = mkdtempSync(join(tmpdir(), "mstack-case-probe-"));
   const populated = mkdtempSync(join(tmpdir(), "mstack-case-probe-"));
   try {
     mkdirSync(join(populated, "Repo"));
-    // Empty directory is decided by the write probe, a populated one by comparing an entry with its case variant.
+    // Empty directory inherits from its parent on the same device; a populated one compares an entry with
+    // its case variant. Neither may create files.
     const emptyResult = pathFoldsCase(empty);
     const populatedResult = pathFoldsCase(populated);
+    assert.deepEqual(readdirSync(empty), []);
+    assert.deepEqual(readdirSync(populated), ["Repo"]);
     const expected = foldsPathCase(empty);
     assert.equal(emptyResult, expected);
     assert.equal(populatedResult, expected);
-    // A path that does not exist yet is judged by its nearest existing directory.
+    // A directory that does not exist yet is judged by its nearest existing ancestor.
     assert.equal(pathFoldsCase(join(empty, "missing", "deeper")), expected);
     // Windows always folds, whatever the probe says.
-    assert.equal(localPathKey(join(empty, "Repo"), { platform: "win32" }), join(empty, "repo").toLowerCase());
+    assert.equal(localPathKey(join(empty, "Repo"), { platform: "win32", foldsCase: () => false }), join(empty, "repo").toLowerCase());
   } finally {
     rmSync(empty, { recursive: true, force: true });
     rmSync(populated, { recursive: true, force: true });
+  }
+});
+
+test("case variants that coexist prove a case-sensitive directory, even as hard links", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-case-links-"));
+  try {
+    writeFileSync(join(root, "README"), "x", "utf8");
+    try {
+      linkSync(join(root, "README"), join(root, "readme"));
+    } catch {
+      t.skip("the temporary filesystem folds case or refuses hard links");
+      return;
+    }
+    assert.equal(pathFoldsCase(root), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

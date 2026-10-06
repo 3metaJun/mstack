@@ -1,92 +1,98 @@
-import { randomBytes } from "node:crypto";
-import { existsSync, lstatSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { existsSync, lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { dirname, join, parse, relative, resolve, sep } from "node:path";
 
 const MAX_LOOKUPS = 32;
 const foldsCaseByDirectory = new Map();
 
-// Whether `alias` (a case variant of `name`) reaches the same directory entry as `name`.
-// `undefined` means the lookup could not decide.
-function sameEntry(directory, name, alias) {
+// Whether the case variant `alias` of the entry `name` reaches the same entry. `undefined` means undecided.
+function aliasReachesEntry(directory, name, alias) {
   try {
     const original = lstatSync(join(directory, name), { bigint: true });
     if (original.ino === 0n) return undefined;
-    try {
-      const variant = lstatSync(join(directory, alias), { bigint: true });
-      return variant.dev === original.dev && variant.ino === original.ino;
-    } catch (error) {
-      return error?.code === "ENOENT" ? false : undefined;
-    }
-  } catch {
-    return undefined;
+    const variant = lstatSync(join(directory, alias), { bigint: true });
+    return variant.dev === original.dev && variant.ino === original.ino;
+  } catch (error) {
+    return error?.code === "ENOENT" ? false : undefined;
   }
 }
 
-function probeDirectory(directory) {
-  let entries = [];
+// Read-only observation of how names directly inside an existing directory compare. Two entries that differ
+// only by case prove case sensitivity (and rule out hard-link look-alikes); an absent entry's case variant
+// resolving to the same inode proves folding. `undefined` when the directory offers nothing to compare.
+function observeDirectory(directory) {
+  let entries;
   try {
     entries = readdirSync(directory);
   } catch {
-    // An unreadable directory falls through to the write probe.
+    return undefined;
   }
+  const present = new Set(entries);
   let lookups = 0;
   for (const name of entries) {
     const alias = name === name.toLowerCase() ? name.toUpperCase() : name.toLowerCase();
     if (alias === name) continue;
-    const same = sameEntry(directory, name, alias);
+    if (present.has(alias)) return false;
+    const same = aliasReachesEntry(directory, name, alias);
     if (same !== undefined) return same;
     if ((lookups += 1) >= MAX_LOOKUPS) break;
   }
-  // No cased entry to compare, so create one. The name is unique per call.
-  const name = `.mstack-Case-Probe-${process.pid}-${randomBytes(4).toString("hex")}`;
-  const probe = join(directory, name);
+  return undefined;
+}
+
+function sameDevice(left, right) {
   try {
-    writeFileSync(probe, "", { flag: "wx" });
+    return statSync(left, { bigint: true }).dev === statSync(right, { bigint: true }).dev;
   } catch {
-    return undefined;
-  }
-  try {
-    return existsSync(join(directory, name.toLowerCase()));
-  } finally {
-    try {
-      unlinkSync(probe);
-    } catch {
-      // A leftover dot-file is harmless; the probe result stands.
-    }
+    return false;
   }
 }
 
-function nearestExistingDirectory(path) {
-  let current = resolve(path);
+function existingDirectoryFoldsCase(directory) {
+  let folds = foldsCaseByDirectory.get(directory);
+  if (folds !== undefined) return folds;
+  folds = observeDirectory(directory);
+  if (folds === undefined) {
+    // Nothing to compare (an empty directory). Within one device the parent's answer applies; a fresh
+    // volume root has no neighbour to ask, so use the OS default. No probe file is ever written.
+    const parent = dirname(directory);
+    folds = parent !== directory && sameDevice(directory, parent)
+      ? existingDirectoryFoldsCase(parent)
+      : process.platform === "win32" || process.platform === "darwin";
+  }
+  foldsCaseByDirectory.set(directory, folds);
+  return folds;
+}
+
+// Whether names directly inside `directory` compare case-insensitively. Case sensitivity belongs to the
+// directory's filesystem, not the OS, so ask the nearest existing directory; results are cached.
+export function pathFoldsCase(directory) {
+  let current = resolve(directory);
   for (;;) {
     try {
-      if (statSync(current).isDirectory()) return current;
+      if (statSync(current).isDirectory()) return existingDirectoryFoldsCase(current);
     } catch {
       // Keep climbing until something exists.
     }
     const parent = dirname(current);
-    if (parent === current) return current;
+    if (parent === current) return existingDirectoryFoldsCase(current);
     current = parent;
   }
 }
 
-// Whether the filesystem holding `path` treats names that differ only by case as the same entry.
-// Case sensitivity is a property of the volume (or directory), not of the OS, so ask the nearest existing
-// directory. Results are cached per directory. When nothing can be observed, fall back to the OS default.
-export function pathFoldsCase(path) {
-  const directory = nearestExistingDirectory(path);
-  let folds = foldsCaseByDirectory.get(directory);
-  if (folds === undefined) {
-    folds = probeDirectory(directory) ?? (process.platform === "win32" || process.platform === "darwin");
-    foldsCaseByDirectory.set(directory, folds);
-  }
-  return folds;
-}
-
-// `foldsCase(absolutePath)` is injectable so tests do not depend on the host filesystem. Windows always folds.
+// Each component is folded by the directory that contains it, so a case-insensitive mount inside a
+// case-sensitive tree (or the reverse) keeps its parent prefix intact. `foldsCase(directory)` is injectable
+// so tests do not depend on the host filesystem. Windows always folds.
 export function localPathKey(value, { platform = process.platform, foldsCase = pathFoldsCase } = {}) {
   const normalized = resolve(value);
-  return platform === "win32" || foldsCase(normalized) ? normalized.toLowerCase() : normalized;
+  if (platform === "win32") return normalized.toLowerCase();
+  const { root } = parse(normalized);
+  let key = root;
+  let directory = root;
+  for (const segment of normalized.slice(root.length).split(sep).filter(Boolean)) {
+    key = join(key, foldsCase(directory) ? segment.toLowerCase() : segment);
+    directory = join(directory, segment);
+  }
+  return key;
 }
 
 export function physicalPathKey(value, options) {
