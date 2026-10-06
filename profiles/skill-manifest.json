@@ -218,13 +218,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-full.md",
       "sourceDigest": "05ca30a16242c19d0c78ba1e88cca66f858d75252cb154fd740099fe292de802",
-      "targetDigest": "ebdc7ef1e8fc52e0b91303770541ce905b372eed8e5293e644c9bc6f59a2ca7d"
+      "targetDigest": "d7ef34b2d3bd55294d237fc71325f1c1d878337fd2c418e63d98c41f6d57e497"
     },
     "skills/meta-mode/playbooks/autopilot-stack.md": {
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/autopilot-stack.md",
       "sourceDigest": "007c0a3b12011954a224f54773ef4ad7b75918be0a311914c1b51ad4e794c1e5",
-      "targetDigest": "80962e7db35f9ad2a0c4a363280f2f181a4e02df819f664fb8e7b8d8dbd4a4a2"
+      "targetDigest": "e822c24e34738087a24f65abc218d31c8c3c08436e7ee04d5c67fd00fc596a03"
     },
     "skills/meta-mode/playbooks/babysit.md": {
       "upstream": "pstack",
@@ -266,7 +266,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
       "sourceDigest": "27d310e3fc3937a60b8fcbe1318f9d249a7477a722907bf85b3e4eb3dc436b11",
-      "targetDigest": "eaa8d7e9f3b907c96acf9067c433eb40b6a32119ab3d8c373a57f1653b9565a5"
+      "targetDigest": "2eb71a5ddd294add838ca5d4bde67c431a925a6c6f3cfe686228b2fbc3b03cf9"
     },
     "skills/meta-mode/playbooks/opening-a-pr.md": {
       "upstream": "pstack",
@@ -733,13 +733,13 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/check-plan.mjs",
       "sourceDigest": "4f9432d9989880b6afc2bdda503d5b12a9d07d357ecf31936b7ab5e83bc80523",
-      "targetDigest": "b37aa3a8d9a7466c2eda37d7ff8e8461f065bea873baa90e51e92746c89378ba",
+      "targetDigest": "093d6a6d987aa6e63560e45840eef4379a472278e0a7e5ad3542025891341809",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/check-plan.test.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "43b630cd003b18171ce62e6cf506cabbd8f6bb4bcd5192170ce5bf5340867709"
+      "targetDigest": "cd81a473955c5cf2f3481654b2c993d28313263cb1cecf09856954b07681fe6b"
     },
     "tools/meta-mode/check-playbooks.mjs": {
       "upstream": null,

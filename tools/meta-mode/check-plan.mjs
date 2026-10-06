@@ -110,7 +110,7 @@ else {
 		}
 	}
 	for (const marker of PROGRAM_MARKERS) {
-		if (!bodyText(program).includes(marker)) fail(program.n, `Program checklist lacks "${marker}"`);
+		if (!bodyText({ body: program.body.filter((l) => !l.code) }).includes(marker)) fail(program.n, `Program checklist lacks "${marker}"`);
 	}
 }
 
