@@ -4,6 +4,12 @@ import { dirname, join, parse, relative, resolve, sep } from "node:path";
 const MAX_LOOKUPS = 32;
 const foldsCaseByDirectory = new Map();
 
+// Flip only ASCII letters: every case-insensitive filesystem equates those, whereas full Unicode case
+// mapping (for example "ß" to "SS") is not something all of them agree on.
+function swapAsciiCase(name) {
+  return name.replace(/[a-z]/gi, (letter) => letter === letter.toLowerCase() ? letter.toUpperCase() : letter.toLowerCase());
+}
+
 // Whether the case variant `alias` of the entry `name` reaches the same entry. `undefined` means undecided.
 function aliasReachesEntry(directory, name, alias) {
   try {
@@ -29,7 +35,7 @@ function observeDirectory(directory) {
   const present = new Set(entries);
   let lookups = 0;
   for (const name of entries) {
-    const alias = name === name.toLowerCase() ? name.toUpperCase() : name.toLowerCase();
+    const alias = swapAsciiCase(name);
     if (alias === name) continue;
     if (present.has(alias)) return false;
     const same = aliasReachesEntry(directory, name, alias);
@@ -48,19 +54,21 @@ function sameDevice(left, right) {
 }
 
 function existingDirectoryFoldsCase(directory) {
-  let folds = foldsCaseByDirectory.get(directory);
-  if (folds !== undefined) return folds;
-  folds = observeDirectory(directory);
-  if (folds === undefined) {
-    // Nothing to compare (an empty directory). Within one device the parent's answer applies; a fresh
-    // volume root has no neighbour to ask, so use the OS default. No probe file is ever written.
-    const parent = dirname(directory);
-    folds = parent !== directory && sameDevice(directory, parent)
-      ? existingDirectoryFoldsCase(parent)
-      : process.platform === "win32" || process.platform === "darwin";
+  const cached = foldsCaseByDirectory.get(directory);
+  if (cached !== undefined) return cached;
+  const observed = observeDirectory(directory);
+  if (observed !== undefined) {
+    foldsCaseByDirectory.set(directory, observed);
+    return observed;
   }
-  foldsCaseByDirectory.set(directory, folds);
-  return folds;
+  // Nothing to compare (an empty directory). Within one device the parent's answer is the best guess, though
+  // a per-directory case-fold flag can differ, so the guess is not cached: the directory is looked at again
+  // once it has entries. A fresh volume root has no neighbour to ask, so use the OS default. No probe file is
+  // ever written.
+  const parent = dirname(directory);
+  return parent !== directory && sameDevice(directory, parent)
+    ? existingDirectoryFoldsCase(parent)
+    : process.platform === "win32" || process.platform === "darwin";
 }
 
 // Whether names directly inside `directory` compare case-insensitively. Case sensitivity belongs to the

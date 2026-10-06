@@ -158,6 +158,18 @@ test("detects case folding from the real filesystem without writing", () => {
   }
 });
 
+test("probes with ASCII case only, so non-ASCII names do not read as case-sensitive", () => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-case-unicode-"));
+  try {
+    // "ß".toUpperCase() is "SS", which a case-insensitive filesystem need not equate.
+    writeFileSync(join(root, "ß.txt"), "x", "utf8");
+    const result = pathFoldsCase(root);
+    assert.equal(result, foldsPathCase(root));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("case variants that coexist prove a case-sensitive directory, even as hard links", (t) => {
   const root = mkdtempSync(join(tmpdir(), "mstack-case-links-"));
   try {
