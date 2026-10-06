@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { readModelConfig, validateModelConfig } from "./model-config-lib.mjs";
+import { readModelConfig, resolveModels, validateModelConfig } from "./model-config-lib.mjs";
 
 const harnesses = ["codex", "claude", "opencode", "pi", "antigravity", "grok"];
 const runRole = resolve("scripts/run-role.mjs");
@@ -40,6 +40,132 @@ test("model configuration rejects empty, duplicate and non-reviewer lists", () =
   assert.ok(validateModelConfig({ roles: { implementer: ["worker-a"] } }, harnesses).length);
   assert.ok(validateModelConfig({ roles: { reviewer: " " } }, harnesses).length);
   assert.deepEqual(validateModelConfig({ roles: { reviewer: "auto" } }, harnesses), []);
+});
+
+test("structured and provider/model entries validate, and a host layer is not a harness", () => {
+  const valid = [
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: ["codex/gpt-5.6-sol (xhigh)", "claude_work/claude-opus-5-5", "inherit-parent", "auto"] } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "opencode/anthropic/claude-sonnet-4 (low)" } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: [{ provider: "codex", model: "a", effort: "high" }, { provider: "codex", model: "a" }] } } },
+    // The same model at two efforts is two entries.
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: ["codex/a (high)", "codex/a (low)", { provider: "codex", model: "a" }] } } },
+    { roles: { implementer: "auto" }, overrides: { t3code: { implementer: { provider: "codex", model: "a", effort: "low" } } }, budgets: { t3code: "small" } },
+    // Harness strings are opaque: slashes and effort-looking suffixes stay part of the name.
+    { roles: { implementer: "anthropic/claude-sonnet-4" }, overrides: { opencode: { implementer: "anthropic/claude-sonnet-4 (high)" } } },
+    { roles: { reviewer: ["gpt-5 (high)", "gpt-5 (low)", "gpt-5", "claude-x (max)"] } },
+  ];
+  for (const config of valid) assert.deepEqual(validateModelConfig(config, harnesses), [], JSON.stringify(config));
+  const invalid = [
+    // Structured entries exist only under the host layer.
+    { roles: { implementer: { model: "gpt-5.6-sol" } } },
+    { roles: { reviewer: [{ provider: "codex", model: "a", effort: "high" }] } },
+    { roles: { reviewer: "auto" }, overrides: { pi: { reviewer: { provider: "codex", model: "a" } } } },
+    { roles: { reviewer: "auto" }, overrides: { codex: { reviewer: ["a", { model: "b" }] } } },
+    // Opaque strings dedupe as themselves, so an identical pair is still a duplicate.
+    { roles: { reviewer: ["gpt-5 (high)", "gpt-5 (high)"] } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { model: "a", extra: 1 } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "a", effort: "ultra" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "a", effort: "inherit-parent" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: " a" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "inherit-parent" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "auto" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: [] } } },
+    { roles: { implementer: "auto" }, overrides: { t3code: { implementer: [{ provider: "codex", model: "a" }] } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: [{ provider: "codex", model: "a" }, { provider: "codex", model: "a" }] } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: [{ provider: "codex", model: "a", effort: "high" }, "codex/a (high)"] } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: ["codex/a (high)", "codex/a (high)"] } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "gpt-5.6-sol" } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: ["codex/", "/a"] } } },
+    // The model part is validated on its own, with or without an effort suffix.
+    ...["codex/ gpt-5", "codex/gpt-5 ", "codex/", "/m", "codex/ gpt-5 (high)", "codex/\tgpt-5", "codex/gpt\u00005"]
+      .map((reviewer) => ({ roles: { reviewer: "auto" }, overrides: { t3code: { reviewer } } })),
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "codex/a (ultra)" } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { model: "a" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "a", effort: "" } } } },
+    { roles: { reviewer: "auto" }, overrides: { t3code: { missing: "codex/a" } } },
+    { roles: { reviewer: "auto" }, overrides: { t3: { reviewer: "codex/a" } } },
+    { roles: { reviewer: "auto" }, budgets: { t3: "small" } },
+  ];
+  for (const config of invalid) assert.ok(validateModelConfig(config, harnesses).length, JSON.stringify(config));
+  assert.ok(!harnesses.includes("t3code"));
+});
+
+test("provider ids follow the T3 instance id rule in objects and in provider/model strings", () => {
+  const longest = `a${"b".repeat(63)}`;
+  for (const provider of ["codex", "claude_work", "a-1", "A", longest]) {
+    for (const config of [
+      { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider, model: "m" } } } },
+      { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: `${provider}/m (high)` } } },
+    ]) assert.deepEqual(validateModelConfig(config, harnesses), [], `${provider}: ${JSON.stringify(config)}`);
+  }
+  for (const provider of ["1bad", "a.b", "__proto__", "_a", "-a", "a b", "a/b", "", `a${"b".repeat(64)}`]) {
+    const configs = [{ roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider, model: "m" } } } }];
+    // A slash in the provider would just move the split point, so only test the other prefixes.
+    if (!provider.includes("/")) configs.push({ roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: `${provider}/m` } } });
+    for (const config of configs) assert.ok(validateModelConfig(config, harnesses).length, `${provider}: ${JSON.stringify(config)}`);
+  }
+});
+
+test("reserved names cannot become role, scope or budget keys, and lookups read own properties only", () => {
+  for (const reserved of ["__proto__", "constructor", "prototype"]) {
+    for (const text of [
+      `{"roles":{"reviewer":"auto","${reserved}":"x"}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"pi":{"${reserved}":"x"}}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"${reserved}":{"reviewer":"x"}}}`,
+      `{"roles":{"reviewer":"auto"},"budgets":{"${reserved}":"small"}}`,
+    ]) assert.ok(validateModelConfig(JSON.parse(text), harnesses).length, text);
+  }
+  // A role named like an inherited member keeps its default; a harness named like one has no overrides.
+  assert.deepEqual(resolveModels({ roles: { toString: "x", reviewer: "y" }, overrides: { pi: {} } }, "pi"), { toString: "x", reviewer: "y" });
+  assert.deepEqual(resolveModels({ roles: { reviewer: "y" }, overrides: {} }, "constructor"), { reviewer: "y" });
+});
+
+test("model-config lists a host layer on request and when the file configures it", (t) => {
+  const { file, run } = fixture(t, {
+    roles: { reviewer: "auto" },
+    overrides: { t3code: { reviewer: ["codex/gpt-5.6-sol (high)", { provider: "claude_work", model: "claude-opus-5-5" }] } },
+  });
+  const one = run(["--file", file, "--harness", "t3code", "--role", "reviewer", "--format", "json"], checkModels);
+  assert.equal(one.status, 0, one.stderr);
+  assert.deepEqual(JSON.parse(one.stdout).models, { reviewer: ["codex/gpt-5.6-sol (high)", { provider: "claude_work", model: "claude-opus-5-5" }] });
+  const all = run(["--file", file, "--format", "json"], checkModels);
+  assert.deepEqual(all.stdout.trim().split("\n").map((line) => JSON.parse(line).harness).slice(-1), ["t3code"]);
+  assert.notEqual(run(["--file", file, "--harness", "t3"], checkModels).status, 0);
+});
+
+test("effort-looking and provider-looking Harness strings reach the CLI unchanged, and run-role never accepts a host layer", (t) => {
+  const { file, run } = fixture(t, {
+    roles: {
+      reviewer: ["gpt-5 (high)", "claude-x (max)", "anthropic/claude-sonnet-4", "gpt-5 (low)"],
+      implementer: "claude-x (max)",
+      judge: "inherit-parent",
+    },
+    overrides: { t3code: { implementer: "codex/gpt-5.6-sol (xhigh)" } },
+  });
+  for (const harness of ["pi", "claude", "opencode"]) {
+    const all = run(["--harness", harness, "--role", "reviewer", "--prompt", "inspect", "--file", file, "--all-models", "--read-only"]);
+    assert.equal(all.status, 0, all.stderr);
+    const plans = JSON.parse(all.stdout);
+    assert.deepEqual(plans.map((plan) => plan.model), ["gpt-5 (high)", "claude-x (max)", "anthropic/claude-sonnet-4", "gpt-5 (low)"]);
+    for (const plan of plans) assert.equal(plan.args[plan.args.indexOf("--model") + 1], plan.model);
+    assert.equal(all.stderr, "");
+    const indexed = JSON.parse(run(["--harness", harness, "--role", "reviewer", "--prompt", "inspect", "--file", file, "--model-index", "1"]).stdout);
+    assert.equal(indexed.args[indexed.args.indexOf("--model") + 1], "claude-x (max)");
+  }
+  const one = JSON.parse(run(["--harness", "claude", "--role", "implementer", "--prompt", "inspect", "--file", file]).stdout);
+  assert.equal(one.args[one.args.indexOf("--model") + 1], "claude-x (max)");
+  const inherited = run(["--harness", "pi", "--role", "judge", "--prompt", "inspect", "--file", file, "--parent-model", "known-parent"]);
+  assert.equal(JSON.parse(inherited.stdout).model, "known-parent");
+  const host = run(["--harness", "t3code", "--role", "implementer", "--prompt", "inspect", "--file", file]);
+  assert.notEqual(host.status, 0);
+  assert.match(host.stderr, /Unsupported harness/);
+  // A structured entry in a Harness scope is refused with a message that names the host layer.
+  const structured = fixture(t, { roles: { implementer: { provider: "codex", model: "a" } } });
+  const refused = structured.run(["--harness", "pi", "--role", "implementer", "--prompt", "inspect", "--file", structured.file]);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.stderr, /overrides\.t3code/);
 });
 
 test("model configuration rejects padded names in defaults, lists and overrides", (t) => {

@@ -53,6 +53,8 @@ if ([options["--model"] !== undefined, allModels, modelIndex !== undefined].filt
 if (allModels && !options["--read-only"]) {
   throw new Error("--all-models requires --read-only; isolate writable workers in separate worktrees and launch them individually");
 }
+// Harness entries are opaque strings passed to the CLI as written. Provider and
+// effort entries exist only in the t3code host layer, which run-role never reads.
 const configuredModels = Array.isArray(configured) ? configured : [configured];
 let selectedModels;
 if (options["--model"] !== undefined) {

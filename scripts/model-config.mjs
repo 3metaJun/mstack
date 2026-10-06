@@ -2,14 +2,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readModelConfig, resolveModels, validateModelConfig } from "./model-config-lib.mjs";
+import { HOST_KEYS, readModelConfig, resolveModels, validateModelConfig } from "./model-config-lib.mjs";
 import { parseCliArgs } from "./cli-args.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const harnesses = Object.keys(JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8")));
 const options = parseCliArgs(process.argv.slice(2), ["--file", "--harness", "--role", "--format"]);
 const requestedHarness = options["--harness"];
-if (requestedHarness && !harnesses.includes(requestedHarness)) {
+if (requestedHarness && ![...harnesses, ...HOST_KEYS].includes(requestedHarness)) {
   throw new Error(`Unsupported harness: ${requestedHarness}`);
 }
 const requestedRole = options["--role"];
@@ -40,7 +40,10 @@ if (errors.length) {
 if (requestedRole && !Object.hasOwn(config.roles, requestedRole)) {
   throw new Error(`Unknown model role: ${requestedRole}`);
 }
-const selectedHarnesses = requestedHarness ? [requestedHarness] : harnesses;
+// A host layer is listed only when the file configures it.
+const selectedHarnesses = requestedHarness
+  ? [requestedHarness]
+  : [...harnesses, ...HOST_KEYS.filter((host) => config.overrides?.[host])];
 for (const harness of selectedHarnesses) {
   const values = requestedRole ? { [requestedRole]: resolveModels(config, harness)[requestedRole] } : resolveModels(config, harness);
   if (format === "json") console.log(JSON.stringify({ harness, models: values }));

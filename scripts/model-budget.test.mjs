@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { setOwn } from "./model-config-lib.mjs";
 
 const script = resolve("scripts/model-budget.mjs");
 const check = resolve("scripts/model-config.mjs");
@@ -16,7 +17,8 @@ function fixture(t, config, models) {
   writeFileSync(catalog, JSON.stringify(models));
   const run = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", file, "--catalog", catalog, "--harness", "pi", "--budget", budget, ...flags], { encoding: "utf8" });
   const runAt = (target, budget, ...flags) => spawnSync(process.execPath, [script, "--file", target, "--catalog", catalog, "--harness", "pi", "--budget", budget, ...flags], { encoding: "utf8" });
-  return { root, file, catalog, run, runAt };
+  const runHost = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", file, "--catalog", catalog, "--harness", "t3code", "--budget", budget, ...flags], { encoding: "utf8" });
+  return { root, file, catalog, run, runAt, runHost };
 }
 
 test("budget preview and apply preserve aliases, families and other Harness choices", (t) => {
@@ -109,4 +111,188 @@ test("invalid options, catalogs and budget metadata fail without modifying confi
     assert.match(result.stderr, /budgets/);
     assert.equal(readFileSync(f.file, "utf8"), invalid);
   }
+});
+
+const ladder = ["low", "medium", "high", "xhigh", "max"];
+const entry = (provider, model, efforts) => ({ provider, model, ...(efforts ? { efforts } : {}) });
+function hostFixture(t, config, models) {
+  const f = fixture(t, config, models);
+  const run = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", f.file, "--catalog", f.catalog, "--harness", "t3code", "--budget", budget, ...flags], { encoding: "utf8" });
+  return { ...f, run };
+}
+
+test("explicit effort options set the entry's effort instead of rewriting names", (t) => {
+  const rows = [
+    // [budget, exposed efforts, implementer (object form), reviewer (string form)]
+    ["unlimited", ladder, "high", "max"],
+    ["large", ladder, "xhigh", "xhigh"],
+    ["medium", ladder, "high", "high"],
+    ["small", ladder, "medium", "medium"],
+    ["large", ["low", "medium", "high", "max"], "high", "high"],
+    ["medium", ["low", "max"], "low", "low"],
+    ["small", ["off", "minimal", "low", "medium", "ultracode"], "medium", "medium"],
+    ["small", ["off", "low", "ultracode"], "low", "low"],
+  ];
+  for (const [budget, efforts, implementer, reviewer] of rows) {
+    const f = hostFixture(t, {
+      roles: { implementer: "inherit-parent", reviewer: "inherit-parent" },
+      overrides: { t3code: { implementer: { provider: "codex", model: "gpt-5.6-sol", effort: "high" }, reviewer: "claude_work/claude-opus-5-5 (max)" } },
+      extra: { keep: true },
+    }, [entry("codex", "gpt-5.6-sol", efforts), entry("claude_work", "claude-opus-5-5", efforts)]);
+    const label = `${budget} ${efforts}`;
+    const result = f.run(budget, "--apply");
+    assert.equal(result.status, 0, `${label}: ${result.stdout}${result.stderr}`);
+    const saved = JSON.parse(readFileSync(f.file, "utf8"));
+    // The object form stays an object and the string form stays a string.
+    assert.deepEqual(saved.overrides.t3code.implementer, { provider: "codex", model: "gpt-5.6-sol", effort: implementer }, label);
+    assert.equal(saved.overrides.t3code.reviewer, `claude_work/claude-opus-5-5 (${reviewer})`, label);
+    assert.equal(saved.budgets.t3code, budget);
+    assert.equal(saved.extra.keep, true);
+    assert.deepEqual(saved.roles, { implementer: "inherit-parent", reviewer: "inherit-parent" });
+  }
+});
+
+test("effort budgets leave aliases and other scopes alone, and a repeat apply is a no-op", (t) => {
+  const f = hostFixture(t, {
+    roles: { implementer: "worker-high", judge: "inherit-parent", explorer: "auto" },
+    overrides: { codex: { implementer: "codex-custom" }, t3code: { judge: "inherit-parent", explorer: "auto", implementer: "codex/gpt-5.6-sol (low)" } },
+  }, [entry("codex", "gpt-5.6-sol", ladder)]);
+  assert.equal(f.run("small", "--apply").status, 0);
+  const saved = JSON.parse(readFileSync(f.file, "utf8"));
+  assert.deepEqual(saved.overrides.t3code, { judge: "inherit-parent", explorer: "auto", implementer: "codex/gpt-5.6-sol (medium)" });
+  assert.deepEqual(saved.overrides.codex, { implementer: "codex-custom" });
+  assert.equal(saved.roles.implementer, "worker-high");
+  const mtime = statSync(f.file).mtimeMs;
+  assert.equal(f.run("small", "--apply").status, 0);
+  assert.equal(statSync(f.file).mtimeMs, mtime);
+});
+
+test("a host role that falls back to a provider-less default is refused until it is set", (t) => {
+  const f = hostFixture(t, { roles: { implementer: "worker-high" } }, [entry("codex", "gpt-5.6-sol", ladder)]);
+  const before = readFileSync(f.file, "utf8");
+  const result = f.run("small", "--apply");
+  assert.equal(result.status, 1);
+  assert.match(JSON.parse(result.stdout).unresolved[0].reason, /overrides\.t3code\.implementer/);
+  assert.equal(readFileSync(f.file, "utf8"), before);
+});
+
+test("effort budgets refuse every write when a target is not exposed or the model is unknown", (t) => {
+  const rows = [
+    ["no option at or below the target", [entry("codex", "gpt-5.6-sol", ["xhigh", "max"])], "small", /no effort option at or below medium/],
+    ["only non-ladder options", [entry("codex", "gpt-5.6-sol", ["off", "ultracode"])], "small", /no effort option/],
+    ["model exposes no effort", [entry("codex", "gpt-5.6-sol")], "large", /no effort option/],
+    ["unknown model", [entry("codex", "other-model", ladder)], "large", /not in the catalog/],
+    ["unknown provider instance", [entry("codex_two", "gpt-5.6-sol", ladder)], "large", /not in the catalog/],
+    ["unlimited with a stored effort the model lacks", [entry("codex", "gpt-5.6-sol", ["low", "medium"])], "unlimited", /does not expose effort high/],
+  ];
+  for (const [label, catalog, budget, reason] of rows) {
+    const f = hostFixture(t, {
+      roles: { implementer: "inherit-parent", reviewer: "inherit-parent" },
+      overrides: { t3code: { implementer: "codex/gpt-5.6-sol (high)", reviewer: "inherit-parent" } },
+    }, catalog);
+    const before = readFileSync(f.file, "utf8");
+    const result = f.run(budget, "--apply");
+    assert.equal(result.status, 1, label);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.applied, false, label);
+    assert.match(report.unresolved[0].reason, reason, label);
+    assert.equal(readFileSync(f.file, "utf8"), before, label);
+  }
+});
+
+test("effort mapping that collapses panel entries refuses the write, while distinct models are a valid panel", (t) => {
+  const catalog = [entry("codex", "gpt-5.6-sol", ladder), entry("claude_work", "claude-opus-5-5", ladder)];
+  const collapsed = hostFixture(t, {
+    roles: { reviewer: "inherit-parent" },
+    overrides: { t3code: { reviewer: ["codex/gpt-5.6-sol (max)", { provider: "codex", model: "gpt-5.6-sol", effort: "low" }] } },
+  }, catalog);
+  const before = readFileSync(collapsed.file, "utf8");
+  const refused = collapsed.run("medium", "--apply");
+  assert.equal(refused.status, 1);
+  assert.match(JSON.parse(refused.stdout).unresolved[0].reason, /collapses reviewer entries/);
+  assert.equal(readFileSync(collapsed.file, "utf8"), before);
+  const distinct = hostFixture(t, {
+    roles: { reviewer: "inherit-parent" },
+    overrides: { t3code: { reviewer: ["codex/gpt-5.6-sol (max)", "claude_work/claude-opus-5-5 (max)", "inherit-parent"] } },
+  }, catalog);
+  assert.equal(distinct.run("medium", "--apply").status, 0);
+  assert.deepEqual(JSON.parse(readFileSync(distinct.file, "utf8")).overrides.t3code.reviewer,
+    ["codex/gpt-5.6-sol (high)", "claude_work/claude-opus-5-5 (high)", "inherit-parent"]);
+});
+
+test("Harness strings stay opaque: suffix-looking names are not parsed as efforts", (t) => {
+  // "gpt-5 (high)" has no -high style suffix, so a bounded budget cannot resolve it, as before this change.
+  const f = fixture(t, { roles: { implementer: "gpt-5 (high)", reviewer: ["claude-x (max)", "claude-x (low)"] } }, ["gpt-5 (high)", "claude-x (max)", "claude-x (low)"]);
+  const before = readFileSync(f.file, "utf8");
+  const bounded = f.run("small", "--apply");
+  assert.equal(bounded.status, 1);
+  assert.deepEqual(JSON.parse(bounded.stdout).unresolved.map(({ model }) => model), ["gpt-5 (high)", "claude-x (max)", "claude-x (low)"]);
+  assert.equal(readFileSync(f.file, "utf8"), before);
+  const unlimited = f.run("unlimited", "--apply");
+  assert.equal(unlimited.status, 0, unlimited.stdout);
+  assert.deepEqual(JSON.parse(readFileSync(f.file, "utf8")).roles, { implementer: "gpt-5 (high)", reviewer: ["claude-x (max)", "claude-x (low)"] });
+});
+
+test("catalog items must match the scope: names for a Harness, provider objects for a host", (t) => {
+  const roles = { roles: { reviewer: "auto" } };
+  const harnessCatalog = fixture(t, roles, [entry("p", "m", ladder)]);
+  assert.notEqual(harnessCatalog.run("medium").status, 0);
+  assert.match(harnessCatalog.run("medium").stderr, /Harness catalogs list concrete model names/);
+  const hostFile = fixture(t, roles, ["worker-high"]);
+  for (const bad of [["worker-high"], [{ model: "m", efforts: ladder }], [{ provider: null, model: "m", efforts: ladder }]]) {
+    writeFileSync(hostFile.catalog, JSON.stringify(bad));
+    const result = hostFile.runHost("medium");
+    assert.notEqual(result.status, 0, JSON.stringify(bad));
+    assert.match(result.stderr, /host catalogs list|provider/);
+  }
+});
+
+test("a malformed host effort catalog is rejected", (t) => {
+  const f = fixture(t, { roles: { reviewer: "auto" } }, []);
+  const before = readFileSync(f.file, "utf8");
+  for (const bad of [
+    [{ provider: "p", model: "m", efforts: "high" }], [{ provider: "p", model: "m", efforts: ["high", "high"] }],
+    [{ provider: "p", model: "m", extra: 1 }], [{ provider: "p/q", model: "m" }], [{ provider: "p", model: "auto" }], [{ model: "" }],
+    [{ provider: "1bad", model: "m" }], [{ provider: "a.b", model: "m" }], [{ provider: "__proto__", model: "m" }], [{ provider: "", model: "m" }],
+    [{ provider: `a${"b".repeat(64)}`, model: "m" }],
+    // One provider and model twice would make the effort list ambiguous.
+    [entry("p", "m", ["low"]), entry("p", "m", ["high"])], [entry("p", "m", ladder), entry("p", "m", ladder)],
+  ]) {
+    writeFileSync(f.catalog, JSON.stringify(bad));
+    const rejected = f.runHost("medium", "--apply");
+    assert.notEqual(rejected.status, 0, JSON.stringify(bad));
+    assert.match(rejected.stderr, /catalog/);
+    assert.equal(readFileSync(f.file, "utf8"), before);
+  }
+  // The same model under two provider instances, and a 64 character id, are distinct and valid.
+  const valid = fixture(t, { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "p/m (low)" } } },
+    [entry("p", "m", ladder), entry("q", "m", ["low"]), entry(`a${"b".repeat(63)}`, "m", ladder)]);
+  assert.equal(valid.runHost("medium").status, 0);
+});
+
+test("role, scope and budget names that reach inherited members are rejected and never polluted", (t) => {
+  for (const reserved of ["__proto__", "constructor", "prototype"]) {
+    // JSON.parse makes "__proto__" an own key, as a hand-edited file would.
+    const configs = [
+      `{"roles":{"reviewer":"auto","${reserved}":"worker-high"}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"pi":{"${reserved}":"worker-high"}}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"${reserved}":{"reviewer":"worker-high"}}}`,
+      `{"roles":{"reviewer":"auto"},"budgets":{"${reserved}":"small"}}`,
+    ];
+    for (const text of configs) {
+      const f = fixture(t, { roles: {} }, ["worker-high", "worker-medium"]);
+      writeFileSync(f.file, text);
+      const result = f.run("small", "--apply");
+      assert.notEqual(result.status, 0, text);
+      assert.equal(readFileSync(f.file, "utf8"), text);
+      assert.equal({}.polluted, undefined);
+    }
+  }
+});
+
+test("setOwn writes an own property even for the __proto__ key", () => {
+  const target = setOwn({}, "__proto__", { model: "x" });
+  assert.ok(Object.hasOwn(target, "__proto__"));
+  assert.equal(Object.getPrototypeOf(target), Object.prototype);
+  assert.deepEqual(JSON.parse(JSON.stringify(target)), JSON.parse('{"__proto__":{"model":"x"}}'));
 });
