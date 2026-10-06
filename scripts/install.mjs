@@ -149,7 +149,7 @@ const { skills: userTargets, native: nativeTargets, legacy: legacyTargets, share
 const targets = projectDir ? resolveProjectRoots(harnessRegistry, projectDir) : userTargets;
 const discoveryRoots = [...new Set([
   ...Object.values(targets), ...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
-].map(physicalPathKey))];
+].map((path) => physicalPathKey(path)))];
 const assertProjectPath = projectDir ? validateProjectTargets({
   projectDir,
   targets: Object.fromEntries(harnesses.map((harness) => [harness, targets[harness]])),

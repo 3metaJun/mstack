@@ -37,7 +37,7 @@ export function resolveHarnessRoots(registry, { env = process.env, home = homedi
 
 const TRANSACTION_SEGMENT = /^\.harness-skills-/;
 // Directories under which some harness scans for skills recursively. Segments arrive lower-cased on
-// case-insensitive platforms, so the names here are lower-case.
+// case-insensitive filesystems, so the names here are lower-case.
 const DISCOVERY_PARENTS = [".agents", ".claude", ".cursor", ".codex", ".gemini", ".agent", ".pi", ".opencode", ".grok"];
 
 function enclosingDiscoveryRoot(segments) {
@@ -73,7 +73,7 @@ export function withoutInvalidOverrides(registry, env, home = homedir()) {
 export function validateProjectTargets({ projectDir, targets, userRoots, packageRoot }) {
   const projectKey = physicalPathKey(projectDir);
   const packageKey = packageRoot ? physicalPathKey(packageRoot) : undefined;
-  const userKeys = userRoots.map(physicalPathKey);
+  const userKeys = userRoots.map((root) => physicalPathKey(root));
   const check = (label, path) => {
     const key = physicalPathKey(path);
     if (!pathIsWithin(projectKey, key)) throw new Error(`--project ${label} resolves outside the project directory: ${path} -> ${key}`);

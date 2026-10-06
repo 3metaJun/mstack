@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { localPathKey, stagingPath, targetPathsOverlap } from "./install-paths.mjs";
+import { localPathKey, pathFoldsCase, pathIsWithin, stagingPath, targetPathsOverlap } from "./install-paths.mjs";
 
 const installer = resolve("scripts", "install.mjs");
 
@@ -84,12 +84,58 @@ test("detects overlapping install targets", () => {
   assert.equal(targetPathsOverlap(join("root", "skills", "meta-mode"), join("root", "skills", "setup-mstack")), false);
 });
 
-test("treats local macOS targets as case-insensitive", () => {
-  const upper = join("root", "Skills", "Meta-Mode");
-  const lower = join("root", "skills", "meta-mode");
-  assert.equal(localPathKey(upper, "darwin"), localPathKey(lower, "darwin"));
-  assert.equal(targetPathsOverlap(upper, join(lower, "agents"), "darwin"), true);
-  assert.notEqual(localPathKey(upper, "linux"), localPathKey(lower, "linux"));
+// Case folding follows the filesystem, not the OS: `foldsCase` stands in for the probe so each row runs the
+// same on every host. Windows is the exception and always folds.
+const caseFoldingCases = [
+  { name: "case-sensitive macOS volume keeps Repo and repo apart", platform: "darwin", foldsCase: () => false, folds: false },
+  { name: "case-insensitive macOS volume folds", platform: "darwin", foldsCase: () => true, folds: true },
+  { name: "case-insensitive Linux mount folds", platform: "linux", foldsCase: () => true, folds: true },
+  { name: "case-sensitive Linux volume keeps case", platform: "linux", foldsCase: () => false, folds: false },
+  { name: "Windows folds without consulting the probe", platform: "win32", foldsCase: () => false, folds: true },
+  {
+    name: "each path is judged by its own volume",
+    platform: "darwin",
+    foldsCase: (path) => path.startsWith(resolve("sensitive")) ? false : true,
+    folds: true,
+    sensitiveFolds: false,
+  },
+];
+
+for (const { name, platform, foldsCase, folds, sensitiveFolds = folds } of caseFoldingCases) {
+  test(`path keys ${name}`, () => {
+    const options = { platform, foldsCase };
+    const upper = join("root", "Repo");
+    const lower = join("root", "repo");
+    assert.equal(localPathKey(upper, options) === localPathKey(lower, options), folds);
+    assert.equal(targetPathsOverlap(upper, join(lower, "package"), options), folds);
+    assert.equal(pathIsWithin(lower, join(upper, "package"), options), folds);
+    const sensitive = join("sensitive", "Repo");
+    assert.equal(localPathKey(sensitive, options) === localPathKey(join("sensitive", "repo"), options), sensitiveFolds);
+    // Genuinely nested paths overlap whichever way case is judged.
+    assert.equal(targetPathsOverlap(upper, join(upper, "package"), options), true);
+    assert.equal(targetPathsOverlap(upper, join("root", "Other"), options), false);
+  });
+}
+
+test("detects case folding from the real filesystem", () => {
+  const empty = mkdtempSync(join(tmpdir(), "mstack-case-probe-"));
+  const populated = mkdtempSync(join(tmpdir(), "mstack-case-probe-"));
+  try {
+    mkdirSync(join(populated, "Repo"));
+    // Empty directory is decided by the write probe, a populated one by comparing an entry with its case variant.
+    const emptyResult = pathFoldsCase(empty);
+    const populatedResult = pathFoldsCase(populated);
+    const expected = foldsPathCase(empty);
+    assert.equal(emptyResult, expected);
+    assert.equal(populatedResult, expected);
+    // A path that does not exist yet is judged by its nearest existing directory.
+    assert.equal(pathFoldsCase(join(empty, "missing", "deeper")), expected);
+    // Windows always folds, whatever the probe says.
+    assert.equal(localPathKey(join(empty, "Repo"), { platform: "win32" }), join(empty, "repo").toLowerCase());
+  } finally {
+    rmSync(empty, { recursive: true, force: true });
+    rmSync(populated, { recursive: true, force: true });
+  }
 });
 
 test("rejects transaction storage reached through a discovery-root alias before writing", () => {
@@ -935,9 +981,8 @@ test("project install refuses overlap with user-level skill roots in either dire
   }
 });
 
-// The installer folds case by platform (win32, darwin); probe the real temporary filesystem as well.
+// Independent of the installer's probe: does the real temporary filesystem fold case?
 function foldsPathCase(directory) {
-  if (!["win32", "darwin"].includes(process.platform)) return false;
   const probe = join(directory, "CaseProbe");
   writeFileSync(probe, "x", "utf8");
   return existsSync(join(directory, "caseprobe"));
@@ -947,7 +992,7 @@ test("project overlap check ignores path case on case-insensitive local filesyst
   const { root, env, home } = projectFixture();
   if (!foldsPathCase(root)) {
     rmSync(root, { recursive: true, force: true });
-    t.skip("path case is significant on this platform or temporary filesystem");
+    t.skip("path case is significant on the temporary filesystem");
     return;
   }
   const nested = join(home, ".agents", "skills", "repo");
@@ -1040,7 +1085,7 @@ test("project install rejects an uppercase spelling of transaction storage on ca
   const { root, env } = projectFixture();
   if (!foldsPathCase(root)) {
     rmSync(root, { recursive: true, force: true });
-    t.skip("path case is significant on this platform or temporary filesystem");
+    t.skip("path case is significant on the temporary filesystem");
     return;
   }
   mkdirSync(join(root, ".harness-skills-backups", "repo"), { recursive: true });

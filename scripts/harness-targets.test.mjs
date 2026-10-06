@@ -147,8 +147,7 @@ test("project directories inside discovery roots are refused on the physical pat
   assert.equal(validateProjectDir(root, options), root);
 });
 
-// Case folding only applies where the platform treats paths as case-insensitive, so probe the real
-// temporary filesystem instead of assuming from the platform name.
+// Case folding follows the filesystem, so probe the real temporary directory.
 function caseInsensitiveTemporaryFilesystem(directory) {
   const probe = join(directory, "CaseProbe");
   writeFileSync(probe, "x", "utf8");
@@ -158,8 +157,8 @@ function caseInsensitiveTemporaryFilesystem(directory) {
 test("mixed-case discovery roots are refused where the filesystem folds case", (t) => {
   const root = mkdtempSync(join(tmpdir(), "mstack-project-case-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  if (!caseInsensitiveTemporaryFilesystem(root) || !["win32", "darwin"].includes(process.platform)) {
-    t.skip("the temporary filesystem or platform treats path case as significant");
+  if (!caseInsensitiveTemporaryFilesystem(root)) {
+    t.skip("the temporary filesystem treats path case as significant");
     return;
   }
   const nested = join(root, ".Agents", "Skills", "repo");
