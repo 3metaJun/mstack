@@ -15,7 +15,7 @@
 const T3_SKILL_NAME = /^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/;
 const PLAIN_SCALAR_FIELDS = ["name", "description"];
 // Indicators that can never start a plain scalar (quote and block forms are handled separately).
-// A `|` or `>` is a block header only on the key's own line; on a continuation line it is invalid.
+// A leading `|` or `>` is a block header, handled before the plain-scalar check; otherwise invalid.
 const ALWAYS_INDICATORS = new Set(["[", "]", "{", "}", ",", "&", "*", "!", "%", "@", "`", "|", ">"]);
 // `-`, `?` and `:` are indicators only when followed by a separator.
 const CONDITIONAL_INDICATORS = /^[-?:]([ \t]|$)/;
@@ -113,7 +113,12 @@ function inspectField(field) {
   const lines = [field.first, ...field.continuation].filter((line) => trimSeparators(line) !== "");
   if (lines.length === 0) return { problem: "is empty or comment-only (YAML null)" };
   const head = trimSeparators(lines[0]);
+  // A block header is the value itself, either after the key or on the next value-bearing line.
+  const [next, ...rest] = field.continuation;
   if (/^[|>]/.test(field.first)) return inspectBlock(field);
+  if (field.first === "" && /^[|>]/.test(trimSeparators(next ?? ""))) {
+    return inspectBlock({ first: trimSeparators(next), continuation: rest });
+  }
   if (/^["']/.test(head)) return inspectQuoted(lines.map(trimSeparators).join("\n"));
   return inspectPlain(lines);
 }
