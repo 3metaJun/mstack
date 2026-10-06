@@ -9,8 +9,8 @@ to the official documentation used for each entry.
 | --- | --- | --- | --- |
 | Codex | `~/.agents/skills/` | `.agents/skills/` | Agent Skills fields; Codex-specific `agents/openai.yaml` lives beside each skill |
 | Claude Code | `~/.claude/skills/` | `.claude/skills/` | `name`, `description`, `license`, `compatibility`, `metadata`, and Claude invocation fields |
-| OpenCode | `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.claude/skills/` | `.opencode/skills/` | `license`, `compatibility`, and `metadata` |
-| pi | `~/.agents/skills/`, `~/.pi/agent/skills/` | `.pi/skills/` | `license`, `compatibility`, `metadata`, `allowed-tools`, and `disable-model-invocation` |
+| OpenCode | `~/.agents/skills/`, `~/.config/opencode/skills/`, `~/.claude/skills/` | `.opencode/skills/`, `.claude/skills/`, `.agents/skills/` | `license`, `compatibility`, and `metadata` |
+| pi | `~/.agents/skills/`, `~/.pi/agent/skills/` | `.pi/skills/`, `.agents/skills/` | `license`, `compatibility`, `metadata`, `allowed-tools`, and `disable-model-invocation` |
 | Antigravity (`agy`) | `~/.gemini/config/skills/`, `~/.gemini/antigravity-cli/skills/` | `.gemini/skills/`, `.agents/skills/`, `.agent/skills/` | `name` (required) and `description`; other fields are not documented |
 | Grok | `~/.grok/skills/`, `~/.agents/skills/`, `~/.claude/skills/`, `~/.cursor/skills/` | `.grok/skills/`, `.agents/skills/`, `.claude/skills/`, `.cursor/skills/` | `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`, `user-invocable`, and `disable-model-invocation` |
 | Cursor | `~/.cursor/skills/`, `~/.agents/skills/` | `.cursor/skills/`, `.agents/skills/`, `.claude/skills/` | Agent Skills fields |
@@ -30,6 +30,30 @@ Sources:
   under the Grok home directory), checked against `grok inspect --json` on 1.0.46,
   which listed skills from `~/.agents/skills/`.
 - [Cursor skills](https://cursor.com/docs/context/skills)
+
+### Project install targets
+
+`--project <dir>` writes to one project root per harness, defined as `project` in
+`profiles/harnesses.json`. Where a harness reads several project directories,
+mstack picks the one that lets harnesses share a copy:
+
+| Harness | mstack project target | Evidence |
+| --- | --- | --- |
+| Codex | `.agents/skills/` | Codex skills documentation |
+| OpenCode | `.agents/skills/` | The OpenCode skills page lists `.opencode/skills/`, `.claude/skills/` and `.agents/skills/` as project paths and walks up to the git worktree root |
+| pi | `.agents/skills/` | The pi skills page: project `.agents/skills/` directories are discovered from the working directory through its ancestors, stopping at the repository root. `.pi/skills/` is also read |
+| Grok | `.agents/skills/` | Grok user guide: scans `.agents/skills/` at each tier and walks every directory between the working directory and the repository root |
+| Antigravity | `.agents/skills/` | T3 Code `AntigravitySkills.ts` scans `<cwd>/.gemini/skills`, `<cwd>/.agents/skills` and `<cwd>/.agent/skills`. Its canonical frontmatter is unchanged, so it shares the copy |
+| Claude Code | `.claude/skills/` | Claude reads only `<cwd>/.claude/skills` (T3 Code `ClaudeSkills.ts`); it needs its own copy without the frontmatter `name` |
+| Cursor | none needed | T3 Code `CursorSkills.ts` scans `<cwd>/.cursor`, `.agents`, `.codex` and `.claude` skills, so the two targets above cover it |
+
+Unlike the user level, Antigravity joins the shared copy because it does read
+`.agents/skills/` in a project. The Cursor, Claude and Antigravity rows were
+checked against T3 Code commit `8f75697`. The OpenCode, pi and Grok rows come from
+their documentation and were not run in a thread. Project installs are skills
+only: agent files have project locations for only some harnesses
+(`.claude/agents`, `.opencode/agents`, `.codex/agents`), in different formats, so
+`--artifact` is refused with `--project`.
 
 The canonical tree keeps the Agent Skills fields that all supported Harnesses
 can read. Claude Code accepts `metadata` but does not act on its contents, so

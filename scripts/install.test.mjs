@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  lstatSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -759,6 +760,141 @@ test("rejects artifact sources outside the repository", () => {
     assert.match(result.stderr, /source must stay within the repository/);
   } finally {
     rmSync(fixture_.root, { recursive: true, force: true });
+  }
+});
+
+function projectFixture() {
+  const { root, env } = fixture();
+  const project = join(root, "repo with spaces");
+  mkdirSync(project);
+  const home = join(root, "home");
+  mkdirSync(home);
+  env.HOME = home;
+  env.USERPROFILE = home;
+  return { root, env, project, home };
+}
+
+test("project install writes per-harness project roots, shares one copy, and ignores user overrides", () => {
+  const { root, env, project, home } = projectFixture();
+  try {
+    const result = run(["--harness", "all", "--project", project, "--skill", "show-me-your-work"], env);
+    assert.equal(result.status, 0, result.stderr);
+    const shared = join(project, ".agents", "skills", "show-me-your-work");
+    const claude = join(project, ".claude", "skills", "show-me-your-work");
+    assert.deepEqual(readdirSync(project).sort(), [".agents", ".claude"]);
+    assert.deepEqual(readdirSync(join(project, ".agents")).sort(), ["skills"]);
+    assert.equal(result.stdout.match(/shared show-me-your-work: .* \(codex, opencode, pi, antigravity, grok\)/)?.length, 1);
+    assert.match(readFileSync(join(shared, "SKILL.md"), "utf8"), /^name: /m);
+    const claudeFrontmatter = readFileSync(join(claude, "SKILL.md"), "utf8").split(/\r?\n---\r?\n/)[0];
+    assert.doesNotMatch(claudeFrontmatter, /^name:/m);
+    assert.match(claudeFrontmatter, /^compatibility:/m);
+    assert.ok(existsSync(join(shared, ".mstack-install.json")));
+    assert.equal(lstatSync(shared).isSymbolicLink(), false);
+    for (const variable of ["CODEX", "CLAUDE", "OPENCODE", "PI", "ANTIGRAVITY", "GROK"]) {
+      assert.equal(existsSync(env[`HARNESS_SKILLS_${variable}_DIR`]), false, variable);
+    }
+    assert.deepEqual(readdirSync(home), []);
+    assert.match(result.stdout, /commit the skill directories deliberately or gitignore them/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install maps a single harness to its own root", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    for (const [harness, parts] of Object.entries({
+      codex: [".agents", "skills"], claude: [".claude", "skills"], opencode: [".agents", "skills"],
+      pi: [".agents", "skills"], antigravity: [".agents", "skills"], grok: [".agents", "skills"],
+    })) {
+      const result = run(["--harness", harness, "--project", project, "--skill", "bro", "--dry-run"], env);
+      assert.equal(result.status, 0, `${harness}: ${result.stderr}`);
+      assert.ok(result.stdout.includes(`${harness}: ${join(project, ...parts)}`), harness);
+    }
+    assert.deepEqual(readdirSync(project), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project dry-run prints the plan and replace backups outside the skill roots", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    assert.equal(run(["--harness", "codex,claude", "--project", project, "--skill", "bro"], env).status, 0);
+    const conflict = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--dry-run"], env);
+    assert.equal(conflict.status, 2);
+    assert.match(conflict.stdout, /conflict: bro/);
+
+    const dry = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--replace", "--dry-run"], env);
+    assert.equal(dry.status, 0, dry.stderr);
+    assert.ok(dry.stdout.includes(`project: ${project}`));
+    assert.match(dry.stdout, /replace with backup: bro/);
+    assert.ok(dry.stdout.includes(join(project, ".agents", ".harness-skills-backups", "skills")));
+    assert.ok(dry.stdout.includes(join(project, ".claude", ".harness-skills-backups", "skills")));
+
+    writeFileSync(join(project, ".agents", "skills", "bro", "marker.txt"), "old", "utf8");
+    const real = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--replace"], env);
+    assert.equal(real.status, 0, real.stderr);
+    assert.equal(existsSync(join(project, ".agents", "skills", "bro", "marker.txt")), false);
+    assert.equal(readFileSync(findFile(join(project, ".agents", ".harness-skills-backups"), "marker.txt"), "utf8"), "old");
+    assert.equal(findFile(join(project, ".agents", "skills"), "marker.txt"), undefined);
+    assert.equal(findFile(join(project, ".claude", "skills"), ".harness-skills-backups"), undefined);
+    assert.equal(readdirSync(join(project, ".agents", "skills")).includes(".harness-skills-backups"), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install rolls back earlier targets when a later one fails", () => {
+  const { root, env, project } = projectFixture();
+  try {
+    assert.equal(run(["--harness", "codex,claude", "--project", project, "--skill", "bro"], env).status, 0);
+    writeFileSync(join(project, ".agents", "skills", "bro", "marker.txt"), "old codex", "utf8");
+    writeFileSync(join(project, ".claude", "skills", "bro", "marker.txt"), "old claude", "utf8");
+    // A file where the Claude backup directory must go makes the second commit fail after Codex committed.
+    mkdirSync(join(project, ".claude", ".harness-skills-backups"));
+    writeFileSync(join(project, ".claude", ".harness-skills-backups", "skills"), "block", "utf8");
+    const result = run(["--harness", "codex,claude", "--project", project, "--skill", "bro", "--replace"], env);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Rollback results:/);
+    assert.match(result.stderr, /restored original/);
+    assert.equal(readFileSync(join(project, ".agents", "skills", "bro", "marker.txt"), "utf8"), "old codex");
+    assert.equal(readFileSync(join(project, ".claude", "skills", "bro", "marker.txt"), "utf8"), "old claude");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("project install refuses unsupported combinations and unsafe directories before writing", () => {
+  const { root, env, project, home } = projectFixture();
+  const file = join(root, "plain-file");
+  const transaction = join(root, ".harness-skills-backups", "repo");
+  writeFileSync(file, "x", "utf8");
+  mkdirSync(transaction, { recursive: true });
+  try {
+    const base = ["--harness", "codex", "--skill", "bro", "--dry-run"];
+    for (const [extra, message] of [
+      [["--project", project, "--artifact", "agents"], /--artifact is not supported with --project/],
+      [["--project", project, "--artifact", "all"], /--artifact is not supported with --project/],
+      [["--project", project, "--migrate", "--replace"], /cannot be combined with --project/],
+      [["--project", project, "--environment", "fleet-ssh"], /cannot be combined with --environment/],
+      [["--project"], /--project requires a directory/],
+      [["--project", "--replace"], /--project requires a directory/],
+      [["--project", join(root, "missing")], /existing directory/],
+      [["--project", file], /must name a directory/],
+      [["--project", home], /cannot be the home directory/],
+      [["--project", join(resolve("."), "scripts")], /inside the mstack package/],
+      [["--project", resolve(".")], /inside the mstack package/],
+      [["--project", transaction], /transaction storage/],
+    ]) {
+      const result = run([...base, ...extra], env);
+      assert.notEqual(result.status, 0, extra.join(" "));
+      assert.match(result.stderr, message, extra.join(" "));
+    }
+    assert.deepEqual(readdirSync(project), []);
+    assert.deepEqual(readdirSync(home), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

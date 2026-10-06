@@ -80,6 +80,26 @@ test("Grok shares the default copy while Antigravity keeps its own native root",
   assert.deepEqual(skillFiles(join(root, ".agents/skills")), ["meta-mode/SKILL.md"]);
 });
 
+test("project install leaves only skill roots in the repository and none under the home directory", (t) => {
+  const { root, env } = fixture(t);
+  const project = join(root, "workspace", "repo");
+  mkdirSync(project, { recursive: true });
+  succeeded(run(["--harness", "all", "--project", project, "--skill", "meta-mode,show-me-your-work"], env));
+  assert.deepEqual(skillFiles(project), [
+    ".agents/skills/meta-mode/SKILL.md",
+    ".agents/skills/show-me-your-work/SKILL.md",
+    ".claude/skills/meta-mode/SKILL.md",
+    ".claude/skills/show-me-your-work/SKILL.md",
+  ]);
+  assert.deepEqual(readdirSync(project).sort(), [".agents", ".claude"]);
+  assert.deepEqual(readdirSync(join(project, ".agents")), ["skills"]);
+  assert.deepEqual(readdirSync(join(project, ".claude")), ["skills"]);
+  assert.deepEqual(readdirSync(root), ["workspace"]);
+  const claude = installedText(project, ".claude/skills", "meta-mode");
+  assert.doesNotMatch(claude.split(/^---\s*$/m)[1], /^name:/m);
+  assert.match(installedText(project, ".agents/skills", "meta-mode"), /^name: meta-mode\r?$/m);
+});
+
 test("explicit Grok and Antigravity roots override their defaults", (t) => {
   const { root, env } = fixture(t);
   env.HARNESS_SKILLS_GROK_DIR = join(root, "custom-grok/skills");

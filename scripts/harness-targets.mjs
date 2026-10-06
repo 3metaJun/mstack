@@ -1,5 +1,7 @@
+import { statSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
+import { pathIsWithin, physicalPathKey } from "./install-paths.mjs";
 
 export function configuredPath(value, fallback, label, home = homedir()) {
   const path = value ?? fallback;
@@ -31,4 +33,43 @@ export function resolveHarnessRoots(registry, { env = process.env, home = homedi
     skills[harness] = config.sharedSkills && !environmentTarget && !directory ? sharedRoot : native[harness];
   }
   return { skills, native, legacy, sharedRoot, externalClaudeRoot };
+}
+
+const TRANSACTION_SEGMENT = /^\.harness-skills-/;
+
+// Project roots come only from the registry's `project` path; user-scope overrides never apply.
+export function resolveProjectRoots(registry, projectDir) {
+  const roots = {};
+  for (const [harness, config] of Object.entries(registry)) {
+    const parts = config.project;
+    if (!Array.isArray(parts) || parts.length === 0 || parts.some((part) =>
+      typeof part !== "string" || !part.trim() || part === "." || part === ".." || /[\\/]/.test(part))) {
+      throw new Error(`Harness ${harness} has no safe project skill root`);
+    }
+    roots[harness] = join(projectDir, ...parts);
+  }
+  return roots;
+}
+
+export function validateProjectDir(value, { packageRoot, home = homedir(), cwd = process.cwd() } = {}) {
+  const expanded = value === "~" ? home : /^~[\\/]/.test(value) ? join(home, value.slice(2)) : value;
+  const project = resolve(cwd, expanded);
+  let status;
+  try {
+    status = statSync(project);
+  } catch {
+    throw new Error(`--project must name an existing directory: ${project}`);
+  }
+  if (!status.isDirectory()) throw new Error(`--project must name a directory: ${project}`);
+  if (project.split(/[\\/]/).some((segment) => TRANSACTION_SEGMENT.test(segment))) {
+    throw new Error(`--project cannot be inside installer transaction storage: ${project}`);
+  }
+  const physical = physicalPathKey(project);
+  if (physical === physicalPathKey(home)) {
+    throw new Error("--project cannot be the home directory; omit --project for a user-level install");
+  }
+  if (packageRoot && pathIsWithin(physicalPathKey(packageRoot), physical)) {
+    throw new Error(`--project cannot be inside the mstack package: ${project}`);
+  }
+  return project;
 }

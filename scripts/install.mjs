@@ -11,16 +11,17 @@ import {
   realpathSync,
   readdirSync,
   renameSync,
+  rmdirSync,
   rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readEnvironment } from "./environment-lib.mjs";
-import { configuredPath, resolveHarnessRoots } from "./harness-targets.mjs";
+import { configuredPath, resolveHarnessRoots, resolveProjectRoots, validateProjectDir } from "./harness-targets.mjs";
 import { planSkillMigration } from "./install-migration.mjs";
 import { convertAgentMarkdown } from "./agent-format.mjs";
 import {
@@ -56,14 +57,20 @@ function valueAfter(flag) {
 }
 
 if (args.includes("--help") || !args.includes("--harness")) {
-  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|antigravity|grok|all> [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace]
+  console.log(`Usage: node scripts/install.mjs --harness <codex|claude|opencode|pi|antigravity|grok|all> [--project <dir>] [--environment <name>] [--skill <name[,name...]>] [--artifact <name[,name...]>] [--no-skills] [--dry-run] [--replace]
 
 Installs canonical skills and optional artifacts into user-level harness directories.
 Artifacts: ${validArtifacts.join(", ")} (use --artifact all for installable artifacts).
 Codex, OpenCode, pi and Grok share ~/.agents/skills by default. Antigravity reads only its own
 ~/.gemini/antigravity-cli/skills. Claude uses directory-based names.
 Use --migrate --replace to back up recognized legacy copies outside skill discovery roots.
-Existing directories are preserved unless --replace is supplied.`);
+Existing directories are preserved unless --replace is supplied.
+
+--project <dir> installs skills only, as copies, into an existing local repository instead of
+the user directories: <dir>/.agents/skills for Codex, OpenCode, pi, Grok and Antigravity, and
+<dir>/.claude/skills for Claude. Commit the result deliberately or gitignore it; a fresh git
+worktree contains only committed files. It cannot be combined with --artifact, --migrate or
+--environment, and ignores HARNESS_SKILLS_*_DIR overrides.`);
   process.exit(args.includes("--help") ? 0 : 1);
 }
 
@@ -87,6 +94,21 @@ const environmentName = valueAfter("--environment");
 if (hasEnvironment && (!environmentName || environmentName.startsWith("--"))) {
   throw new Error("--environment requires a name");
 }
+const hasProject = args.includes("--project");
+const projectValue = valueAfter("--project");
+if (hasProject && (!projectValue?.trim() || projectValue.startsWith("--"))) {
+  throw new Error("--project requires a directory");
+}
+if (hasProject && hasEnvironment) {
+  throw new Error("--project cannot be combined with --environment: project installs write only to a local repository");
+}
+if (hasProject && migrate) throw new Error("--migrate applies to user-level installs and cannot be combined with --project");
+if (hasProject && args.includes("--artifact")) {
+  // Agent roles, tools, the guide and session context are user-owned configuration; none has a verified
+  // project location for every harness, so a repository never receives them implicitly.
+  throw new Error("--artifact is not supported with --project: project installs copy skills only. Install artifacts at user level or copy them into the repository deliberately.");
+}
+const projectDir = hasProject ? validateProjectDir(projectValue, { packageRoot: repoRoot, home: userHome }) : undefined;
 
 function artifactBase(name, harness) {
   const base = artifactRegistry[name]?.harnesses?.[harness]?.base;
@@ -108,11 +130,21 @@ if (environment.transport === "ssh") {
 }
 const environmentTargets = environment.targets;
 const environmentArtifacts = environment.artifacts;
-const { skills: targets, native: nativeTargets, legacy: legacyTargets, sharedRoot, externalClaudeRoot } =
+const { skills: userTargets, native: nativeTargets, legacy: legacyTargets, sharedRoot, externalClaudeRoot } =
   resolveHarnessRoots(harnessRegistry, { home: userHome, environmentTargets, environmentName });
+const targets = projectDir ? resolveProjectRoots(harnessRegistry, projectDir) : userTargets;
 const discoveryRoots = [...new Set([
-  ...Object.values(targets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
+  ...Object.values(targets), ...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot,
 ].map(physicalPathKey))];
+if (projectDir) {
+  // A symlinked project directory could alias the home skill roots, which is a user-level install.
+  const userKeys = new Set([...Object.values(userTargets), ...Object.values(nativeTargets), ...Object.values(legacyTargets), sharedRoot, externalClaudeRoot].map(physicalPathKey));
+  for (const harness of harnesses) {
+    if (userKeys.has(physicalPathKey(targets[harness]))) {
+      throw new Error(`--project resolves ${harness} to a user-level skill root: ${targets[harness]}`);
+    }
+  }
+}
 
 function artifactEnvironmentPath(name, harness) {
   const byArtifact = environmentArtifacts[name];
@@ -412,7 +444,7 @@ for (const item of harnesses.flatMap((harness) =>
     skillPlan.push(item);
   }
 }
-const migrationEnabled = skills.length > 0 && !hasEnvironment && skillPlan.some((item) =>
+const migrationEnabled = skills.length > 0 && !hasEnvironment && !projectDir && skillPlan.some((item) =>
   item.harness !== "claude" && localPathKey(dirname(item.target)) === localPathKey(sharedRoot));
 if (migrate && !migrationEnabled) {
   throw new Error("--migrate requires a local default shared skill target; run the installer on the target machine without --environment");
@@ -446,6 +478,7 @@ for (const item of plan) {
   for (const category of ["backups", "failed", "stage"]) transactionPath(item, category);
 }
 
+if (projectDir) console.log(`project: ${projectDir}`);
 for (const harness of harnesses) console.log(`${harness}: ${targets[harness]}`);
 for (const item of skillPlan.filter((item) => item.consumers.length > 1)) {
   console.log(`  shared ${item.name}: ${item.target} (${item.consumers.join(", ")})`);
@@ -489,6 +522,21 @@ function transactionPath(item, category) {
     }
   }
   return path;
+}
+
+// Skill staging lives under <root>/.harness-skills-stage/<skills dir>/<transaction>/<name>; drop the empty
+// shell once staging is cleaned so a repository does not keep stray directories. Backups and failed
+// replacements are never pruned because they hold recoverable data.
+function pruneEmptyStageDirectories(staged) {
+  if (!staged.includes(`${sep}.harness-skills-stage${sep}`)) return;
+  for (let directory = dirname(staged); ; directory = dirname(directory)) {
+    try {
+      rmdirSync(directory);
+    } catch {
+      return;
+    }
+    if (basename(directory) === ".harness-skills-stage") return;
+  }
 }
 
 function processIsAlive(pid) {
@@ -664,7 +712,10 @@ try {
   const results = rollbackCommitted();
   throw new Error(`${error.message}\nRollback results:\n${results.join("\n")}`, { cause: error });
 } finally {
-  for (const staged of stagedPaths) rmSync(staged, { recursive: true, force: true });
+  for (const staged of stagedPaths) {
+    rmSync(staged, { recursive: true, force: true });
+    pruneEmptyStageDirectories(staged);
+  }
   for (const { descriptor, lockPath, owner } of locks.reverse()) {
     closeSync(descriptor);
     try {
@@ -678,3 +729,6 @@ try {
 const skillCount = plan.filter(({ kind }) => kind === "skill").length;
 const artifactCount = artifactPlan.length;
 console.log(`Installed ${skillCount} skill copies and ${artifactCount} artifact copies; replaced ${conflicts.length}; retired ${migration.retirements.length} legacy entries.`);
+if (projectDir) {
+  console.log(`Project install in ${projectDir}: commit the skill directories deliberately or gitignore them. A new git worktree contains only committed files.`);
+}
