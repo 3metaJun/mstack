@@ -18,6 +18,22 @@ export const HOST_KEYS = ["t3code"];
 // Lowest to highest. Entries accept only these effort values.
 export const EFFORT_LADDER = ["low", "medium", "high", "xhigh", "max"];
 
+// Same rule as T3's provider instance id (PROVIDER_SLUG_PATTERN, at most 64 characters).
+const PROVIDER_ID = /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/;
+const PROVIDER_ID_RULE = "provider must be a provider instance id: a letter followed by letters, digits, `_` or `-`, at most 64 characters";
+// Names that would reach inherited object members if used as a key.
+const RESERVED_KEYS = ["__proto__", "constructor", "prototype"];
+
+export function isProviderId(provider) {
+  return typeof provider === "string" && PROVIDER_ID.test(provider);
+}
+
+// Assigns an own data property, so a key such as "__proto__" can never hit the inherited setter.
+export function setOwn(target, key, value) {
+  Object.defineProperty(target, key, { value, enumerable: true, writable: true, configurable: true });
+  return target;
+}
+
 const ALIASES = ["auto", "inherit-parent"];
 const ENTRY_FIELDS = ["provider", "model", "effort"];
 const EFFORT_SUFFIX = new RegExp(`^(.*\\S) \\((${EFFORT_LADDER.join("|")})\\)$`);
@@ -52,7 +68,9 @@ export function parseRoleEntry(entry, { host = false } = {}) {
     if (!host) return { model: body, ...effort };
     const slash = body.indexOf("/");
     if (slash <= 0 || slash === body.length - 1) return { error: "must be <provider>/<model> with an optional (<effort>) suffix" };
-    return { provider: body.slice(0, slash), model: body.slice(slash + 1), ...effort };
+    const provider = body.slice(0, slash);
+    if (!isProviderId(provider)) return { error: PROVIDER_ID_RULE };
+    return { provider, model: body.slice(slash + 1), ...effort };
   }
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return { error: "must be a model string or an object with provider, model and effort" };
   const unknown = Object.keys(entry).filter((field) => !ENTRY_FIELDS.includes(field));
@@ -60,9 +78,7 @@ export function parseRoleEntry(entry, { host = false } = {}) {
   if (!isValidModel(entry.model) || isAlias(entry.model)) {
     return { error: "model must be a concrete model name; write inherit-parent or auto as a plain string" };
   }
-  if (entry.provider !== undefined && (!isValidModel(entry.provider) || /[\s/]/.test(entry.provider))) {
-    return { error: "provider must be a non-empty provider id without whitespace or slashes" };
-  }
+  if (entry.provider !== undefined && !isProviderId(entry.provider)) return { error: PROVIDER_ID_RULE };
   if (host && entry.provider === undefined) return { error: "provider is required for a host entry" };
   if (entry.effort !== undefined && !EFFORT_LADDER.includes(entry.effort)) {
     return { error: `effort must be one of ${EFFORT_LADDER.join(", ")}` };
@@ -117,6 +133,7 @@ export function validateModelConfig(config, harnesses) {
   } else {
     for (const [role, model] of Object.entries(config.roles)) {
       if (!role.trim()) errors.push("role names must not be empty");
+      if (RESERVED_KEYS.includes(role)) errors.push(`roles.${role} uses a reserved name`);
       validateRoleValue(role, model, `roles.${role || "<empty>"}`, errors, false);
     }
   }
@@ -130,6 +147,7 @@ export function validateModelConfig(config, harnesses) {
       continue;
     }
     for (const [role, model] of Object.entries(overrides)) {
+      if (RESERVED_KEYS.includes(role)) errors.push(`overrides.${scope}.${role} uses a reserved name`);
       if (!Object.hasOwn(config.roles ?? {}, role)) errors.push(`overrides.${scope}.${role} has no role default`);
       validateRoleValue(role, model, `overrides.${scope}.${role}`, errors, HOST_KEYS.includes(scope));
     }
@@ -149,8 +167,10 @@ export function validateModelConfig(config, harnesses) {
 }
 
 export function resolveModels(config, harness) {
+  // Read own properties only, so a role or harness name never resolves to an inherited member.
+  const scope = Object.hasOwn(config.overrides ?? {}, harness) ? config.overrides[harness] : {};
   return Object.fromEntries(
-    Object.entries(config.roles ?? {}).map(([role, model]) => [role, config.overrides?.[harness]?.[role] ?? model]),
+    Object.entries(config.roles ?? {}).map(([role, model]) => [role, Object.hasOwn(scope, role) ? scope[role] : model]),
   );
 }
 

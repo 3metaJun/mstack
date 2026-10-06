@@ -46,8 +46,9 @@ the budget under `budgets.t3code`. They do not touch the Harness overrides or
 
 - `"<providerInstanceId>/<model> (<effort>)"`, with the parenthesis omitted when
   there is no effort. A provider instance id starts with a letter and holds
-  only letters, digits, `_` and `-`, so the first `/` ends it. A model id can
-  hold slashes.
+  only letters, digits, `_` and `-`, at most 64 characters, so the first `/`
+  ends it. The validator rejects any other provider id. A model id can hold
+  slashes.
 - `{ "provider": "<providerInstanceId>", "model": "<model>", "effort": "<choice>" }`.
 
 `inherit-parent` and `auto` stay plain strings. Both mean the role runs on the

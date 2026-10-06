@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { readModelConfig, validateModelConfig } from "./model-config-lib.mjs";
+import { readModelConfig, resolveModels, validateModelConfig } from "./model-config-lib.mjs";
 
 const harnesses = ["codex", "claude", "opencode", "pi", "antigravity", "grok"];
 const runRole = resolve("scripts/run-role.mjs");
@@ -85,6 +85,39 @@ test("structured and provider/model entries validate, and a host layer is not a 
   ];
   for (const config of invalid) assert.ok(validateModelConfig(config, harnesses).length, JSON.stringify(config));
   assert.ok(!harnesses.includes("t3code"));
+});
+
+test("provider ids follow the T3 instance id rule in objects and in provider/model strings", () => {
+  const longest = `a${"b".repeat(63)}`;
+  for (const provider of ["codex", "claude_work", "a-1", "A", longest]) {
+    for (const config of [
+      { roles: { implementer: { provider, model: "m" } } },
+      { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: `${provider}/m (high)` } } },
+    ]) assert.deepEqual(validateModelConfig(config, harnesses), [], `${provider}: ${JSON.stringify(config)}`);
+  }
+  for (const provider of ["1bad", "a.b", "__proto__", "_a", "-a", "a b", "a/b", "", `a${"b".repeat(64)}`]) {
+    const configs = [
+      { roles: { implementer: { provider, model: "m" } } },
+      { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider, model: "m" } } } },
+    ];
+    // A slash in the provider would just move the split point, so only test the other prefixes.
+    if (!provider.includes("/")) configs.push({ roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: `${provider}/m` } } });
+    for (const config of configs) assert.ok(validateModelConfig(config, harnesses).length, `${provider}: ${JSON.stringify(config)}`);
+  }
+});
+
+test("reserved names cannot become role, scope or budget keys, and lookups read own properties only", () => {
+  for (const reserved of ["__proto__", "constructor", "prototype"]) {
+    for (const text of [
+      `{"roles":{"reviewer":"auto","${reserved}":"x"}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"pi":{"${reserved}":"x"}}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"${reserved}":{"reviewer":"x"}}}`,
+      `{"roles":{"reviewer":"auto"},"budgets":{"${reserved}":"small"}}`,
+    ]) assert.ok(validateModelConfig(JSON.parse(text), harnesses).length, text);
+  }
+  // A role named like an inherited member keeps its default; a harness named like one has no overrides.
+  assert.deepEqual(resolveModels({ roles: { toString: "x", reviewer: "y" }, overrides: { pi: {} } }, "pi"), { toString: "x", reviewer: "y" });
+  assert.deepEqual(resolveModels({ roles: { reviewer: "y" }, overrides: {} }, "constructor"), { reviewer: "y" });
 });
 
 test("model-config lists a host layer on request and when the file configures it", (t) => {

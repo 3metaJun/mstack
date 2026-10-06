@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCliArgs } from "./cli-args.mjs";
-import { EFFORT_LADDER, HOST_KEYS, entryKey, isAlias, isValidModel, parseRoleEntry, readModelConfig, validateModelConfig } from "./model-config-lib.mjs";
+import { EFFORT_LADDER, HOST_KEYS, entryKey, isAlias, isProviderId, isValidModel, parseRoleEntry, readModelConfig, resolveModels, setOwn, validateModelConfig } from "./model-config-lib.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const harnesses = Object.keys(JSON.parse(readFileSync(join(root, "profiles/harnesses.json"), "utf8")));
@@ -31,15 +31,27 @@ function catalogProblem(item) {
   const unknown = Object.keys(item).filter((field) => !["provider", "model", "efforts"].includes(field));
   if (unknown.length) return `has unknown field ${unknown.join(", ")}`;
   if (!isValidModel(item.model) || isAlias(item.model)) return "model must be a concrete name";
-  if (item.provider !== undefined && (!isValidModel(item.provider) || /[\s/]/.test(item.provider))) return "provider must be a provider id without whitespace or slashes";
+  if (item.provider !== undefined && !isProviderId(item.provider)) return "provider must be a provider instance id: a letter followed by letters, digits, `_` or `-`, at most 64 characters";
   if (item.efforts !== undefined && (!Array.isArray(item.efforts) || item.efforts.some((value) => !isValidModel(value)) || new Set(item.efforts).size !== item.efforts.length)) {
     return "efforts must be a list of unique option ids";
   }
   return null;
 }
+// Two items for one provider and model would give an ambiguous effort list.
+function duplicateIdentity(items) {
+  const seen = new Set();
+  for (const item of items) {
+    if (typeof item !== "object") continue;
+    const identity = JSON.stringify([item.provider ?? null, item.model]);
+    if (seen.has(identity)) return `duplicate provider and model ${entryKey(item)}`;
+    seen.add(identity);
+  }
+  return null;
+}
 const catalog = JSON.parse(readFileSync(options["--catalog"], "utf8"));
-if (!Array.isArray(catalog) || catalog.some((item) => catalogProblem(item))) {
-  const detail = Array.isArray(catalog) ? catalog.map(catalogProblem).find(Boolean) : "it is not an array";
+const catalogDetail = Array.isArray(catalog) ? catalog.map(catalogProblem).find(Boolean) ?? duplicateIdentity(catalog) : "it is not an array";
+if (catalogDetail) {
+  const detail = catalogDetail;
   throw new Error(`catalog must be a JSON array of concrete model names or { provider, model, efforts } objects: ${detail}`);
 }
 const names = catalog.filter((item) => typeof item === "string");
@@ -110,16 +122,18 @@ const resolveEntry = (entry, role) => {
   }
   return resolveSuffix(entry, role);
 };
-for (const [role, defaultModel] of Object.entries(config.roles)) {
-  const before = config.overrides?.[harness]?.[role] ?? defaultModel;
+const current = resolveModels(config, harness);
+for (const role of Object.keys(config.roles)) {
+  const before = current[role];
   const after = Array.isArray(before) ? before.map((entry) => resolveEntry(entry, role)) : resolveEntry(before, role);
   if (Array.isArray(after) && new Set(after.map((entry) => entryKey(parseRoleEntry(entry, { host })))).size !== after.length) {
     unresolved.push({ role, model: before, reason: "budget mapping collapses reviewer entries; choose a unique panel" });
   }
   if (JSON.stringify(before) !== JSON.stringify(after)) {
+    // Own-property writes: role names come from a user file.
     next.overrides ??= {};
-    next.overrides[harness] ??= {};
-    next.overrides[harness][role] = after;
+    if (!Object.hasOwn(next.overrides, harness)) setOwn(next.overrides, harness, {});
+    setOwn(next.overrides[harness], role, after);
     changes.push({ role, before, after });
   }
 }

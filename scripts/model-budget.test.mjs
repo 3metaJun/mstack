@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { setOwn } from "./model-config-lib.mjs";
 
 const script = resolve("scripts/model-budget.mjs");
 const check = resolve("scripts/model-config.mjs");
@@ -229,6 +230,10 @@ test("name-suffix catalogs keep working beside effort catalogs, and a malformed 
   for (const bad of [
     [{ provider: "p", model: "m", efforts: "high" }], [{ provider: "p", model: "m", efforts: ["high", "high"] }],
     [{ provider: "p", model: "m", extra: 1 }], [{ provider: "p/q", model: "m" }], [{ provider: "p", model: "auto" }], [{ model: "" }],
+    [{ provider: "1bad", model: "m" }], [{ provider: "a.b", model: "m" }], [{ provider: "__proto__", model: "m" }], [{ provider: "", model: "m" }],
+    [{ provider: `a${"b".repeat(64)}`, model: "m" }],
+    // One provider and model twice would make the effort list ambiguous.
+    [entry("p", "m", ["low"]), entry("p", "m", ["high"])], [entry("p", "m", ladder), entry("p", "m", ladder)],
   ]) {
     writeFileSync(f.catalog, JSON.stringify(bad));
     const rejected = f.run("medium", "--apply");
@@ -236,4 +241,35 @@ test("name-suffix catalogs keep working beside effort catalogs, and a malformed 
     assert.match(rejected.stderr, /catalog/);
     assert.equal(readFileSync(f.file, "utf8"), before);
   }
+  // The same model under two provider instances, and a 64 character id, are distinct and valid.
+  const valid = fixture(t, { roles: { reviewer: { provider: "p", model: "m" } } },
+    [entry("p", "m", ladder), entry("q", "m", ["low"]), entry(`a${"b".repeat(63)}`, "m", ladder)]);
+  assert.equal(valid.run("medium").status, 0);
+});
+
+test("role, scope and budget names that reach inherited members are rejected and never polluted", (t) => {
+  for (const reserved of ["__proto__", "constructor", "prototype"]) {
+    // JSON.parse makes "__proto__" an own key, as a hand-edited file would.
+    const configs = [
+      `{"roles":{"reviewer":"auto","${reserved}":"worker-high"}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"pi":{"${reserved}":"worker-high"}}}`,
+      `{"roles":{"reviewer":"auto"},"overrides":{"${reserved}":{"reviewer":"worker-high"}}}`,
+      `{"roles":{"reviewer":"auto"},"budgets":{"${reserved}":"small"}}`,
+    ];
+    for (const text of configs) {
+      const f = fixture(t, { roles: {} }, ["worker-high", "worker-medium"]);
+      writeFileSync(f.file, text);
+      const result = f.run("small", "--apply");
+      assert.notEqual(result.status, 0, text);
+      assert.equal(readFileSync(f.file, "utf8"), text);
+      assert.equal({}.polluted, undefined);
+    }
+  }
+});
+
+test("setOwn writes an own property even for the __proto__ key", () => {
+  const target = setOwn({}, "__proto__", { model: "x" });
+  assert.ok(Object.hasOwn(target, "__proto__"));
+  assert.equal(Object.getPrototypeOf(target), Object.prototype);
+  assert.deepEqual(JSON.parse(JSON.stringify(target)), JSON.parse('{"__proto__":{"model":"x"}}'));
 });
