@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { execFile, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildSshInvocation, environmentCwd, readEnvironment } from "./environment-lib.mjs";
-import { harnessModel, isValidModel, parseRoleEntry, readModelConfig, resolveRoleModel, validateModelConfig } from "./model-config-lib.mjs";
+import { isValidModel, readModelConfig, resolveRoleModel, validateModelConfig } from "./model-config-lib.mjs";
 import { processInvocation } from "./runtime-lib.mjs";
 import { parseCliArgs } from "./cli-args.mjs";
 
@@ -53,14 +53,9 @@ if ([options["--model"] !== undefined, allModels, modelIndex !== undefined].filt
 if (allModels && !options["--read-only"]) {
   throw new Error("--all-models requires --read-only; isolate writable workers in separate worktrees and launch them individually");
 }
-// A CLI harness receives only the model. Provider and effort belong to hosts that
-// expose them, and the CLI keeps its own effort setting.
-const configuredEntries = Array.isArray(configured) ? configured : [configured];
-const hostFields = configuredEntries.map((entry) => parseRoleEntry(entry)).some(({ provider, effort }) => provider !== undefined || effort !== undefined);
-if (hostFields && options["--model"] === undefined) {
-  console.error(`run-role: ${harness} receives only each entry's model; provider and effort are ignored. Set effort in the ${harness} CLI.`);
-}
-const configuredModels = configuredEntries.map(harnessModel);
+// Harness entries are opaque strings passed to the CLI as written. Provider and
+// effort entries exist only in the t3code host layer, which run-role never reads.
+const configuredModels = Array.isArray(configured) ? configured : [configured];
 let selectedModels;
 if (options["--model"] !== undefined) {
   selectedModels = [options["--model"]];

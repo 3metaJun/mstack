@@ -51,21 +51,27 @@ export function isAlias(entry) {
   return ALIASES.includes(entry);
 }
 
-// Normalizes one role entry to { provider?, model, effort? }. A string is one
-// opaque model name, except that a trailing ` (<effort>)` is read as the effort
-// and a host entry `<provider>/<model>` splits at the first slash. Returns
-// { error } when the entry is malformed for the given scope.
+// Normalizes one role entry to { provider?, model, effort? }. Outside a host
+// layer every string is one opaque model name and objects are rejected, so
+// existing Harness configurations keep their exact meaning. In host scope a
+// trailing ` (<effort>)` is read as the effort and `<provider>/<model>` splits
+// at the first slash. Returns { error } when the entry is malformed.
 export function parseRoleEntry(entry, { host = false } = {}) {
+  if (!host) {
+    if (typeof entry === "string") {
+      return isValidModel(entry) ? { model: entry } : { error: "must be a non-empty string without surrounding whitespace or NUL characters" };
+    }
+    return { error: "must be a model string; provider and effort entries are only supported under overrides.t3code" };
+  }
   if (typeof entry === "string") {
     if (!isValidModel(entry)) return { error: "must be a non-empty string without surrounding whitespace or NUL characters" };
     if (isAlias(entry)) return { model: entry };
     const suffix = EFFORT_SUFFIX.exec(entry);
-    if (host && !suffix && /\s\([^()]*\)$/.test(entry)) {
+    if (!suffix && /\s\([^()]*\)$/.test(entry)) {
       return { error: `effort must be one of ${EFFORT_LADDER.join(", ")}` };
     }
     const body = suffix ? suffix[1] : entry;
     const effort = suffix ? { effort: suffix[2] } : {};
-    if (!host) return { model: body, ...effort };
     const slash = body.indexOf("/");
     if (slash <= 0 || slash === body.length - 1) return { error: "must be <provider>/<model> with an optional (<effort>) suffix" };
     const provider = body.slice(0, slash);
@@ -78,13 +84,13 @@ export function parseRoleEntry(entry, { host = false } = {}) {
   if (!isValidModel(entry.model) || isAlias(entry.model)) {
     return { error: "model must be a concrete model name; write inherit-parent or auto as a plain string" };
   }
-  if (entry.provider !== undefined && !isProviderId(entry.provider)) return { error: PROVIDER_ID_RULE };
-  if (host && entry.provider === undefined) return { error: "provider is required for a host entry" };
+  if (entry.provider === undefined) return { error: "provider is required for a host entry" };
+  if (!isProviderId(entry.provider)) return { error: PROVIDER_ID_RULE };
   if (entry.effort !== undefined && !EFFORT_LADDER.includes(entry.effort)) {
     return { error: `effort must be one of ${EFFORT_LADDER.join(", ")}` };
   }
   return {
-    ...(entry.provider === undefined ? {} : { provider: entry.provider }),
+    provider: entry.provider,
     model: entry.model,
     ...(entry.effort === undefined ? {} : { effort: entry.effort }),
   };
@@ -93,14 +99,6 @@ export function parseRoleEntry(entry, { host = false } = {}) {
 // Canonical text of a parsed entry, used to detect duplicate panel members.
 export function entryKey({ provider, model, effort }) {
   return `${provider === undefined ? "" : `${provider}/`}${model}${effort === undefined ? "" : ` (${effort})`}`;
-}
-
-// The value a Harness CLI receives for `--model`. Provider and effort are for
-// hosts that expose them; a CLI keeps its own effort setting.
-export function harnessModel(entry) {
-  const parsed = parseRoleEntry(entry);
-  if (parsed.error) throw new Error(`Invalid model entry: ${parsed.error}`);
-  return parsed.model;
 }
 
 function validateRoleValue(role, value, path, errors, host) {

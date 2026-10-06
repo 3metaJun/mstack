@@ -12,8 +12,8 @@ const options = parseCliArgs(process.argv.slice(2), ["--file", "--harness", "--b
 if (options["--help"]) {
   console.log("Usage: node scripts/model-budget.mjs --harness <name> --budget <unlimited|large|medium|small> --catalog <models.json> [--file <models.json>] [--apply]\n\n" +
     "--harness is a supported Harness or a host layer such as t3code.\n" +
-    "The catalog is a JSON array reported by the selected Harness or host. An item is a model name string " +
-    "(effort is a name suffix) or an object { provider?, model, efforts? } where efforts lists the effort options the model exposes. " +
+    "The catalog is a JSON array reported by the selected Harness or host. A Harness catalog lists model names (effort is a name suffix). " +
+    "A host catalog lists objects { provider, model, efforts? } where efforts lists the effort options the model exposes. " +
     "Default: preview. --apply writes only when every role resolves.");
   process.exit(0);
 }
@@ -26,12 +26,13 @@ if (!Object.hasOwn(targets, budget)) throw new Error("--budget must be unlimited
 if (!options["--catalog"]) throw new Error("--catalog is required");
 
 function catalogProblem(item) {
-  if (typeof item === "string") return isValidModel(item) && !isAlias(item) ? null : "names must be concrete without surrounding whitespace or NUL characters";
-  if (!item || typeof item !== "object" || Array.isArray(item)) return "items must be model names or objects";
+  if (!host) return typeof item === "string" && isValidModel(item) && !isAlias(item) ? null : "Harness catalogs list concrete model names without surrounding whitespace or NUL characters";
+  if (!item || typeof item !== "object" || Array.isArray(item)) return "host catalogs list { provider, model, efforts } objects";
   const unknown = Object.keys(item).filter((field) => !["provider", "model", "efforts"].includes(field));
   if (unknown.length) return `has unknown field ${unknown.join(", ")}`;
   if (!isValidModel(item.model) || isAlias(item.model)) return "model must be a concrete name";
-  if (item.provider !== undefined && !isProviderId(item.provider)) return "provider must be a provider instance id: a letter followed by letters, digits, `_` or `-`, at most 64 characters";
+  if (item.provider === undefined) return "provider is required for a host catalog entry";
+  if (!isProviderId(item.provider)) return "provider must be a provider instance id: a letter followed by letters, digits, `_` or `-`, at most 64 characters";
   if (item.efforts !== undefined && (!Array.isArray(item.efforts) || item.efforts.some((value) => !isValidModel(value)) || new Set(item.efforts).size !== item.efforts.length)) {
     return "efforts must be a list of unique option ids";
   }
@@ -42,7 +43,7 @@ function duplicateIdentity(items) {
   const seen = new Set();
   for (const item of items) {
     if (typeof item !== "object") continue;
-    const identity = JSON.stringify([item.provider ?? null, item.model]);
+    const identity = JSON.stringify([item.provider, item.model]);
     if (seen.has(identity)) return `duplicate provider and model ${entryKey(item)}`;
     seen.add(identity);
   }
@@ -52,10 +53,10 @@ const catalog = JSON.parse(readFileSync(options["--catalog"], "utf8"));
 const catalogDetail = Array.isArray(catalog) ? catalog.map(catalogProblem).find(Boolean) ?? duplicateIdentity(catalog) : "it is not an array";
 if (catalogDetail) {
   const detail = catalogDetail;
-  throw new Error(`catalog must be a JSON array of concrete model names or { provider, model, efforts } objects: ${detail}`);
+  throw new Error(`catalog must be a JSON array of ${host ? "{ provider, model, efforts } objects" : "concrete model names"}: ${detail}`);
 }
-const names = catalog.filter((item) => typeof item === "string");
-const exposed = catalog.filter((item) => typeof item === "object");
+const names = host ? [] : catalog;
+const exposed = host ? catalog : [];
 const file = resolve(options["--file"] ?? join(homedir(), ".config/mstack/models.json"));
 const config = readModelConfig(file);
 const errors = validateModelConfig(config, harnesses);
@@ -83,7 +84,7 @@ const resolveExposed = (entry, parsed, found, role) => {
   }
   if (best === parsed.effort) return entry;
   if (typeof entry === "string") return entryKey({ ...parsed, effort: best });
-  return { ...(parsed.provider === undefined ? {} : { provider: parsed.provider }), model: parsed.model, effort: best };
+  return { provider: parsed.provider, model: parsed.model, effort: best };
 };
 
 // Rewrites an effort suffix in a model name, the only effort control a name-only catalog has.
@@ -109,6 +110,7 @@ const resolveSuffix = (model, role) => {
 
 const resolveEntry = (entry, role) => {
   if (isAlias(entry)) return entry;
+  if (!host) return resolveSuffix(entry, role);
   const parsed = parseRoleEntry(entry, { host });
   if (parsed.error) {
     unresolved.push({ role, model: entry, reason: `${parsed.error}; set overrides.${harness}.${role} first` });
@@ -116,11 +118,8 @@ const resolveEntry = (entry, role) => {
   }
   const found = exposed.find((item) => item.provider === parsed.provider && item.model === parsed.model);
   if (found) return resolveExposed(entry, parsed, found, role);
-  if (host || parsed.provider !== undefined || typeof entry !== "string") {
-    unresolved.push({ role, model: entry, reason: "provider and model are not in the catalog" });
-    return entry;
-  }
-  return resolveSuffix(entry, role);
+  unresolved.push({ role, model: entry, reason: "provider and model are not in the catalog" });
+  return entry;
 };
 const current = resolveModels(config, harness);
 for (const role of Object.keys(config.roles)) {

@@ -17,7 +17,8 @@ function fixture(t, config, models) {
   writeFileSync(catalog, JSON.stringify(models));
   const run = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", file, "--catalog", catalog, "--harness", "pi", "--budget", budget, ...flags], { encoding: "utf8" });
   const runAt = (target, budget, ...flags) => spawnSync(process.execPath, [script, "--file", target, "--catalog", catalog, "--harness", "pi", "--budget", budget, ...flags], { encoding: "utf8" });
-  return { root, file, catalog, run, runAt };
+  const runHost = (budget, ...flags) => spawnSync(process.execPath, [script, "--file", file, "--catalog", catalog, "--harness", "t3code", "--budget", budget, ...flags], { encoding: "utf8" });
+  return { root, file, catalog, run, runAt, runHost };
 }
 
 test("budget preview and apply preserve aliases, families and other Harness choices", (t) => {
@@ -219,13 +220,35 @@ test("effort mapping that collapses panel entries refuses the write, while disti
     ["codex/gpt-5.6-sol (high)", "claude_work/claude-opus-5-5 (high)", "inherit-parent"]);
 });
 
-test("name-suffix catalogs keep working beside effort catalogs, and a malformed effort catalog is rejected", (t) => {
-  const f = fixture(t, { roles: { implementer: "grok-4.7-max-fast", reviewer: { provider: "p", model: "m" } } }, [
-    "grok-4.7-high-fast", entry("p", "m", ladder),
-  ]);
-  const result = f.run("medium", "--apply");
-  assert.equal(result.status, 0, result.stdout + result.stderr);
-  assert.deepEqual(JSON.parse(readFileSync(f.file, "utf8")).overrides.pi, { implementer: "grok-4.7-high-fast", reviewer: { provider: "p", model: "m", effort: "high" } });
+test("Harness strings stay opaque: suffix-looking names are not parsed as efforts", (t) => {
+  // "gpt-5 (high)" has no -high style suffix, so a bounded budget cannot resolve it, as before this change.
+  const f = fixture(t, { roles: { implementer: "gpt-5 (high)", reviewer: ["claude-x (max)", "claude-x (low)"] } }, ["gpt-5 (high)", "claude-x (max)", "claude-x (low)"]);
+  const before = readFileSync(f.file, "utf8");
+  const bounded = f.run("small", "--apply");
+  assert.equal(bounded.status, 1);
+  assert.deepEqual(JSON.parse(bounded.stdout).unresolved.map(({ model }) => model), ["gpt-5 (high)", "claude-x (max)", "claude-x (low)"]);
+  assert.equal(readFileSync(f.file, "utf8"), before);
+  const unlimited = f.run("unlimited", "--apply");
+  assert.equal(unlimited.status, 0, unlimited.stdout);
+  assert.deepEqual(JSON.parse(readFileSync(f.file, "utf8")).roles, { implementer: "gpt-5 (high)", reviewer: ["claude-x (max)", "claude-x (low)"] });
+});
+
+test("catalog items must match the scope: names for a Harness, provider objects for a host", (t) => {
+  const roles = { roles: { reviewer: "auto" } };
+  const harnessCatalog = fixture(t, roles, [entry("p", "m", ladder)]);
+  assert.notEqual(harnessCatalog.run("medium").status, 0);
+  assert.match(harnessCatalog.run("medium").stderr, /Harness catalogs list concrete model names/);
+  const hostFile = fixture(t, roles, ["worker-high"]);
+  for (const bad of [["worker-high"], [{ model: "m", efforts: ladder }], [{ provider: null, model: "m", efforts: ladder }]]) {
+    writeFileSync(hostFile.catalog, JSON.stringify(bad));
+    const result = hostFile.runHost("medium");
+    assert.notEqual(result.status, 0, JSON.stringify(bad));
+    assert.match(result.stderr, /host catalogs list|provider/);
+  }
+});
+
+test("a malformed host effort catalog is rejected", (t) => {
+  const f = fixture(t, { roles: { reviewer: "auto" } }, []);
   const before = readFileSync(f.file, "utf8");
   for (const bad of [
     [{ provider: "p", model: "m", efforts: "high" }], [{ provider: "p", model: "m", efforts: ["high", "high"] }],
@@ -236,15 +259,15 @@ test("name-suffix catalogs keep working beside effort catalogs, and a malformed 
     [entry("p", "m", ["low"]), entry("p", "m", ["high"])], [entry("p", "m", ladder), entry("p", "m", ladder)],
   ]) {
     writeFileSync(f.catalog, JSON.stringify(bad));
-    const rejected = f.run("medium", "--apply");
+    const rejected = f.runHost("medium", "--apply");
     assert.notEqual(rejected.status, 0, JSON.stringify(bad));
     assert.match(rejected.stderr, /catalog/);
     assert.equal(readFileSync(f.file, "utf8"), before);
   }
   // The same model under two provider instances, and a 64 character id, are distinct and valid.
-  const valid = fixture(t, { roles: { reviewer: { provider: "p", model: "m" } } },
+  const valid = fixture(t, { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "p/m (low)" } } },
     [entry("p", "m", ladder), entry("q", "m", ["low"]), entry(`a${"b".repeat(63)}`, "m", ladder)]);
-  assert.equal(valid.run("medium").status, 0);
+  assert.equal(valid.runHost("medium").status, 0);
 });
 
 test("role, scope and budget names that reach inherited members are rejected and never polluted", (t) => {

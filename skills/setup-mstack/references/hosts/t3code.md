@@ -56,9 +56,11 @@ parent thread's selection. `reviewer` is the only role that takes a list. One
 panel can mix instances, and the same model at two efforts counts as two
 entries. Identical entries do not.
 
-A role with no `overrides.t3code` entry falls back to `roles`. A plain model
-string there names no provider, so do not guess one. Treat the role as
-`inherit-parent` and tell the user to run setup.
+The `<provider>/<model> (<effort>)` and object forms are read only in this
+layer. Everywhere else a string is an opaque Harness model name, even one that
+ends in `(high)` or contains a slash. A role with no `overrides.t3code` entry
+falls back to `roles`, whose strings name no provider, so do not guess one.
+Treat the role as `inherit-parent` and tell the user to run setup.
 
 ## Budget
 
