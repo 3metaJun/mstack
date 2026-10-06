@@ -29,6 +29,8 @@ function fixture() {
       HARNESS_SKILLS_CLAUDE_DIR: join(root, "claude skills"),
       HARNESS_SKILLS_OPENCODE_DIR: join(root, "opencode skills"),
       HARNESS_SKILLS_PI_DIR: join(root, "pi skills"),
+      HARNESS_SKILLS_ANTIGRAVITY_DIR: join(root, "antigravity skills"),
+      HARNESS_SKILLS_GROK_DIR: join(root, "grok skills"),
     },
   };
 }
@@ -115,6 +117,8 @@ test("dry-run reports a plan without creating target directories", () => {
     assert.equal(existsSync(env.HARNESS_SKILLS_CODEX_DIR), false);
     assert.equal(existsSync(env.HARNESS_SKILLS_CLAUDE_DIR), false);
     assert.equal(existsSync(env.HARNESS_SKILLS_OPENCODE_DIR), false);
+    assert.equal(existsSync(env.HARNESS_SKILLS_ANTIGRAVITY_DIR), false);
+    assert.equal(existsSync(env.HARNESS_SKILLS_GROK_DIR), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -170,15 +174,20 @@ test("installs harness-specific frontmatter and preserves conflicts", () => {
     const claudePath = join(env.HARNESS_SKILLS_CLAUDE_DIR, "show-me-your-work", "SKILL.md");
     const opencodePath = join(env.HARNESS_SKILLS_OPENCODE_DIR, "show-me-your-work", "SKILL.md");
     const piPath = join(env.HARNESS_SKILLS_PI_DIR, "show-me-your-work", "SKILL.md");
+    const antigravityPath = join(env.HARNESS_SKILLS_ANTIGRAVITY_DIR, "show-me-your-work", "SKILL.md");
+    const grokPath = join(env.HARNESS_SKILLS_GROK_DIR, "show-me-your-work", "SKILL.md");
     const codex = readFileSync(codexPath, "utf8");
     const claude = readFileSync(claudePath, "utf8");
     const opencode = readFileSync(opencodePath, "utf8");
     const pi = readFileSync(piPath, "utf8");
+    const antigravity = readFileSync(antigravityPath, "utf8");
+    const grok = readFileSync(grokPath, "utf8");
     assert.match(codex, /^metadata:/m);
     assert.doesNotMatch(codex, /^compatibility:/m);
     assert.match(claude, /^compatibility:/m);
     assert.doesNotMatch(claude, /^metadata:/m);
-    for (const adapted of [opencode, pi]) {
+    for (const adapted of [opencode, pi, antigravity, grok]) {
+      assert.match(adapted, /^name: show-me-your-work$/m);
       assert.match(adapted, /^metadata:/m);
       assert.match(adapted, /^  requirements: Node\.js 18 or newer for scripts\/log\.mjs$/m);
       assert.doesNotMatch(adapted, /^compatibility:/m);
@@ -315,6 +324,8 @@ test("installs only selected skills", () => {
       env.HARNESS_SKILLS_CLAUDE_DIR,
       env.HARNESS_SKILLS_OPENCODE_DIR,
       env.HARNESS_SKILLS_PI_DIR,
+      env.HARNESS_SKILLS_ANTIGRAVITY_DIR,
+      env.HARNESS_SKILLS_GROK_DIR,
     ]) {
       assert.deepEqual(readdirSync(target).sort(), [
         "codebase-design",

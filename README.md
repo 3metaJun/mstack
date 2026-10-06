@@ -30,6 +30,7 @@ To install skills for selected harnesses, list them with commas:
 ```bash
 npx @3metajun/mstack --harness codex,claude
 npx @3metajun/mstack --harness opencode,pi
+npx @3metajun/mstack --harness antigravity,grok
 ```
 
 To install selected skills, add `--skill`:
@@ -81,7 +82,7 @@ in `~/.config/mstack/models.json`; the
 installer registers no hooks, so the hook comes only with the plugin.
 
 The installer remains the route for bare `/meta-mode` names, per-skill
-selection, and the shared Codex, OpenCode, and pi copy:
+selection, and the shared Codex, OpenCode, pi, and Grok copy:
 `npx @3metajun/mstack --harness claude`.
 
 ### Claude Desktop chat, Cowork, and claude.ai
@@ -190,13 +191,23 @@ The default directories are defined in
 | Claude Code | `~/.claude/skills/` | `HARNESS_SKILLS_CLAUDE_DIR` |
 | OpenCode | `~/.agents/skills/` | `HARNESS_SKILLS_OPENCODE_DIR` |
 | pi | `~/.agents/skills/` | `HARNESS_SKILLS_PI_DIR` |
+| Antigravity (`agy`) | `~/.gemini/antigravity-cli/skills/` | `HARNESS_SKILLS_ANTIGRAVITY_DIR` |
+| Grok | `~/.agents/skills/` | `HARNESS_SKILLS_GROK_DIR` |
 
-Codex, OpenCode and pi share one physical copy per skill by default. Updating
+Codex, OpenCode, pi and Grok share one physical copy per skill by default. Updating
 through any of these Harnesses updates that shared copy. Claude gets its own
 adapter output without a frontmatter `name`: Claude uses the directory name,
 while OpenCode skips that copy. No global Harness settings are changed.
 
-OpenCode and pi agent artifacts retain their native configuration roots.
+Antigravity does not read `~/.agents/skills/`, so it keeps its own canonical copy
+under `~/.gemini/antigravity-cli/skills/` and relies on the frontmatter `name`
+the canonical skills carry. Cursor already reads `~/.agents/skills/` and needs no
+separate target; see the [Harness adapter reference](./docs/harness-adapters.md).
+
+OpenCode and pi agent artifacts retain their native configuration roots. Grok
+agents go to `~/.grok/agents/`. Antigravity artifacts install beside its skills
+root (`~/.gemini/antigravity-cli/`); whether `agy` discovers agent files there is
+not verified, so treat that target as storage until you confirm it.
 `CLAUDE_CONFIG_DIR`, `XDG_CONFIG_HOME` and `PI_CODING_AGENT_DIR` still resolve
 native roots and legacy migration locations; the latter two no longer move
 the default shared skills. Use `HARNESS_SKILLS_*_DIR` for explicit skill paths.
@@ -312,6 +323,10 @@ npm run run-role -- --harness opencode --role explorer \
 
 Add `--execute` to run the command. SSH environments pass the prompt through
 strict POSIX quoting or a PowerShell encoded command, depending on `shell`.
+Harnesses whose CLI takes the prompt as the value of a flag (`agy --print`,
+`grok --single`) declare that flag as `runtime.promptArgs` in
+[`profiles/harnesses.json`](./profiles/harnesses.json), so the model and read-only
+arguments never land between the flag and the prompt.
 
 Model roles live in `~/.config/mstack/models.json`. Each role accepts a model
 string. The `reviewer` role also accepts a non-empty list of unique model strings.
@@ -358,10 +373,14 @@ default model unless you supply `--model`, `--parent-model`, or a `--file` with
 model choices. An inherited role in that file needs `--parent-model`. The live
 prompt checks a reply marker; it does not prove that the Harness loaded the skill
 or completed its workflow. These live calls always use `--read-only`.
-Codex, Claude Code, and pi use CLI-enforced tool restrictions.
+Codex, Claude Code, pi, and Grok use CLI-enforced tool restrictions; Grok keeps
+only `read_file`, `list_dir`, and `grep`.
 OpenCode selects its built-in `plan` agent, which denies direct edits but still
 allows shell commands in OpenCode 1.18; use a disposable checkout when its
-prompt-only write boundary is insufficient. A live check also needs that
+prompt-only write boundary is insufficient. Antigravity's `--mode plan` has the
+same limit: it is an agent mode, not a tool allowlist. In Antigravity 1.2.17 it
+left the workspace untouched but still wrote its own plan file under
+`~/.gemini/antigravity-cli/`. A live check also needs that
 Harness's credentials and configured model access.
 
 The Claude live path was verified with Claude Code 2.1.267, the Kiro-Pro

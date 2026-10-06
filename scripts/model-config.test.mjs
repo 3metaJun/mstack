@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { readModelConfig, validateModelConfig } from "./model-config-lib.mjs";
 
-const harnesses = ["codex", "claude", "opencode", "pi"];
+const harnesses = ["codex", "claude", "opencode", "pi", "antigravity", "grok"];
 const runRole = resolve("scripts/run-role.mjs");
 const checkModels = resolve("scripts/model-config.mjs");
 
@@ -83,6 +83,20 @@ test("list execution requires explicit selection and preserves model arguments f
     assert.equal(all.status, 0, all.stderr);
     assert.deepEqual(JSON.parse(all.stdout).map((entry) => entry.model), ["review-a", "review-b"]);
   }
+});
+
+test("prompt-valued flags sit directly before the prompt so model and read-only flags cannot be swallowed", (t) => {
+  const { file, run } = fixture(t, { roles: { reviewer: "review-a" } });
+  const plan = (harness, ...extra) => JSON.parse(run([
+    "--harness", harness, "--role", "reviewer", "--prompt", "inspect", "--file", file, ...extra,
+  ]).stdout);
+  assert.deepEqual(plan("antigravity", "--read-only").args,
+    ["--output-format", "text", "--model", "review-a", "--print", "inspect", "--mode", "plan"]);
+  assert.deepEqual(plan("grok", "--read-only").args, [
+    "--output-format", "plain", "--model", "review-a", "--single", "inspect",
+    "--tools", "read_file,list_dir,grep", "--disallowed-tools", "search_tool,use_tool",
+  ]);
+  assert.deepEqual(plan("grok", "--model", "auto").args, ["--output-format", "plain", "--single", "inspect"]);
 });
 
 test("inherit-parent requires the parent model while auto selects the CLI default", (t) => {

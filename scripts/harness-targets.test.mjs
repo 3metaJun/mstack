@@ -13,15 +13,37 @@ const home = resolve("fixture-home");
 test("default skills share a root while native roots retain harness-specific locations", () => {
   const roots = resolveHarnessRoots(registry, { env: {}, home });
   const shared = join(home, ".agents", "skills");
-  assert.deepEqual(roots.skills, { codex: shared, claude: join(home, ".claude", "skills"), opencode: shared, pi: shared });
+  assert.deepEqual(roots.skills, {
+    codex: shared,
+    claude: join(home, ".claude", "skills"),
+    opencode: shared,
+    pi: shared,
+    antigravity: join(home, ".gemini", "antigravity-cli", "skills"),
+    grok: shared,
+  });
   assert.deepEqual(roots.native, {
     codex: shared,
     claude: join(home, ".claude", "skills"),
     opencode: join(home, ".config", "opencode", "skills"),
     pi: join(home, ".pi", "agent", "skills"),
+    antigravity: join(home, ".gemini", "antigravity-cli", "skills"),
+    grok: join(home, ".grok", "skills"),
   });
   assert.deepEqual(roots.legacy, roots.native);
   assert.equal(roots.externalClaudeRoot, join(home, ".claude", "skills"));
+});
+
+test("Grok and Antigravity directory variables override roots and only Grok shares by default", () => {
+  const roots = resolveHarnessRoots(registry, {
+    home,
+    env: { HARNESS_SKILLS_GROK_DIR: "~/grok-explicit", HARNESS_SKILLS_ANTIGRAVITY_DIR: "~/antigravity-explicit" },
+  });
+  assert.equal(roots.skills.grok, join(home, "grok-explicit"));
+  assert.equal(roots.native.grok, join(home, "grok-explicit"));
+  assert.equal(roots.legacy.grok, join(home, ".grok", "skills"));
+  assert.equal(roots.skills.antigravity, join(home, "antigravity-explicit"));
+  assert.equal(roots.legacy.antigravity, join(home, ".gemini", "antigravity-cli", "skills"));
+  assert.throws(() => resolveHarnessRoots(registry, { home, env: { HARNESS_SKILLS_GROK_DIR: "relative" } }), /HARNESS_SKILLS_GROK_DIR must be an absolute path/);
 });
 
 test("configuration roots affect native and legacy locations without moving shared skills", () => {
@@ -66,8 +88,8 @@ for (const explicit of [false, true]) {
     t.after(() => rmSync(root, { recursive: true, force: true }));
     const bin = join(root, "bin");
     mkdirSync(bin);
-    for (const harness of Object.keys(registry)) {
-      const executable = join(bin, `${harness}${process.platform === "win32" ? ".ps1" : ""}`);
+    for (const { runtime } of Object.values(registry)) {
+      const executable = join(bin, `${runtime.command}${process.platform === "win32" ? ".ps1" : ""}`);
       writeFileSync(executable, process.platform === "win32"
         ? 'if ($args.Count -eq 1 -and $args[0] -eq "--version") { Write-Output "fixture-cli 1.0"; exit 0 }; exit 9\n'
         : '#!/bin/sh\nif [ "$#" = 1 ] && [ "$1" = "--version" ]; then printf "fixture-cli 1.0\\n"; exit 0; fi\nexit 9\n');
@@ -79,17 +101,20 @@ for (const explicit of [false, true]) {
     if (explicit) {
       env.HARNESS_SKILLS_PI_DIR = join(root, "custom-pi-skills");
       env.HARNESS_SKILLS_OPENCODE_DIR = join(root, "custom-opencode-skills");
+      env.HARNESS_SKILLS_GROK_DIR = join(root, "custom-grok-skills");
+      env.HARNESS_SKILLS_ANTIGRAVITY_DIR = join(root, "custom-antigravity-skills");
     }
     const installed = spawnSync(process.execPath, [join(repository, "scripts", "install.mjs"), "--harness", "all", "--skill", "bro"], { cwd: root, env, encoding: "utf8" });
     assert.equal(installed.status, 0, installed.stderr);
     const smoked = spawnSync(process.execPath, [join(repository, "scripts", "smoke-harnesses.mjs"), "--harness", "all", "--skill", "bro", "--require-installed", "--json"], { cwd: root, env, encoding: "utf8" });
     assert.equal(smoked.status, 0, `${smoked.stderr}\n${smoked.stdout}`);
     const entries = JSON.parse(smoked.stdout);
-    assert.equal(entries.length, 4);
+    assert.equal(entries.length, 6);
     for (const entry of entries) {
       const expected = entry.harness === "claude" ? join(root, ".claude", "skills")
-        : explicit && ["pi", "opencode"].includes(entry.harness) ? join(root, `custom-${entry.harness}-skills`)
-          : join(root, ".agents", "skills");
+        : entry.harness === "antigravity" && !explicit ? join(root, ".gemini", "antigravity-cli", "skills")
+          : explicit && ["pi", "opencode", "grok", "antigravity"].includes(entry.harness) ? join(root, `custom-${entry.harness}-skills`)
+            : join(root, ".agents", "skills");
       assert.equal(entry.target, expected, entry.harness);
       assert.equal(entry.installed, true, entry.harness);
       assert.equal(entry.cli, "available", entry.harness);
