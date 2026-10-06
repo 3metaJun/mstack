@@ -32,7 +32,7 @@ Check the state that changes the answer, and mention it only when it does:
    npx @3metajun/mstack --harness all --skill tdd,diagnosing-bugs
    ```
 
-   `--dry-run` prints the plan. An existing skill directory is kept unless `--replace` is given, which moves it into a backup directory. `--artifact` adds the optional agents, `meta-mode-tools`, `guide`, or `session-context` files. Node.js 18 or newer is required.
+   `--dry-run` prints the plan. An existing skill directory is kept unless `--replace` is given, which moves it into a backup directory. `--artifact` adds the optional agents, `meta-mode-tools`, `guide`, or `session-context` files. `--project /path/to/repo` copies skills into that repository's own skill directories instead, for harnesses that read project skills only, such as agents started in per-thread worktrees. It is skills only, so it is refused together with `--artifact`. Node.js 18 or newer is required.
 2. Run `/setup-mstack`. It asks for a reasoning budget, maps a model to each role, and writes `~/.config/mstack/models.json`. New sessions pick it up.
 3. Start a real task with `/meta-mode`, a goal, and a check that can pass or fail.
 
