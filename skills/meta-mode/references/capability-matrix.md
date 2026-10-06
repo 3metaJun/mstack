@@ -14,6 +14,11 @@ Harness adapter or in a user environment profile.
 | Role models | The Harness model setting | The configured default model | The selected role and model are recorded |
 | Session history | The Harness transcript store | A saved decision log and command output | The next run can locate the record |
 
+A host that implements several of these capabilities natively can have a
+file under `hosts/`. It maps each capability to the host's primitive and lists
+what must not change. Playbooks point there; without such a file or without the
+primitives, the fallback column applies.
+
 Native automation and fallback executors are complementary layers. An event or
 schedule can dispatch work to a Harness-managed cloud agent, a persistent local
 process, or an SSH target. The native service owns isolation, retries,

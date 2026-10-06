@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { validateArtifactOverrides } from "./install-paths.mjs";
 import { validatePluginAgents, validatePluginHooks } from "./claude-package-lib.mjs";
 import { skillCompatProblems } from "./skill-compat-lib.mjs";
+import { hostBindingProblems } from "./host-binding-lib.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(repoRoot, "skills");
@@ -179,6 +180,10 @@ for (const file of walk(skillsRoot)) {
       errors.push(`${relative(repoRoot, file)} contains forbidden Cursor-specific pattern ${pattern}`);
     }
   }
+}
+
+for (const file of walk(skillsRoot)) {
+  errors.push(...hostBindingProblems(relative(repoRoot, file), readFileSync(file, "utf8")));
 }
 
 const privateMarkers = [
