@@ -75,8 +75,11 @@ export function parseRoleEntry(entry, { host = false } = {}) {
     const slash = body.indexOf("/");
     if (slash <= 0 || slash === body.length - 1) return { error: "must be <provider>/<model> with an optional (<effort>) suffix" };
     const provider = body.slice(0, slash);
+    const model = body.slice(slash + 1);
     if (!isProviderId(provider)) return { error: PROVIDER_ID_RULE };
-    return { provider, model: body.slice(slash + 1), ...effort };
+    // The model is a separate T3 value, so it needs its own whitespace check.
+    if (!isValidModel(model)) return { error: "model must be a non-empty string without surrounding whitespace or NUL characters" };
+    return { provider, model, ...effort };
   }
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return { error: "must be a model string or an object with provider, model and effort" };
   const unknown = Object.keys(entry).filter((field) => !ENTRY_FIELDS.includes(field));

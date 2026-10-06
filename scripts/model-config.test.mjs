@@ -78,6 +78,9 @@ test("structured and provider/model entries validate, and a host layer is not a 
     { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: ["codex/a (high)", "codex/a (high)"] } } },
     { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "gpt-5.6-sol" } } },
     { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: ["codex/", "/a"] } } },
+    // The model part is validated on its own, with or without an effort suffix.
+    ...["codex/ gpt-5", "codex/gpt-5 ", "codex/", "/m", "codex/ gpt-5 (high)", "codex/\tgpt-5", "codex/gpt\u00005"]
+      .map((reviewer) => ({ roles: { reviewer: "auto" }, overrides: { t3code: { reviewer } } })),
     { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: "codex/a (ultra)" } } },
     { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { model: "a" } } } },
     { roles: { reviewer: "auto" }, overrides: { t3code: { reviewer: { provider: "codex", model: "a", effort: "" } } } },

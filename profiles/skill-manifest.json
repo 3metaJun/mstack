@@ -581,7 +581,7 @@
     "skills/setup-mstack/references/hosts/t3code.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "039f56288d728367a6a10c1c8d794b601113e4a867941026a86ef0427478480d"
+      "targetDigest": "944a6616012b72d35544c62abfdbd5892f4e0f843f9a285b72ab44b6d9614a0e"
     },
     "skills/setup-mstack/SKILL.md": {
       "upstream": "pstack",
