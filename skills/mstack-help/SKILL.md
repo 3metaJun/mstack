@@ -18,7 +18,7 @@ Infer the need from the message and the conversation. A named situation, such as
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `~/.config/mstack/models.json` means `/setup-mstack` has not run for this user, so roles use defaults.
+- No `~/.config/mstack/models.json` means `/setup-mstack` has not run for this user, so roles run on `inherit-parent`. The scripts read that path under the home directory on every platform by default, and their `--file` option overrides it.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `create-verification-skill` when the question is about proving a change works.
 - Which harness the user runs decides the command names in the next section.
 
@@ -33,7 +33,7 @@ Check the state that changes the answer, and mention it only when it does:
    ```
 
    `--dry-run` prints the plan. An existing skill directory is kept unless `--replace` is given, which moves it into a backup directory. `--artifact` adds the optional agents, `meta-mode-tools`, `guide`, or `session-context` files. `--project /path/to/repo` copies skills into that repository's own skill directories instead, for harnesses that read project skills only, such as agents started in per-thread worktrees. It is skills only, so it is refused together with `--artifact`. Node.js 18 or newer is required.
-2. Run `/setup-mstack`. It asks for a reasoning budget, maps a model to each role, and writes `~/.config/mstack/models.json`. New sessions pick it up.
+2. Run `/setup-mstack`. It asks for a reasoning budget, maps a model to each role, and writes `~/.config/mstack/models.json`, the portable file every mstack skill reads. New sessions pick it up.
 3. Start a real task with `/meta-mode`, a goal, and a check that can pass or fail.
 
 Installing changes nothing until the user invokes a skill. Offer to word their first prompt with them. The guide page `docs/guide/01-setup.md` has the walkthrough.
@@ -55,7 +55,7 @@ If cost is the worry, say where the tokens go. mstack spends extra tokens on sub
 /meta-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
 ```
 
-The mode stays on for the current task and fades as the chat moves on. Start the next task with `/meta-mode`, or say "new task" to rematch a playbook.
+The mode stays active for the current task. It does not apply to a casual turn or after the user opts out.
 
 ## Pick a skill
 
@@ -118,7 +118,7 @@ Principles are one-rule skills that `meta-mode` reads and cites in its replies. 
 | Symptom | Fix |
 |---|---|
 | The mode stopped applying after a few turns | Start the next task with `/meta-mode`. |
-| A question was treated as the next step of the last task | Say "new task", or say the turn does not need the mode. |
+| A question was treated as the next step of the last task | Say the turn does not need the mode. |
 | A model choice had no effect | `models.json` applies to new sessions. Start one. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
 | The reply claims success from a green build | Ask for the real command, flow, or output. That is the `principle-prove-it-works` rule. |

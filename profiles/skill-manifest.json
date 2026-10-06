@@ -375,7 +375,7 @@
     "skills/mstack-help/SKILL.md": {
       "upstream": null,
       "reason": "mstack-only entry skill that routes setup and usage questions; no upstream skill covers this repository.",
-      "targetDigest": "b3c91142be488556bb39b5b2191c7848e129c2003ca6024b530d351756df51c3"
+      "targetDigest": "425353e51cc7d98f98c855375191f2f8e6127b406ce059ef0f2fd1934ec7d5ee"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",

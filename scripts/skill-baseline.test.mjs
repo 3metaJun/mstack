@@ -185,6 +185,66 @@ test("a declared local skill is recorded as a local addition and an undeclared o
   assert.match(duplicate.stderr, /diagnosis: local skill is also owned by an upstream source/);
 });
 
+function localFixture(t) {
+  const f = fixture(t);
+  json(f.target, "profiles/skills.json", { skills: ["diagnosis", "helper", "meta-mode"] });
+  write(f.target, "skills/helper/SKILL.md", "# Helper\n\nLocal entry skill.\n");
+  json(f.target, "profiles/local-skills.json", { skills: { helper: "No upstream skill covers this repository." } });
+  f.record();
+  const checked = f.run("--check");
+  assert.equal(checked.status, 0, checked.stderr);
+  return f;
+}
+
+test("local checks reject a removed local skill declaration", (t) => {
+  const f = localFixture(t);
+  rmSync(join(f.target, "profiles/local-skills.json"));
+  const result = f.run("--check");
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /skills\/helper\/SKILL.md: skill has no upstream owner and is not declared/);
+  assert.match(result.stderr, /helper: skill in profiles\/skills.json has no upstream owner or local declaration/);
+});
+
+test("local checks reject a changed local skill reason", (t) => {
+  const f = localFixture(t);
+  json(f.target, "profiles/local-skills.json", { skills: { helper: "A different reason." } });
+  const result = f.run("--check");
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /skills\/helper\/SKILL.md: manifest reason differs from profiles\/local-skills.json/);
+});
+
+test("local checks reject an undeclared extra local skill and a declaration missing from the inventory", (t) => {
+  const f = localFixture(t);
+  const manifest = JSON.parse(readFileSync(join(f.target, "profiles/skill-manifest.json"), "utf8"));
+  manifest.files["skills/extra/SKILL.md"] = { ...manifest.files["skills/helper/SKILL.md"] };
+  json(f.target, "profiles/skill-manifest.json", manifest);
+  write(f.target, "skills/extra/SKILL.md", "# Helper\n\nLocal entry skill.\n");
+  const extra = f.run("--check");
+  assert.notEqual(extra.status, 0);
+  assert.match(extra.stderr, /skills\/extra\/SKILL.md: skill has no upstream owner and is not declared/);
+  json(f.target, "profiles/skills.json", { skills: ["diagnosis", "meta-mode"] });
+  const dropped = f.run("--check");
+  assert.match(dropped.stderr, /helper: declared local skill is missing from profiles\/skills.json/);
+});
+
+test("local checks reject a declared local skill whose directory is missing", (t) => {
+  const f = localFixture(t);
+  rmSync(join(f.target, "skills/helper"), { recursive: true });
+  const result = f.run("--check");
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /helper: declared local skill is missing skills\/helper\/SKILL.md/);
+});
+
+test("local checks reject a declared local skill that an upstream source owns", (t) => {
+  const f = localFixture(t);
+  json(f.target, "profiles/local-skills.json", {
+    skills: { helper: "No upstream skill covers this repository.", diagnosis: "Claimed as local." },
+  });
+  const result = f.run("--check");
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /diagnosis: declared local skill is also owned by an upstream source/);
+});
+
 test("refresh refuses to bless a deleted source-mapped file and preserves the previous manifest", (t) => {
   const f = fixture(t);
   const before = f.record();

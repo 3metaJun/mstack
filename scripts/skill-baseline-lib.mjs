@@ -57,6 +57,42 @@ function localSkillReasons(root) {
   return skills;
 }
 
+// Cross-checks the declared local skills against the manifest, the inventory, and the tree.
+function localSkillProblems(root, manifest) {
+  const problems = [];
+  const declared = localSkillReasons(root);
+  const inventory = new Set(json(root, "profiles/skills.json").skills);
+  const upstreamOwned = new Set();
+  const localOnly = new Map();
+  for (const [path, entry] of Object.entries(manifest.files)) {
+    const [top, skill] = path.split("/");
+    if (top !== "skills" || !skill || !record(entry)) continue;
+    if (entry.upstream === null) localOnly.set(skill, [...(localOnly.get(skill) ?? []), { path, entry }]);
+    else upstreamOwned.add(skill);
+  }
+  for (const [skill, reason] of Object.entries(declared)) {
+    if (typeof reason !== "string" || !reason.trim()) problems.push(`${skill}: declared local skill has no reason`);
+    if (upstreamOwned.has(skill)) problems.push(`${skill}: declared local skill is also owned by an upstream source`);
+    if (!inventory.has(skill)) problems.push(`${skill}: declared local skill is missing from profiles/skills.json`);
+    if (!existsSync(inside(root, `skills/${skill}/SKILL.md`))) problems.push(`${skill}: declared local skill is missing skills/${skill}/SKILL.md`);
+    if (!(localOnly.get(skill) ?? []).some(({ path }) => path === `skills/${skill}/SKILL.md`)) {
+      problems.push(`${skill}: declared local skill is not recorded as a local addition in the manifest`);
+    }
+    for (const { path, entry } of localOnly.get(skill) ?? []) {
+      if (entry.reason !== reason) problems.push(`${path}: manifest reason differs from profiles/local-skills.json`);
+    }
+  }
+  for (const [skill, files] of localOnly) {
+    if (!upstreamOwned.has(skill) && !(skill in declared)) {
+      problems.push(`${files[0].path}: skill has no upstream owner and is not declared in profiles/local-skills.json`);
+    }
+  }
+  for (const skill of inventory) {
+    if (!upstreamOwned.has(skill) && !(skill in declared)) problems.push(`${skill}: skill in profiles/skills.json has no upstream owner or local declaration`);
+  }
+  return problems;
+}
+
 function targetFiles(root, profiles) {
   const options = { excludeDependencies: true };
   const files = new Set(filesUnder(root, "skills", options));
@@ -106,6 +142,7 @@ export function checkLocalBaseline(root, manifest) {
     actual.delete(path);
   }
   for (const path of actual) problems.push(`${path}: untracked skill file`);
+  problems.push(...localSkillProblems(root, manifest));
   for (const [key, entry] of Object.entries(manifest.omitted)) {
     if (!record(entry) || !manifest.sources[entry.upstream] || !hashPattern.test(entry.sourceDigest ?? "") ||
         typeof entry.reason !== "string" || !entry.reason.trim()) problems.push(`${key}: invalid omission`);
