@@ -51,7 +51,7 @@ skills from different places and enforce different frontmatter rules:
 | Surface | Source | Frontmatter rules |
 | --- | --- | --- |
 | Claude Code and the desktop Code tab | `~/.claude/skills/` (installer) or the `mstack` plugin | Unknown keys ignored; `name` falls back to the directory name |
-| Claude Code plugin | `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json`, default `skills/` and `agents/` | `name` is kept, skills are namespaced `/mstack:<skill>` |
+| Claude Code plugin | `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json`, default `skills/`, `agents/`, and `hooks/hooks.json` | `name` is kept, skills are namespaced `/mstack:<skill>` |
 | Desktop chat, Cowork, claude.ai | Zip per skill from `npm run pack-claude-skills` | Only `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`; `name` is required |
 
 The installer's Claude adapter drops `name` so OpenCode, which scans
@@ -62,6 +62,20 @@ canonical frontmatter must stay inside the upload field set; the packer test and
 and archive limits. Claude-only invocation fields such as `user-invocable` and
 `disable-model-invocation` therefore belong in an install-time adapter, never in
 the canonical tree.
+
+The plugin also carries a `SessionStart` hook. Claude Code loads
+`hooks/hooks.json` from the plugin root by default, so `plugin.json` does not
+reference it; `validatePluginHooks` rejects a second reference as a duplicate and
+checks that the hook command names an existing script. The command is
+`node "${CLAUDE_PLUGIN_ROOT}/scripts/session-hook.mjs"`, one Node script for
+every platform, and it fails open. The off switch is `"sessionHook": false` in
+`~/.config/mstack/models.json`. The installer adapter cannot ship this hook
+cleanly: registering it means merging into the user's `settings.json`, which
+mstack leaves to the user, so installer-only setups have no hook. Subagent
+effort is not adapted either. Claude Code's Agent tool accepts no per-call
+effort and Codex agent conversion rejects an `effort` field, so `agents/` stays
+one file per role; see the
+[guide page](./guide/12-claude-code-routing.md#effort-levels).
 
 Claude's skill-authoring documentation lists a 1,024-character `description`
 limit, which the packer enforces. A Help Center article on custom skills lists

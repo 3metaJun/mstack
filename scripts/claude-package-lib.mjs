@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { deflateRawSync } from "node:zlib";
 
 // Fields accepted by claude.ai uploads and the Skills API. Anything else is a hard
@@ -302,4 +302,96 @@ export function createZip(files) {
 export function skillPackable(skillsRoot, skill) {
   const path = join(skillsRoot, skill);
   return existsSync(join(path, "SKILL.md")) && statSync(path).isDirectory();
+}
+
+const HOOK_MATCHER = "startup|resume|clear|compact";
+
+// A plugin path must stay inside the package: `..` segments or absolute paths would load
+// files that the published package does not contain.
+function containedPath(repoRoot, rel) {
+  const abs = resolve(repoRoot, rel);
+  const inside = relative(resolve(repoRoot), abs);
+  return inside && !inside.startsWith("..") && !isAbsolute(inside) ? abs : undefined;
+}
+
+function isFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function readJson(path) {
+  try {
+    return { value: JSON.parse(readFileSync(path, "utf8")) };
+  } catch (error) {
+    return { error: error.message };
+  }
+}
+
+// Claude Code loads hooks/hooks.json from the plugin root without a manifest entry, and
+// rejects a manifest `hooks` field that names the same file again. The plugin must ship
+// one SessionStart command whose script exists, and its context file must be non-empty.
+export function validatePluginHooks(repoRoot) {
+  const problems = [];
+  const manifest = readJson(join(repoRoot, ".claude-plugin", "plugin.json")).value ?? {};
+  if (manifest.hooks !== undefined) {
+    problems.push(".claude-plugin/plugin.json must not declare hooks: hooks/hooks.json loads by default and a second reference is a duplicate");
+  }
+  const { value: file, error } = readJson(join(repoRoot, "hooks", "hooks.json"));
+  if (error) return [...problems, `invalid hooks/hooks.json: ${error}`];
+  const groups = file?.hooks?.SessionStart;
+  if (Object.keys(file?.hooks ?? {}).length !== 1 || !Array.isArray(groups) || groups.length !== 1) {
+    return [...problems, "hooks/hooks.json must define exactly one SessionStart group and no other event"];
+  }
+  const [group] = groups;
+  if (group.matcher !== HOOK_MATCHER) problems.push(`hooks/hooks.json SessionStart matcher must be ${HOOK_MATCHER}`);
+  const entries = Array.isArray(group.hooks) ? group.hooks : [];
+  if (entries.length !== 1 || entries[0]?.type !== "command" || typeof entries[0].command !== "string") {
+    return [...problems, "hooks/hooks.json SessionStart must run exactly one command hook"];
+  }
+  const command = entries[0].command;
+  const script = command.match(/^node "\$\{CLAUDE_PLUGIN_ROOT\}\/([^"]+)"$/)?.[1];
+  if (!script) {
+    problems.push(`hooks/hooks.json command must be node "\${CLAUDE_PLUGIN_ROOT}/<script>" with no extra arguments: ${command}`);
+  } else {
+    const abs = containedPath(repoRoot, script);
+    if (!abs) problems.push(`hooks/hooks.json command script escapes the plugin root: ${script}`);
+    else if (!isFile(abs)) problems.push(`hooks/hooks.json command references a missing script: ${script}`);
+  }
+  const context = join(repoRoot, "hooks", "session-start-context.md");
+  let contextText = "";
+  try {
+    contextText = isFile(context) ? readFileSync(context, "utf8") : "";
+  } catch {}
+  if (!contextText.trim()) problems.push("hooks/session-start-context.md must be a readable, non-empty file");
+  return problems;
+}
+
+// Plugin agents load from agents/ by file name. The frontmatter name must match so
+// `mstack:<name>` resolves, and any extra manifest path must exist.
+export function validatePluginAgents(repoRoot) {
+  const problems = [];
+  const agentsDir = join(repoRoot, "agents");
+  for (const entry of readdirSync(agentsDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) {
+      problems.push(`agents/${entry.name} is not a top-level Markdown agent file`);
+      continue;
+    }
+    try {
+      const fields = parseTopLevel(splitFrontmatter(readFileSync(join(agentsDir, entry.name), "utf8")).block);
+      if (fields.get("name") !== entry.name.slice(0, -3)) problems.push(`agents/${entry.name}: frontmatter name must equal the file name`);
+      if (typeof fields.get("description") !== "string" || !fields.get("description")) problems.push(`agents/${entry.name}: description is required`);
+    } catch (error) {
+      problems.push(`agents/${entry.name}: ${error.message}`);
+    }
+  }
+  const manifest = readJson(join(repoRoot, ".claude-plugin", "plugin.json")).value ?? {};
+  for (const path of [].concat(manifest.agents ?? [])) {
+    const abs = typeof path === "string" ? containedPath(repoRoot, path) : undefined;
+    if (typeof path !== "string" || !abs) problems.push(`.claude-plugin/plugin.json agents entry must stay inside the plugin: ${path}`);
+    else if (!existsSync(abs)) problems.push(`.claude-plugin/plugin.json agents entry does not exist: ${path}`);
+  }
+  return problems;
 }

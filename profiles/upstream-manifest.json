@@ -315,7 +315,7 @@
     },
     "docs/guide/README.md": {
       "source": "e76f2e20364a4021707394b0557751e3aa81be2c819b19aaa705de08086515a5",
-      "target": "fe7261350a49c8bf1961e6ad8536d776479e65afcf78b14e1b45d1c0f3969de9",
+      "target": "e9c7b7d96995ed268034310e38b36721f3379cabe69d1e135cb9eab54d9ee2ad",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     }
   }

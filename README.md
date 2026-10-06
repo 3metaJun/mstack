@@ -71,6 +71,15 @@ cost; the 50 skill descriptions add about 3,000 tokens to every session.
 `claude plugin marketplace update mstack` picks up new releases, because the
 plugin `version` tracks the npm version.
 
+The plugin also registers a `SessionStart` hook (`hooks/hooks.json`) that adds a
+short routing note on startup, resume, clear, and compact: multi-file changes
+and bugs with an unknown cause go through `mstack:meta-mode`, while your own
+`CLAUDE.md` instructions take priority. It runs one Node script, needs `node`
+on `PATH`, and never blocks a session. Turn it off with `"sessionHook": false`
+in `~/.config/mstack/models.json`; the
+[guide page](docs/guide/12-claude-code-routing.md) has the details. The
+installer registers no hooks, so the hook comes only with the plugin.
+
 The installer remains the route for bare `/meta-mode` names, per-skill
 selection, and the shared Codex, OpenCode, and pi copy:
 `npx @3metajun/mstack --harness claude`.
@@ -388,6 +397,8 @@ workflow even when no native skill creator or repository validator is installed.
 - `profiles/models.example.json` gives model-role configuration a portable
   shape without forcing a provider.
 - `agents/` contains portable routing and comment-review agents.
+- `hooks/` holds the Claude Code plugin's `SessionStart` hook definition and its
+  context note; `scripts/session-hook.mjs` is the script it runs.
 - `automations/benny/` keeps the optional Cursor automation pack from pstack.
 - `docs/guide/` contains the adapted upstream workflow guide.
 - `tools/meta-mode/` contains the optional Bun orchestration and PR watcher

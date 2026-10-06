@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { decodeText } from "./text-decode.mjs";
 
 export const DEFAULT_ROLES = [
   "implementer",
@@ -12,7 +13,7 @@ export const DEFAULT_ROLES = [
 
 export function readModelConfig(path) {
   if (!existsSync(path)) return { roles: Object.fromEntries(DEFAULT_ROLES.map((role) => [role, "inherit-parent"])), overrides: {} };
-  return JSON.parse(readFileSync(path, "utf8"));
+  return JSON.parse(decodeText(readFileSync(path)));
 }
 
 export function isValidModel(model) {
@@ -56,6 +57,9 @@ export function validateModelConfig(config, harnesses) {
       if (!Object.hasOwn(config.roles ?? {}, role)) errors.push(`overrides.${harness}.${role} has no role default`);
       validateRoleValue(role, model, `overrides.${harness}.${role}`, errors);
     }
+  }
+  if (config.sessionHook !== undefined && typeof config.sessionHook !== "boolean") {
+    errors.push("sessionHook must be true or false");
   }
   if (config.budgets !== undefined) {
     if (!config.budgets || typeof config.budgets !== "object" || Array.isArray(config.budgets)) {
