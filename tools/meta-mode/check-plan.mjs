@@ -34,7 +34,7 @@ if (!file) {
 	process.exit(2);
 }
 
-const raw = fs.readFileSync(file, "utf8").split(/\r?\n/);
+const raw = fs.readFileSync(file, "utf8").replace(/^﻿/, "").split(/\r?\n/);
 const problems = [];
 const fail = (line, message) => problems.push(`${file}:${line}: ${message}`);
 
@@ -44,13 +44,23 @@ if (raw[0] === "---") {
 }
 
 const lines = [];
-let fence = false;
+// A fence opens with three or more backticks or tildes and closes on the same character, at least as
+// many, with nothing after it. Anything else inside is example text, so a shorter inner fence or a
+// fence of the other kind does not end it.
+let fence = null;
 for (let i = start; i < raw.length; i++) {
 	const text = raw[i];
 	const n = i + 1;
-	if (/^```/.test(text)) fence = !fence;
-	lines.push({ n, text, code: fence });
-	if (fence) continue;
+	const delimiter = text.match(/^[ \t]*(`{3,}|~{3,})(.*)$/);
+	let code = fence !== null;
+	if (fence !== null) {
+		if (delimiter && delimiter[1][0] === fence[0] && delimiter[1].length >= fence.length && /^[ \t]*$/.test(delimiter[2])) fence = null;
+	} else if (delimiter && (delimiter[1][0] !== "`" || !delimiter[2].includes("`"))) {
+		fence = delimiter[1];
+		code = true;
+	}
+	lines.push({ n, text, code });
+	if (code) continue;
 	const prose = text
 		.replace(/`[^`]*`/g, "`")
 		.replace(/!\[[^\]]*\]\([^)]*\)/g, "")
@@ -60,13 +70,15 @@ for (let i = start; i < raw.length; i++) {
 	if (/: \S/.test(prose)) fail(n, "mid-sentence colon");
 }
 
-const h2 = (l) => (!l.code && l.text.startsWith("## ") ? l.text.slice(3).trim() : null);
-const sections = [];
-for (const l of lines) {
-	const title = h2(l);
-	if (title !== null) sections.push({ title, n: l.n, body: [] });
-	else if (sections.length) sections.at(-1).body.push(l);
+function sectionsAtLevel(ls, prefix) {
+	const found = [];
+	for (const l of ls) {
+		if (!l.code && l.text.startsWith(prefix)) found.push({ title: l.text.slice(prefix.length).trim(), n: l.n, body: [] });
+		else if (found.length) found.at(-1).body.push(l);
+	}
+	return found;
 }
+const sections = sectionsAtLevel(lines, "## ");
 const find = (title) => sections.find((s) => s.title === title);
 const bodyText = (s) => s.body.map((l) => l.text).join("\n");
 const boxes = (ls) => ls.filter((l) => !l.code && BOX.test(l.text)).map((l) => ({ n: l.n, text: l.text.match(BOX)[1] }));
@@ -86,12 +98,16 @@ if (h1 !== -1 && howToRead) {
 const program = find("Program checklist");
 if (!program) fail(1, 'no "## Program checklist" section');
 else {
-	const h3s = program.body.filter((l) => !l.code && l.text.startsWith("### ")).map((l) => l.text.slice(4).trim());
+	const tasks = sectionsAtLevel(program.body, "### ");
 	let cursor = 0;
 	for (const name of PROGRAM_H3) {
-		const at = h3s.findIndex((t, i) => i >= cursor && t.startsWith(name));
+		const at = tasks.findIndex((t, i) => i >= cursor && t.title.startsWith(name));
 		if (at === -1) fail(program.n, `Program checklist lacks "### ${name}" in order`);
-		else cursor = at + 1;
+		else {
+			// A task heading with prose and no box is a promise nothing can check off.
+			if (boxes(tasks[at].body).length === 0) fail(tasks[at].n, `${tasks[at].title} has no box`);
+			cursor = at + 1;
+		}
 	}
 	for (const marker of PROGRAM_MARKERS) {
 		const ok = marker instanceof RegExp ? marker.test(bodyText(program)) : bodyText(program).includes(marker);
@@ -101,6 +117,7 @@ else {
 
 const close = find("Close the program");
 if (!close) fail(1, 'no "## Close the program" section');
+else if (boxes(close.body).length === 0) fail(close.n, "Close the program has no box");
 const programIndex = sections.indexOf(program);
 const closeIndex = sections.indexOf(close);
 const prSections = programIndex === -1 || closeIndex === -1 ? [] : sections.slice(programIndex + 1, closeIndex);
