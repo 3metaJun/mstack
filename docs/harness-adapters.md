@@ -151,8 +151,9 @@ both `.cursor/skills/` and `.agents/skills/` as project discovery locations.
 For a project configured for Codex and Cursor or Grok Bot, generate one neutral
 `verify-<app>` wrapper in `.agents/skills/`. A project using only Cursor or Grok
 Bot places it in `.cursor/skills/`. Claude Code, OpenCode, pi, the Grok CLI, and
-Antigravity use the project roots in the table above. These wrappers contain the same capability-neutral
-instructions, with no duplicate maps or host-specific driver commands.
+Antigravity use the project roots in the table above. These wrappers contain the
+same capability-neutral instructions, with no duplicate maps or host-specific
+driver commands.
 
 `compatibility` text is not a reliable discovery filter. Two wrappers with
 different app instructions remain conflicting definitions even if one says
