@@ -17,7 +17,7 @@ const SUB_BLOCKS = [
 	"Merge.",
 ];
 const PROGRAM_H3 = ["Arm the program", "Spawn owners", "PR mechanics", "Verdict and merge", "Boot recipe"];
-const PROGRAM_MARKERS = ["/goal", "git show origin/main:", /30[- ]minute/, "status message"];
+const PROGRAM_MARKERS = ["git show origin/main:", "program objective", "every hour", "status message"];
 const HOW_TO_READ_MARKERS = [
 	"One box is one unit of work",
 	"names the evidence",
@@ -110,8 +110,7 @@ else {
 		}
 	}
 	for (const marker of PROGRAM_MARKERS) {
-		const ok = marker instanceof RegExp ? marker.test(bodyText(program)) : bodyText(program).includes(marker);
-		if (!ok) fail(program.n, `Program checklist lacks "${marker}"`);
+		if (!bodyText(program).includes(marker)) fail(program.n, `Program checklist lacks "${marker}"`);
 	}
 }
 

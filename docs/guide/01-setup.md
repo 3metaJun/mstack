@@ -21,7 +21,7 @@ Run:
 /setup-mstack
 ```
 
-[`/setup-mstack`](../../skills/setup-mstack/SKILL.md) detects the models you have access to, shows you each role (code delegates, judgment, the review panels), and asks what you want. Answer the questions. It writes `~/.config/mstack/models.json`, the portable configuration every mstack skill reads.
+[`/setup-mstack`](../../skills/setup-mstack/SKILL.md) detects the models you have access to, asks for a reasoning budget, shows you each role (code delegates, judgment, the review panels), and asks what you want. Answer the questions. It writes `~/.config/mstack/models.json`, the portable configuration every mstack skill reads.
 
 You only override what you care about. To restore a role to the parent chat model, set it to `inherit-parent` or run `/setup-mstack` again. Setup preserves other choices and Harness overrides.
 
@@ -33,9 +33,20 @@ At the end of setup, `/setup-mstack` looks for a shared verification contract, a
 
 If it finds neither a reusable verification workflow nor a repository driver, setup offers once to run [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md). When you accept, the generator writes `.harness/verify/<app>/contract.md`, its feature map, and thin discovery wrappers. It proves one feature in the real app before handing over the result. Model setup alone does not start the app or create a team policy.
 
-You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers the proof. For a team using both native pstack and mstack, follow [the mixed-Harness adoption guide](./11-mixed-harness.md) to add the shared project workflow and CI checks.
+Say no and setup moves on. You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers the proof. For a team using both native pstack and mstack, follow [the mixed-Harness adoption guide](./11-mixed-harness.md) to add the shared project workflow and CI checks.
+
+If you're new to mstack, say yes. An agent that can check its own work keeps going until the check passes. An agent that can't hands every result back to you to check by hand. Of everything in this guide, the verification skill pays off the most.
 
 After setup, start a new session. The model configuration applies to new sessions.
+
+## Keep the cost in check
+
+mstack spends extra tokens on subagents and review panels. That's the price of the rigor. To spend fewer:
+
+- Rerun `/setup-mstack` and pick a smaller reasoning budget or cheaper models. A strong model in the main chat with cheaper, faster models in the code roles is a good split.
+- Set a role to `inherit-parent` so it runs on the chat's own model.
+- Shorten a panel list. Each entry runs one subagent.
+- Save `/meta-mode` for work that needs rigor. A small, obvious edit doesn't.
 
 ## Run your first task
 
@@ -47,6 +58,6 @@ Pick something real but small, and describe it the way you'd describe it to a co
 
 Watch the todo list. Its first items are the matched playbook's steps copied in, the Feature playbook for this prompt. If `/meta-mode` skips a step, the step stays in the list with `skip: <reason>`, so you can see what it chose not to do.
 
-From here you can type normal follow-ups. `/meta-mode` is sticky. It stays on for the conversation until you opt out by saying so.
+From here you can type normal follow-ups. `/meta-mode` stays active for the current task and fades as the chat moves on. When it fades, start the next task with `/meta-mode`, or pin it for the whole chat if your Harness can pin a skill or mode. Mid-chat, "new task" makes it match a fresh playbook.
 
 Next: [Route work through `/meta-mode`](./02-meta-mode.md).

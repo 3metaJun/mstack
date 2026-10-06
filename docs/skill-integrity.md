@@ -42,7 +42,7 @@ lock. It leaves adapted content untouched. Artifact synchronization preserves
 its existing transaction behavior and never refreshes skill baselines.
 
 The earlier `canonicalSkills` block in `profiles/upstream-manifest.json` still
-checks the 47 pstack entry documents. When changing one of those entries, update
+checks the 51 pstack entry documents. When changing one of those entries, update
 that existing target digest in the same review. The new manifest covers the
 complete trees and the three Matt Pocock skills alongside that check.
 

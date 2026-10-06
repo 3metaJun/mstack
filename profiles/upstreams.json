@@ -1,11 +1,12 @@
 {
   "pstack": {
     "repository": "https://github.com/cursor/plugins/tree/main/pstack",
-    "commit": "f5bdd6826fd0a0d9cbc4347134c3a74a200b9d9d",
+    "commit": "2cbf58508f40de470d7490b55c51d71241928fa2",
     "renames": {
       "poteto-mode": "meta-mode",
       "setup-pstack": "setup-mstack",
-      "poteto-agent": "meta-agent"
+      "poteto-agent": "meta-agent",
+      "poteto-help": "meta-help"
     },
     "artifacts": {
       "agents": {
@@ -101,6 +102,50 @@
           {
             "from": "Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/meta-mode/playbooks/authoring-a-skill.md), which routes through Cursor's built-in `create-skill`, validates the frontmatter and links, and ships the result through the Opening a PR playbook.",
             "to": "Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/meta-mode/playbooks/authoring-a-skill.md), which routes through the active Harness's skill-authoring flow, validates the frontmatter and links, and ships the result through the Opening a PR playbook."
+          },
+          {
+            "from": "Short works because the playbook holds the structure, and a Custom Mode keeps `/meta-mode` in context on every turn. [Set up mstack](./01-setup.md#run-your-first-task) shows how to start one.",
+            "to": "Short works because the playbook holds the structure, and `/meta-mode` stays active for the current task. [Set up mstack](./01-setup.md#run-your-first-task) says what to do when it fades."
+          },
+          {
+            "from": "The cleanest isolation is a [cloud subagent](https://cursor.com/docs/subagents#cloud-subagents). Each one gets its own VM and branch, so it can install dependencies, run your app, and record video of the result without touching your machine. Type `/in-cloud` before the task, or ask the parent chat to hand work to cloud subagents.",
+            "to": "The cleanest isolation is a worker on its own machine or remote environment, when the active Harness offers one. Each gets its own branch, so it can install dependencies, run your app, and record the result without touching your machine. Ask the parent chat to hand the work to remote workers."
+          },
+          {
+            "from": "an isolated worktree or cloud agent, and a decision log",
+            "to": "an isolated worktree or remote worker, and a decision log"
+          },
+          {
+            "from": "or that you're about to go offline or restart Cursor.",
+            "to": "or that you're about to go offline or restart the Harness."
+          },
+          {
+            "from": "A [Cursor Project](https://cursor.com/blog/projects) gives one coordinator agent a persistent thread. The coordinator doesn't write code. It directs subagents, which run in the cloud by default, so the work continues when your laptop is closed. That's the shape the Orchestrate playbook expects.",
+            "to": "A coordinator agent with a persistent thread, such as a Harness project or a long-lived session, directs subagents and doesn't write code itself. When the Harness runs subagents remotely, the work continues when your laptop is closed. That's the shape the Orchestrate playbook expects."
+          },
+          {
+            "from": "- Give each body of work its own Project, such as a feature, a migration, a perf push, or a tech-debt cleanup. Several can run side by side.\n- Drag related chats into the Project, finished ones included. They become context for every agent in it.",
+            "to": "- Give each body of work its own coordinator thread, such as a feature, a migration, a perf push, or a tech-debt cleanup. Several can run side by side.\n- Point the coordinator at related finished chats and notes. They become context for every agent under it."
+          },
+          {
+            "from": "One prompt can carry a whole Project, from research through execution:",
+            "to": "One prompt can carry a whole program, from research through execution:"
+          },
+          {
+            "from": "Run them as cloud agents, or say \"own worktree per attempt\".",
+            "to": "Run them on separate machines, or say \"own worktree per attempt\"."
+          },
+          {
+            "from": "## Load the TypeScript rules by name\n\n[`typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) turns the type-system principles into concrete rules: discriminated unions, `unknown` at boundaries, exhaustive variants, schema-derived types. It doesn't load on its own, so type `/typescript-best-practices` when a task touches `.ts` or `.tsx` files.",
+            "to": "## Let the TypeScript rules load themselves\n\n[`typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) has no slash command in your workflow. It loads whenever the agent touches a `.ts` or `.tsx` file and turns the type-system principles into concrete rules: discriminated unions, `unknown` at boundaries, exhaustive variants, schema-derived types."
+          },
+          {
+            "from": "/poteto-help how do i get meta-mode to stay on every turn?",
+            "to": "/meta-help how do i pick a model for each role?"
+          },
+          {
+            "from": "poteto-help",
+            "to": "meta-help"
           }
         ]
       },

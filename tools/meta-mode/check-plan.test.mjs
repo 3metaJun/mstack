@@ -106,3 +106,12 @@ test("a closing delimiter indented four spaces does not close the example", () =
   const result = run(`${skeleton}\n\`\`\`yaml\nmessage: “code”\n    \`\`\`\nstill inside: “code”\n\`\`\`\n`);
   assert.equal(result.code, 0, result.out);
 });
+
+for (const marker of ["program objective", "every hour"]) {
+  test(`the program checklist must keep "${marker}"`, () => {
+    assert.ok(skeleton.includes(marker), `the shipped skeleton lacks "${marker}"`);
+    const result = run(skeleton.replaceAll(marker, "removed"));
+    assert.equal(result.code, 1);
+    assert.match(result.out, new RegExp(`Program checklist lacks "${marker}"`));
+  });
+}

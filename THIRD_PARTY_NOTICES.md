@@ -5,7 +5,7 @@
 The skills in this repository are adapted from the `pstack` plugin in
 [`cursor/plugins`](https://github.com/cursor/plugins/tree/main/pstack/skills),
 with the current complete snapshot pinned at commit
-[`7366ac128bdf95f45e6734f412b49a4031800169`](https://github.com/cursor/plugins/commit/7366ac128bdf95f45e6734f412b49a4031800169).
+[`2cbf58508f40de470d7490b55c51d71241928fa2`](https://github.com/cursor/plugins/commit/2cbf58508f40de470d7490b55c51d71241928fa2).
 The first port of selected skills was pinned at commit
 [`799151d91b6e12ee7dbd09f708eec108d7de9b3b`](https://github.com/cursor/plugins/commit/799151d91b6e12ee7dbd09f708eec108d7de9b3b).
 
@@ -32,10 +32,11 @@ Adapted upstream skill names:
 - `principle-build-the-lever`
 
 The bundle also includes these principles from the current upstream tree, pinned
-at commit [`7366ac128bdf95f45e6734f412b49a4031800169`](https://github.com/cursor/plugins/commit/7366ac128bdf95f45e6734f412b49a4031800169):
+at commit [`2cbf58508f40de470d7490b55c51d71241928fa2`](https://github.com/cursor/plugins/commit/2cbf58508f40de470d7490b55c51d71241928fa2):
 
 - `principle-attack-the-premise`
 - `principle-encode-lessons-in-structure`
+- `principle-explain-the-number`
 - `principle-exhaust-the-design-space`
 - `principle-experience-first`
 - `principle-foundational-thinking`
@@ -53,7 +54,8 @@ These files use portable capability names. They do not copy the upstream
 Cursor-only commands or paths.
 
 The remaining pstack workflow skills are included under their original names.
-The portable bundle renames `poteto-mode` to `meta-mode` and `poteto-agent` to
+The portable bundle renames `poteto-mode` to `meta-mode`, `poteto-help` to
+`meta-help`, and `poteto-agent` to
 `meta-agent`. The source inventory is recorded in `profiles/skills.json`.
 Source commits and renames are recorded in `profiles/upstreams.json`. The
 non-skill upstream artifacts are retained as follows:

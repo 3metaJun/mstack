@@ -103,3 +103,16 @@ test("round-trips actual agent files and escaped strings through Python's standa
   });
   assert.equal(result.status, 0, result.stderr);
 });
+
+test("the routing agent description matches meta-mode's fresh-subagent rule", () => {
+  const agent = readFileSync(new URL("../agents/meta-agent.md", import.meta.url), "utf8");
+  const description = agent.match(/^description: (.*)$/m)?.[1] ?? "";
+  const skill = readFileSync(new URL("../skills/meta-mode/SKILL.md", import.meta.url), "utf8");
+  assert.match(skill, /\*\*Fresh subagents by default\.\*\*/);
+  assert.match(description, /Spawn a fresh `meta-agent` for each new task/);
+  assert.doesNotMatch(description, /Resume an existing/);
+  // The reuse cases come from meta-mode's own list, so the two files cannot drift apart.
+  const cases = skill.match(/costly to move: (its [^,]+), (its [^,]+), or (a process it still runs)/);
+  assert.ok(cases, "meta-mode no longer lists the reuse cases");
+  for (const reuse of cases.slice(1)) assert.ok(description.includes(reuse), `description omits "${reuse}"`);
+});

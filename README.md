@@ -67,7 +67,7 @@ claude plugin install mstack@mstack
 Plugin skills are namespaced, for example `/mstack:meta-mode`, and the agents
 appear as `mstack:meta-agent` and `mstack:comment-reviewer`. Run
 `claude plugin details mstack` to see the inventory and its projected token
-cost; the 50 skill descriptions add about 3,000 tokens to every session.
+cost; the 54 skill descriptions add about 3,200 tokens to every session.
 `claude plugin marketplace update mstack` picks up new releases, because the
 plugin `version` tracks the npm version.
 
@@ -420,7 +420,7 @@ target directory and restores backups if a commit fails.
 
 ## Included skills
 
-The current bundle contains 50 skills. It includes the 47 entries in the
+The current bundle contains 54 skills. It includes the 51 entries in the
 portable pstack tree and three skills adapted from `mattpocock/skills`:
 
 - Engineering principles for boundaries, domain modelling, idempotence,
@@ -431,10 +431,15 @@ portable pstack tree and three skills adapted from `mattpocock/skills`:
   workflow.
 - `meta-mode` for routing a multi-step task through the capabilities available
   in the current harness.
+- `meta-help` for answering questions about setup and which skill fits,
+  invoked as `/meta-help`.
+- `benchmark-checklist` and `correct` for vetting a measured number and for
+  fixing repeated agent mistakes at the repository level.
 
 The bundle includes the pstack workflow and principle names. `meta-mode` is the
-portable replacement for pstack's `poteto-mode`; it describes capabilities and
-uses the current harness's adapter instead of naming one vendor's commands.
+portable replacement for pstack's `poteto-mode`, and `meta-help` replaces
+`poteto-help`. They describe capabilities and
+use the current harness's adapter instead of naming one vendor's commands.
 
 Run `node scripts/validate.mjs` to print the validated skill count.
 
@@ -465,7 +470,7 @@ To check the complete skill trees against both pinned upstreams, run:
 npm run skill-baseline -- --check --source /path/to/pstack --matt-source /path/to/mattpocock-skills
 ```
 
-This checks every file in all 50 skill trees, including references, playbooks,
+This checks every file in all 54 skill trees, including references, playbooks,
 and scripts. It also checks tools moved out of skill directories. Local
 additions and intentional upstream omissions are recorded explicitly. Both
 source checkouts must be clean and at their pinned commits. `npm test` checks
