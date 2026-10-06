@@ -2,6 +2,7 @@
 /** Read-only, cross-platform Git worktree audit. */
 import { spawnSync } from "node:child_process";
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -74,48 +75,122 @@ function remoteState(worktree, branch, head) {
   const count = runGit(["rev-list", "--count", `origin/${branch}..HEAD`], worktree).trim();
   return `ahead${count || "0"}`;
 }
-function latestTranscript(transcripts, worktree, now) {
-  if (!transcripts || !existsSync(transcripts)) return { date: "-", recent: false };
-  let newest = 0;
-  // Transcripts are JSONL, so a Windows path appears with doubled backslashes. Collapse every run to one slash on both sides.
-  const normalize = (text) => text.replace(/\\+/g, "/");
-  const needle = normalize(worktree);
-  const scan = (dir) => {
-    let entries;
-    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
-    for (const entry of entries) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) scan(path);
-      else {
-        try {
-          const text = normalize(readFileSync(path, "utf8"));
-          if (text.includes(`${needle}/`) || text.includes(`${needle}\"`) || text.includes(`${needle}'`)) newest = Math.max(newest, lstatSync(path).mtimeMs);
-        } catch { /* transcript may disappear during a scan */ }
-      }
-    }
-  };
-  scan(transcripts);
-  if (!newest) return { date: "-", recent: false };
-  const date = new Date(newest).toISOString().slice(0, 10);
-  return { date, recent: (now - newest) / 86400000 <= 4 };
+function expandHome(path, home) {
+  if (path === "~") return home;
+  return /^~[/\\]/.test(path) ? join(home, path.slice(2)) : path;
 }
 
-export function classify({ dirty, pr, recent, merged }) {
+/**
+ * Where each Harness keeps its sessions, so a chat that touched a worktree is found wherever it ran.
+ * MSTACK_TRANSCRIPTS_DIR replaces them all with one directory the caller has scoped to the workspace.
+ * OpenCode has no raw session files to read, so it is not scanned.
+ */
+export function defaultTranscriptRoots({ env = process.env, home = homedir() } = {}) {
+  if (env.MSTACK_TRANSCRIPTS_DIR) return [env.MSTACK_TRANSCRIPTS_DIR];
+  const codex = expandHome(env.CODEX_HOME || join(home, ".codex"), home);
+  const claude = expandHome(env.CLAUDE_CONFIG_DIR || join(home, ".claude"), home);
+  const pi = env.PI_CODING_AGENT_SESSION_DIR
+    ? expandHome(env.PI_CODING_AGENT_SESSION_DIR, home)
+    : join(expandHome(env.PI_CODING_AGENT_DIR || join(home, ".pi", "agent"), home), "sessions");
+  return [join(claude, "projects"), join(codex, "sessions"), join(codex, "archived_sessions"), pi]
+    .filter((root) => existsSync(root));
+}
+
+// A transcript names a worktree as a whole path token. It must end at a path boundary (a separator, a quote,
+// whitespace, or the end of a JSON string) and begin at one (the start of the text, whitespace, a quote, or
+// an opening bracket), so `/x/wt` inherits neither a chat in `/x/wt-long` nor one in `/other/x/wt`.
+// Git on Windows prints `C:/x/wt` while a session records `C:\x\wt` (`C:\\x\\wt` once JSON-escaped),
+// so a Windows or UNC path is searched in both separator spellings and both drive-letter cases.
+const PATH_BOUNDARIES = ["/", "\\", '"', "'", " ", "\t", "\n", "\r"];
+function transcriptNeedles(path) {
+  const spellings = /^(?:[a-z]:[\\/]|\\\\|\/\/)/i.test(path)
+    ? [path.replaceAll("\\", "/"), path.replaceAll("/", "\\")].flatMap((spelling) =>
+      /^[a-z]:/i.test(spelling) ? [spelling[0].toLowerCase() + spelling.slice(1), spelling[0].toUpperCase() + spelling.slice(1)] : [spelling])
+    : [path];
+  return [...new Set(spellings)].flatMap((spelling) => [
+    // Plain text, as in an exported transcript.
+    ...PATH_BOUNDARIES.map((end) => spelling + end),
+    // JSON text: the path and its boundary escaped, or the path closing its string.
+    ...PATH_BOUNDARIES.map((end) => JSON.stringify(spelling + end).slice(1, -1)),
+    JSON.stringify(spelling).slice(1),
+  ]).map((needle) => Buffer.from(needle));
+}
+
+const START_BOUNDARIES = new Set([..." \t\n\r\"'`=(,;<>|[{"].map((char) => char.charCodeAt(0)));
+// The Windows verbatim prefix may sit in front of a drive path, plain or JSON-escaped.
+const VERBATIM_PREFIXES = ["\\\\?\\", "\\\\\\\\?\\\\", "//?/"].map((prefix) => Buffer.from(prefix));
+function startsPathToken(text, at) {
+  if (at === 0) return true;
+  const previous = text[at - 1];
+  if (START_BOUNDARIES.has(previous)) return true;
+  // A JSON-escaped newline, tab or return: an odd run of backslashes before the letter.
+  if ([0x6e, 0x72, 0x74].includes(previous)) {
+    let slashes = 0;
+    while (at - 2 - slashes >= 0 && text[at - 2 - slashes] === 0x5c) slashes++;
+    if (slashes % 2 === 1) return true;
+  }
+  return VERBATIM_PREFIXES.some((prefix) => at >= prefix.length && text.subarray(at - prefix.length, at).equals(prefix) && startsPathToken(text, at - prefix.length));
+}
+function namesPath(text, forms) {
+  return forms.some((form) => {
+    // A space or tab ends a path in shell text (`cd /x/wt && ls`), but a value that opens with a quote
+    // directly before the path is one whole path, so `"/x/wt long"` names another directory.
+    const endsAtBlank = form.at(-1) === 0x20 || form.at(-1) === 0x09;
+    for (let at = text.indexOf(form); at !== -1; at = text.indexOf(form, at + 1)) {
+      if (endsAtBlank && at > 0 && (text[at - 1] === 0x22 || text[at - 1] === 0x27)) continue;
+      if (startsPathToken(text, at)) return true;
+    }
+    return false;
+  });
+}
+
+function* transcriptFiles(root) {
+  let entries;
+  try { entries = readdirSync(root, { withFileTypes: true }); } catch { return; }
+  for (const entry of entries) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) yield* transcriptFiles(path);
+    else if (entry.isFile()) yield path;
+  }
+}
+
+/** Newest transcript mtime (ms) that names each path, for every path a transcript under `roots` mentions. */
+export function lastChats(roots, paths) {
+  const needles = paths.map((path) => [path, transcriptNeedles(path)]);
+  const latest = new Map();
+  for (const root of roots) {
+    for (const file of transcriptFiles(root)) {
+      try {
+        const mtime = lstatSync(file).mtimeMs;
+        // A file older than every path's newest match cannot change an answer, so it is not read.
+        if (!needles.some(([path]) => mtime > (latest.get(path) ?? 0))) continue;
+        const text = readFileSync(file);
+        for (const [path, forms] of needles) {
+          if (mtime > (latest.get(path) ?? 0) && namesPath(text, forms)) latest.set(path, mtime);
+        }
+      } catch { /* a transcript may disappear during a scan */ }
+    }
+  }
+  return latest;
+}
+
+// `prMerged` means a PR merged into the trunk carried exactly this worktree HEAD. A closed PR landed nothing, and a merged PR does not cover commits made after it.
+export function classify({ dirty, pr, recent, merged, prMerged = false }) {
   if (dirty === "unknown") return "hold-unknown";
   if (dirty.startsWith("wip:")) return "hold-wip";
   if (pr.includes("OPEN")) return "hold-open-pr";
   if (recent) return "verify-recent-chat";
-  if (merged || pr !== "-") return "safe";
+  if (merged || prMerged) return "safe";
   return "review";
 }
 
 function listAuthoredPrs(repo) {
-  const gh = spawnSync("gh", ["pr", "list", "--author", "@me", "--state", "all", "--limit", "1000", "--json", "number,state,headRefName"], { cwd: repo, encoding: "utf8" });
+  const gh = spawnSync("gh", ["pr", "list", "--author", "@me", "--state", "all", "--limit", "1000", "--json", "number,state,headRefName,headRefOid,baseRefName"], { cwd: repo, encoding: "utf8" });
   if (gh.status !== 0) return [];
   try { return JSON.parse(gh.stdout); } catch { return []; }
 }
 
-export function audit(repo = runGit(["rev-parse", "--show-toplevel"], process.cwd()).trim(), env = process.env, { listPrs = listAuthoredPrs } = {}) {
+export function audit(repo = runGit(["rev-parse", "--show-toplevel"], process.cwd()).trim(), env = process.env, { listPrs = listAuthoredPrs, home = homedir() } = {}) {
   if (!repo) throw new Error("not in a git repo; pass a repo path");
   repo = resolve(repo);
   const worktrees = parseWorktreePorcelain(runGit(["worktree", "list", "--porcelain", "-z"], repo));
@@ -124,15 +199,21 @@ export function audit(repo = runGit(["rev-parse", "--show-toplevel"], process.cw
   const prs = listPrs(repo);
   const now = Date.now();
   const main = worktrees[0]?.path;
+  // One pass over the transcripts answers for every worktree.
+  const chats = worktrees.length > 1 ? lastChats(defaultTranscriptRoots({ env, home }), worktrees.slice(1).map((wt) => wt.path)) : new Map();
   return worktrees.slice(1).map((wt) => {
     const timestamp = Number(runGit(["log", "-1", "--format=%ct", wt.path], wt.path).trim()) * 1000 || 0;
-    const pr = prs.find((item) => item.headRefName === wt.branch);
+    const candidates = prs.filter((item) => item.headRefName === wt.branch);
+    // Only a PR merged into the trunk this audit compares against (origin/main) shows the work landed.
+    const landed = (item) => item.state === "MERGED" && item.headRefOid === wt.head && item.baseRefName === "main";
+    const pr = candidates.find((item) => item.state === "OPEN") ?? candidates.find(landed) ?? candidates[0];
     const prText = pr ? `#${pr.number}/${pr.state}` : "-";
     const merged = gitOk(["merge-base", "--is-ancestor", wt.head, "origin/main"], repo);
-    const transcript = latestTranscript(env.MSTACK_TRANSCRIPTS_DIR, wt.path, now);
+    const newest = chats.get(wt.path);
+    const transcript = newest ? { date: new Date(newest).toISOString().slice(0, 10), recent: (now - newest) / 86400000 <= 4 } : { date: "-", recent: false };
     const dirty = gitStatus(wt.path);
     const bytes = directorySize(wt.path);
-    return { size: humanSize(bytes), bytes, age: age(timestamp, now), merged: merged ? "YES" : "no", dirty, remote: remoteState(wt.path, wt.branch, wt.head), pr: prText, lastChat: transcript.date, bucket: classify({ dirty, pr: prText, recent: transcript.recent, merged }), worktree: wt.path, main };
+    return { size: humanSize(bytes), bytes, age: age(timestamp, now), merged: merged ? "YES" : "no", dirty, remote: remoteState(wt.path, wt.branch, wt.head), pr: prText, lastChat: transcript.date, bucket: classify({ dirty, pr: prText, recent: transcript.recent, merged, prMerged: pr ? landed(pr) : false }), worktree: wt.path, main };
   }).sort((a, b) => b.bytes - a.bytes);
 }
 
