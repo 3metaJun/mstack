@@ -36,7 +36,7 @@
   },
   "unsupported": {
     "commands": "No commands/ tree is shipped. Harness slash commands are vendor-specific and remain out of the portable installer.",
-    "hooks": "No hooks/ tree is shipped. Hooks need project lifecycle and security policy, so mstack does not install them implicitly.",
+    "hooks": "The installer writes no hooks. Only the Claude Code plugin ships hooks/hooks.json, a SessionStart routing hook that the user can switch off in models.json.",
     "settings": "No settings/ tree is shipped. Harness settings are user- or project-owned configuration and must be merged explicitly.",
     "automations": "Benny is retained as the optional Cursor-only automations/benny source; it is not a cross-harness artifact."
   }

@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { deflateRawSync } from "node:zlib";
 
 // Fields accepted by claude.ai uploads and the Skills API. Anything else is a hard
@@ -306,6 +306,22 @@ export function skillPackable(skillsRoot, skill) {
 
 const HOOK_MATCHER = "startup|resume|clear|compact";
 
+// A plugin path must stay inside the package: `..` segments or absolute paths would load
+// files that the published package does not contain.
+function containedPath(repoRoot, rel) {
+  const abs = resolve(repoRoot, rel);
+  const inside = relative(resolve(repoRoot), abs);
+  return inside && !inside.startsWith("..") && !isAbsolute(inside) ? abs : undefined;
+}
+
+function isFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
 function readJson(path) {
   try {
     return { value: JSON.parse(readFileSync(path, "utf8")) };
@@ -339,11 +355,17 @@ export function validatePluginHooks(repoRoot) {
   const script = command.match(/^node "\$\{CLAUDE_PLUGIN_ROOT\}\/([^"]+)"$/)?.[1];
   if (!script) {
     problems.push(`hooks/hooks.json command must be node "\${CLAUDE_PLUGIN_ROOT}/<script>" with no extra arguments: ${command}`);
-  } else if (!existsSync(join(repoRoot, script))) {
-    problems.push(`hooks/hooks.json command references a missing script: ${script}`);
+  } else {
+    const abs = containedPath(repoRoot, script);
+    if (!abs) problems.push(`hooks/hooks.json command script escapes the plugin root: ${script}`);
+    else if (!isFile(abs)) problems.push(`hooks/hooks.json command references a missing script: ${script}`);
   }
   const context = join(repoRoot, "hooks", "session-start-context.md");
-  if (!existsSync(context) || !readFileSync(context, "utf8").trim()) problems.push("hooks/session-start-context.md must exist and be non-empty");
+  let contextText = "";
+  try {
+    contextText = isFile(context) ? readFileSync(context, "utf8") : "";
+  } catch {}
+  if (!contextText.trim()) problems.push("hooks/session-start-context.md must be a readable, non-empty file");
   return problems;
 }
 
@@ -367,7 +389,9 @@ export function validatePluginAgents(repoRoot) {
   }
   const manifest = readJson(join(repoRoot, ".claude-plugin", "plugin.json")).value ?? {};
   for (const path of [].concat(manifest.agents ?? [])) {
-    if (typeof path !== "string" || !existsSync(resolve(repoRoot, path))) problems.push(`.claude-plugin/plugin.json agents entry does not exist: ${path}`);
+    const abs = typeof path === "string" ? containedPath(repoRoot, path) : undefined;
+    if (typeof path !== "string" || !abs) problems.push(`.claude-plugin/plugin.json agents entry must stay inside the plugin: ${path}`);
+    else if (!existsSync(abs)) problems.push(`.claude-plugin/plugin.json agents entry does not exist: ${path}`);
   }
   return problems;
 }

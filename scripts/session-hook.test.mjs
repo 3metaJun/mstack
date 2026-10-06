@@ -114,6 +114,7 @@ test("plugin hook validation rejects broken references", (t) => {
     return validatePluginHooks(root).join("\n");
   };
   assert.match(withCommand('node "${CLAUDE_PLUGIN_ROOT}/scripts/missing.mjs"'), /missing script/);
+  assert.match(withCommand('node "${CLAUDE_PLUGIN_ROOT}/../outside.mjs"'), /escapes the plugin root/);
   assert.match(withCommand("sh session-start.sh"), /must be node/);
   assert.match(withCommand('node "${CLAUDE_PLUGIN_ROOT}/scripts/session-hook.mjs" extra'), /must be node/);
 
@@ -127,8 +128,16 @@ test("plugin hook validation rejects broken references", (t) => {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   writeFileSync(manifestPath, JSON.stringify({ ...manifest, hooks: "./hooks/hooks.json" }));
   assert.match(validatePluginHooks(root).join("\n"), /duplicate/);
+  writeFileSync(manifestPath, JSON.stringify({ ...manifest, agents: ["../shared-agent.md"] }));
+  assert.match(validatePluginAgents(root).join("\n"), /must stay inside the plugin/);
   writeFileSync(manifestPath, JSON.stringify({ ...manifest, agents: ["./agents/nope.md"] }));
   assert.match(validatePluginAgents(root).join("\n"), /does not exist/);
+
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  const contextPath = join(root, "hooks", "session-start-context.md");
+  rmSync(contextPath);
+  mkdirSync(contextPath);
+  assert.match(validatePluginHooks(root).join("\n"), /readable, non-empty file/);
 
   writeFileSync(join(root, "agents", "wrong.md"), "---\nname: other\ndescription: x\n---\nbody\n");
   assert.match(validatePluginAgents(root).join("\n"), /name must equal the file name/);
