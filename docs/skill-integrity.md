@@ -6,6 +6,9 @@ bytes. The complete target skill tree is checked, including files added locally.
 `profiles/skill-sources.json` declares source skill ownership, moves, and
 omissions. Every source file must map to an existing target or an omission with
 a reason. Missing files cannot become accepted omissions by refreshing hashes.
+A skill with no upstream counterpart is declared in `profiles/local-skills.json`
+with the reason it is local. Its files are recorded as local additions, and the
+skill must also appear in `profiles/skills.json`.
 
 Target inventories include `skills/` and each move's exact target. A moved
 directory includes local additions recursively; a single-file move includes

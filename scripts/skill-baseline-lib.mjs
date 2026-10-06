@@ -48,6 +48,87 @@ function json(root, path) {
   return JSON.parse(readFileSync(inside(root, path), "utf8"));
 }
 
+// Skills written for mstack with no upstream counterpart, mapped to the reason they are local.
+function localSkillReasons(root) {
+  const path = "profiles/local-skills.json";
+  if (!existsSync(inside(root, path))) return {};
+  const skills = json(root, path).skills;
+  if (!record(skills)) throw new Error(`${path}: expected a skills object mapping each local skill to its reason`);
+  return skills;
+}
+
+// Skill names and exact files that the profiles map to an upstream, read without source
+// checkouts and independent of the manifest under check. Pstack ownership comes from its
+// renames and the reviewed canonicalSkills targets; Matt Pocock ownership from the explicit
+// skill mappings. A single-file move target is an upstream file too.
+function profileOwnership(root) {
+  const skills = new Set();
+  const files = new Set();
+  const upstreams = json(root, "profiles/upstreams.json");
+  for (const profile of Object.values(upstreams)) {
+    for (const target of Object.values(profile.renames ?? {})) skills.add(target);
+  }
+  const manifestPath = "profiles/upstream-manifest.json";
+  if (existsSync(inside(root, manifestPath))) {
+    const canonical = json(root, manifestPath).canonicalSkills;
+    if (record(canonical)) for (const name of Object.keys(canonical)) skills.add(name);
+  }
+  for (const spec of Object.values(json(root, "profiles/skill-sources.json"))) {
+    for (const target of Object.values(spec.skills ?? {})) skills.add(target);
+    for (const move of Object.values(spec.moves ?? {})) {
+      const target = inside(root, move.target);
+      if (existsSync(target) && lstatSync(target).isFile()) files.add(move.target);
+    }
+  }
+  return { skills, files };
+}
+
+// Cross-checks the declared local skills against the profiles, the manifest, and the tree.
+function localSkillProblems(root, manifest) {
+  const problems = [];
+  const declared = localSkillReasons(root);
+  const inventory = new Set(json(root, "profiles/skills.json").skills);
+  const { skills: upstreamOwned, files: upstreamFiles } = profileOwnership(root);
+  const localOnly = new Map();
+  for (const [path, entry] of Object.entries(manifest.files)) {
+    if (!record(entry)) continue;
+    if (entry.upstream === null && (upstreamFiles.has(path) ||
+        (upstreamOwned.has(path.split("/")[1]) && path === `skills/${path.split("/")[1]}/SKILL.md`))) {
+      problems.push(`${path}: recorded as local but a profile maps it to an upstream source`);
+    }
+    const [top, skill] = path.split("/");
+    if (top === "skills" && skill && entry.upstream === null) {
+      localOnly.set(skill, [...(localOnly.get(skill) ?? []), { path, entry }]);
+    }
+  }
+  for (const [skill, reason] of Object.entries(declared)) {
+    if (typeof reason !== "string" || !reason.trim()) problems.push(`${skill}: declared local skill has no reason`);
+    if (upstreamOwned.has(skill)) problems.push(`${skill}: declared local skill is also owned by an upstream source`);
+    for (const [path, entry] of Object.entries(manifest.files)) {
+      if (path.startsWith(`skills/${skill}/`) && record(entry) && entry.upstream !== null) {
+        problems.push(`${path}: file of a declared local skill is recorded with an upstream source`);
+      }
+    }
+    if (!inventory.has(skill)) problems.push(`${skill}: declared local skill is missing from profiles/skills.json`);
+    if (!existsSync(inside(root, `skills/${skill}/SKILL.md`))) problems.push(`${skill}: declared local skill is missing skills/${skill}/SKILL.md`);
+    if (!(localOnly.get(skill) ?? []).some(({ path }) => path === `skills/${skill}/SKILL.md`)) {
+      problems.push(`${skill}: declared local skill is not recorded as a local addition in the manifest`);
+    }
+    for (const { path, entry } of localOnly.get(skill) ?? []) {
+      if (entry.reason !== reason) problems.push(`${path}: manifest reason differs from profiles/local-skills.json`);
+    }
+  }
+  for (const [skill, files] of localOnly) {
+    if (!upstreamOwned.has(skill) && !(skill in declared)) {
+      problems.push(`${files[0].path}: skill has no upstream owner and is not declared in profiles/local-skills.json`);
+    }
+  }
+  for (const skill of inventory) {
+    if (!upstreamOwned.has(skill) && !(skill in declared)) problems.push(`${skill}: skill in profiles/skills.json has no upstream owner or local declaration`);
+  }
+  return problems;
+}
+
 function targetFiles(root, profiles) {
   const options = { excludeDependencies: true };
   const files = new Set(filesUnder(root, "skills", options));
@@ -97,6 +178,7 @@ export function checkLocalBaseline(root, manifest) {
     actual.delete(path);
   }
   for (const path of actual) problems.push(`${path}: untracked skill file`);
+  problems.push(...localSkillProblems(root, manifest));
   for (const [key, entry] of Object.entries(manifest.omitted)) {
     if (!record(entry) || !manifest.sources[entry.upstream] || !hashPattern.test(entry.sourceDigest ?? "") ||
         typeof entry.reason !== "string" || !entry.reason.trim()) problems.push(`${key}: invalid omission`);
@@ -179,11 +261,19 @@ export function buildBaseline(root, sourceRoots) {
     for (const path of Object.keys(spec.omit ?? {})) if (!usedOmissions.has(path)) throw new Error(`${path}: stale omission rule`);
     for (const skill of Object.keys(omittedSkills)) if (!usedSkillOmissions.has(skill)) throw new Error(`${skill}: stale skill omission rule`);
   }
+  const localSkills = localSkillReasons(root);
+  for (const [skill, reason] of Object.entries(localSkills)) {
+    if (typeof reason !== "string" || !reason.trim()) throw new Error(`${skill}: local skill requires a reason`);
+    if (owners.has(skill)) throw new Error(`${skill}: local skill is also owned by an upstream source`);
+    if (!existsSync(inside(root, `skills/${skill}/SKILL.md`))) throw new Error(`${skill}: local skill is missing SKILL.md`);
+    owners.add(skill);
+  }
   const expectedSkills = json(root, "profiles/skills.json").skills;
   if (JSON.stringify([...owners].sort()) !== JSON.stringify([...expectedSkills].sort())) throw new Error("Skill sources do not cover the declared skill inventory");
   for (const path of targetFiles(root, profiles)) {
     if (path.startsWith("skills/") && !owners.has(path.split("/")[1])) throw new Error(`${path}: no upstream skill owner`);
-    manifest.files[path] ??= { upstream: null, reason: "Local portability guidance or implementation; review alongside its owning skill.", targetDigest: contentDigest(root, path) };
+    const reason = localSkills[path.split("/")[1]] ?? "Local portability guidance or implementation; review alongside its owning skill.";
+    manifest.files[path] ??= { upstream: null, reason, targetDigest: contentDigest(root, path) };
   }
   manifest.files = Object.fromEntries(Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b, "en")));
   manifest.omitted = Object.fromEntries(Object.entries(manifest.omitted).sort(([a], [b]) => a.localeCompare(b, "en")));
