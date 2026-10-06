@@ -28,7 +28,8 @@ const COMMENT_TAIL = /^(?:[ \t]+#.*)?[ \t]*$/;
 const BLANK_OR_COMMENT_LINE = /^[ \t]*(?:#.*)?$/;
 const QUOTE_REMEDY = "quote the value";
 
-const trimSeparators = (text) => text.replace(/^[ \t]+|[ \t]+$/g, "");
+const isCommentLine = (line) => /^[ \t]*#/.test(line);
+const trimSeparators =(text) => text.replace(/^[ \t]+|[ \t]+$/g, "");
 
 /** Reads a top-level field: its same-line value and any indented continuation lines. */
 function readField(lines, field) {
@@ -83,11 +84,13 @@ function inspectBlock({ first, continuation }) {
   const explicit = Number(indicators.match(/[1-9]/)?.[0] ?? 0);
   const indents = continuation.map((line) => line.match(/^ */)[0].length);
   // Without an indentation indicator YAML takes the first body line's indent.
-  const required = explicit || indents[0];
-  if (indents.some((indent) => indent < Math.max(required, 1))) {
-    return { problem: `has a block scalar body line indented less than ${Math.max(required, 1)} space(s)` };
-  }
-  return {};
+  const required = Math.max(explicit || indents[0], 1);
+  const end = indents.findIndex((indent) => indent < required);
+  if (end === -1) return {};
+  // A line below the body's indent ends the scalar. Only comments may follow it,
+  // and a comment-only line there is not body text.
+  if (end > 0 && continuation.slice(end).every(isCommentLine)) return {};
+  return { problem: `has a block scalar body line indented less than ${required} space(s)` };
 }
 
 function inspectPlain(lines) {
@@ -109,15 +112,17 @@ function inspectPlain(lines) {
 }
 
 /** Returns `{ problem }` and/or the scalar's string `value` when it can be determined. */
-function inspectField(field) {
-  const lines = [field.first, ...field.continuation].filter((line) => trimSeparators(line) !== "");
+function inspectField({ first, continuation: rawContinuation }) {
+  // Comment lines between the key and its value are not part of the value.
+  const valueStart = rawContinuation.findIndex((line) => !isCommentLine(line));
+  const continuation = first === "" ? (valueStart === -1 ? [] : rawContinuation.slice(valueStart)) : rawContinuation;
+  const lines = [first, ...continuation].filter((line) => trimSeparators(line) !== "");
   if (lines.length === 0) return { problem: "is empty or comment-only (YAML null)" };
   const head = trimSeparators(lines[0]);
   // A block header is the value itself, either after the key or on the next value-bearing line.
-  const [next, ...rest] = field.continuation;
-  if (/^[|>]/.test(field.first)) return inspectBlock(field);
-  if (field.first === "" && /^[|>]/.test(trimSeparators(next ?? ""))) {
-    return inspectBlock({ first: trimSeparators(next), continuation: rest });
+  if (/^[|>]/.test(first)) return inspectBlock({ first, continuation });
+  if (first === "" && /^[|>]/.test(head)) {
+    return inspectBlock({ first: head, continuation: continuation.slice(1) });
   }
   if (/^["']/.test(head)) return inspectQuoted(lines.map(trimSeparators).join("\n"));
   return inspectPlain(lines);
