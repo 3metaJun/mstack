@@ -27,7 +27,7 @@ worktree in the `LAST_CHAT` column. By default it scans Claude Code `projects` (
 Set `MSTACK_TRANSCRIPTS_DIR` to scan one directory instead, for example for OpenCode, which has no raw session files to
 read. A worktree path matches as the transcript spells it (forward or back slashes, UNC, either drive-letter case) and
 never as the prefix of a sibling such as `wt-long`. With no transcripts the column is `-` and every Git worktree is
-still checked. A worktree is `safe` only when its HEAD is in `origin/main` or a merged PR carried exactly that HEAD; a
+still checked. A worktree is `safe` only when its HEAD is in `origin/main` or a PR merged into `main` carried exactly that HEAD; a
 closed PR, or commits made after a merged one, leave it in `review`.
 
 Resume checkpoints are project-local and Git-bound. They are stored under

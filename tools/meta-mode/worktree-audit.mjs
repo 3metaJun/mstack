@@ -133,7 +133,11 @@ function startsPathToken(text, at) {
 }
 function namesPath(text, forms) {
   return forms.some((form) => {
+    // A space or tab ends a path in shell text (`cd /x/wt && ls`), but a value that opens with a quote
+    // directly before the path is one whole path, so `"/x/wt long"` names another directory.
+    const endsAtBlank = form.at(-1) === 0x20 || form.at(-1) === 0x09;
     for (let at = text.indexOf(form); at !== -1; at = text.indexOf(form, at + 1)) {
+      if (endsAtBlank && at > 0 && (text[at - 1] === 0x22 || text[at - 1] === 0x27)) continue;
       if (startsPathToken(text, at)) return true;
     }
     return false;
@@ -170,7 +174,7 @@ export function lastChats(roots, paths) {
   return latest;
 }
 
-// `prMerged` means a merged PR carried exactly this worktree HEAD. A closed PR landed nothing, and a merged PR does not cover commits made after it.
+// `prMerged` means a PR merged into the trunk carried exactly this worktree HEAD. A closed PR landed nothing, and a merged PR does not cover commits made after it.
 export function classify({ dirty, pr, recent, merged, prMerged = false }) {
   if (dirty === "unknown") return "hold-unknown";
   if (dirty.startsWith("wip:")) return "hold-wip";
@@ -181,7 +185,7 @@ export function classify({ dirty, pr, recent, merged, prMerged = false }) {
 }
 
 function listAuthoredPrs(repo) {
-  const gh = spawnSync("gh", ["pr", "list", "--author", "@me", "--state", "all", "--limit", "1000", "--json", "number,state,headRefName,headRefOid"], { cwd: repo, encoding: "utf8" });
+  const gh = spawnSync("gh", ["pr", "list", "--author", "@me", "--state", "all", "--limit", "1000", "--json", "number,state,headRefName,headRefOid,baseRefName"], { cwd: repo, encoding: "utf8" });
   if (gh.status !== 0) return [];
   try { return JSON.parse(gh.stdout); } catch { return []; }
 }
@@ -200,14 +204,16 @@ export function audit(repo = runGit(["rev-parse", "--show-toplevel"], process.cw
   return worktrees.slice(1).map((wt) => {
     const timestamp = Number(runGit(["log", "-1", "--format=%ct", wt.path], wt.path).trim()) * 1000 || 0;
     const candidates = prs.filter((item) => item.headRefName === wt.branch);
-    const pr = candidates.find((item) => item.state === "OPEN") ?? candidates.find((item) => item.state === "MERGED" && item.headRefOid === wt.head) ?? candidates[0];
+    // Only a PR merged into the trunk this audit compares against (origin/main) shows the work landed.
+    const landed = (item) => item.state === "MERGED" && item.headRefOid === wt.head && item.baseRefName === "main";
+    const pr = candidates.find((item) => item.state === "OPEN") ?? candidates.find(landed) ?? candidates[0];
     const prText = pr ? `#${pr.number}/${pr.state}` : "-";
     const merged = gitOk(["merge-base", "--is-ancestor", wt.head, "origin/main"], repo);
     const newest = chats.get(wt.path);
     const transcript = newest ? { date: new Date(newest).toISOString().slice(0, 10), recent: (now - newest) / 86400000 <= 4 } : { date: "-", recent: false };
     const dirty = gitStatus(wt.path);
     const bytes = directorySize(wt.path);
-    return { size: humanSize(bytes), bytes, age: age(timestamp, now), merged: merged ? "YES" : "no", dirty, remote: remoteState(wt.path, wt.branch, wt.head), pr: prText, lastChat: transcript.date, bucket: classify({ dirty, pr: prText, recent: transcript.recent, merged, prMerged: pr?.state === "MERGED" && pr.headRefOid === wt.head }), worktree: wt.path, main };
+    return { size: humanSize(bytes), bytes, age: age(timestamp, now), merged: merged ? "YES" : "no", dirty, remote: remoteState(wt.path, wt.branch, wt.head), pr: prText, lastChat: transcript.date, bucket: classify({ dirty, pr: prText, recent: transcript.recent, merged, prMerged: pr ? landed(pr) : false }), worktree: wt.path, main };
   }).sort((a, b) => b.bytes - a.bytes);
 }
 

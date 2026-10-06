@@ -181,6 +181,12 @@ test("lastChats matches a path as a transcript spells it, and nothing that merel
     ["/work/wt", "cwd: /work/wt\n", true],
     ["/work/wt", '{"cwd":"/work/wt-long"}', false],
     ["/work/wt", '{"cwd":"/work/wt.old/src"}', false],
+    // Whitespace ends a path in shell text, but not inside a quoted value that begins with the path.
+    ["/work/wt", '{"cwd":"/work/wt long"}', false],
+    ["/work/wt", '{"cwd":"/work/wt 2/src"}', false],
+    ["/work/wt", "cwd: '/work/wt long'\n", false],
+    ["C:/Users/dev/wt", '{"cwd":"C:\\\\Users\\\\dev\\\\wt long"}', false],
+    ["/work/wt", '{"cmd":"cd /work/wt && ls"}', true],
     // A longer path that merely ends with the worktree path is another directory.
     ["/work/wt", '{"cwd":"/other/work/wt"}', false],
     ["/work/wt", '{"cwd":"/other/work/wt/src"}', false],
@@ -214,13 +220,15 @@ test("a PR vouches for a worktree only when it merged exactly the worktree's HEA
   git(worktree, "commit", "-q", "-m", "work");
   const head = git(worktree, "rev-parse", "HEAD").trim();
   const bucketFor = (pr) => {
-    const listPrs = () => (pr ? [{ headRefName: "audit-worktree", ...pr }] : []);
+    const listPrs = () => (pr ? [{ headRefName: "audit-worktree", baseRefName: "main", ...pr }] : []);
     const env = { MSTACK_TRANSCRIPTS_DIR: join(root, "no-transcripts") };
     return audit(repo, env, { listPrs })[0].bucket;
   };
   assert.equal(bucketFor(null), "review");
   assert.equal(bucketFor({ number: 7, state: "MERGED", headRefOid: head }), "safe");
   assert.equal(bucketFor({ number: 7, state: "MERGED", headRefOid: "0".repeat(40) }), "review");
+  // Merged into a feature branch that has not reached origin/main, so the work has not landed.
+  assert.equal(bucketFor({ number: 7, state: "MERGED", headRefOid: head, baseRefName: "parent-feature" }), "review");
   assert.equal(bucketFor({ number: 7, state: "CLOSED", headRefOid: head }), "review");
   assert.equal(bucketFor({ number: 7, state: "OPEN", headRefOid: head }), "hold-open-pr");
 });

@@ -769,7 +769,7 @@
     "tools/meta-mode/README.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "0d65e391616a1653611d0adb4dc785882796ee115fad5fb0c9607c3a735b2f80"
+      "targetDigest": "9ac94be27aff564f37c373a8c3e0a802496fe9c052f0b28d67ed1893a0d597e8"
     },
     "tools/meta-mode/resume.mjs": {
       "upstream": null,
@@ -868,7 +868,7 @@
     "tools/meta-mode/worktree-audit.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "223e969155d9e381c1d11119cbe922ef21b851237b8bf8c1ef6f3c2d6cf41295"
+      "targetDigest": "bf0c68c18cc096e4463a65c8b57eefcff9dd2ad9701ec1864764e90df5842665"
     },
     "tools/meta-mode/worktree-audit.sh": {
       "upstream": "pstack",
