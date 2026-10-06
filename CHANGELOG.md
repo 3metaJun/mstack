@@ -1,5 +1,77 @@
 # Changelog
 
+## 0.9.0 - 2026-10-06
+
+### Changes
+
+- Adapt mstack to T3 Code. `docs/t3code.md` explains how each T3 provider finds
+  skills, the install commands per provider, `$name` invocation, worktrees, a
+  `t3.json` setup recipe and T3's own safety rules. `docs/session-context/T3-CODE.md`
+  is an opt-in routing note for sessions that have the `t3-code` MCP tools.
+- Add T3 host bindings. `skills/meta-mode`, `recall` and `create-verification-skill`
+  gain `references/hosts/t3code.md`, and the playbooks point to it in neutral
+  wording. Where T3 provides the primitive, the references bind delegation to
+  `delegate_task`, PR watching to `watch_pull_request`, scheduling to
+  `schedule_task`, thread history to `t3_thread_search` and `t3_thread_read`, and
+  runtime evidence to `preview_*` and `device_*`. Shipping keeps a bounded
+  merge-confirmation task because T3 does not wake a thread on merge. `npm test`
+  now fails when a T3-only tool name appears under `skills/` outside
+  `skills/*/references/hosts/`.
+- Add `antigravity` and `grok` harnesses. Antigravity installs to
+  `~/.gemini/antigravity-cli/skills` (override `HARNESS_SKILLS_ANTIGRAVITY_DIR`)
+  and Grok shares `~/.agents/skills` (override `HARNESS_SKILLS_GROK_DIR`). Both
+  have `run-role` and `smoke-harnesses` runtimes; `runtime.promptArgs` places
+  flags that take the prompt as their value. Cursor needs no target because it
+  reads `~/.agents/skills`.
+- Add project-scope install: `--project <repo>` copies skills into each
+  harness's project root (`.agents/skills`, `.claude/skills`). It refuses
+  artifacts, `--migrate` and `--environment`, rejects project paths that
+  resolve into a user skill root, the package, an enclosing discovery root or
+  installer storage (symlinks, junctions and case variants included), and keeps
+  `--replace` backups beside the skill roots.
+- Add provider instances and effort options to model roles. `overrides.t3code`
+  and `budgets.t3code` accept `<provider>/<model> (<effort>)` strings or
+  `{ provider, model, effort }` objects, and `model-budget` sets the effort from
+  a catalog's explicit option list. Harness role strings stay opaque. Reserved
+  keys such as `__proto__` are rejected and budget writes use own properties.
+  `setup-mstack` reads the T3 reference on a host that lists provider instances.
+- Add the `mstack-help` entry skill (54 skills) for install, setup and "which
+  skill fits" questions. `profiles/local-skills.json` lets `skill-baseline`
+  record a wholly local skill, and `--check` derives upstream ownership from the
+  profiles so a manifest cannot reclassify an upstream file as local.
+- Reject skill frontmatter that Cursor and Antigravity silently drop: a plain
+  `name` or `description` that is invalid YAML (`: `, ` #`, a leading
+  indicator, malformed quoted or block scalars) or a name outside T3's chip
+  pattern. A ` #` in a plain scalar is rejected on purpose, since YAML would
+  truncate the value there.
+- Detect filesystem case sensitivity for installer path keys instead of
+  lowercasing on macOS, so a case-sensitive volume no longer reports distinct
+  paths as overlapping.
+
+### Upgrade notes
+
+Reinstall skills to receive `mstack-help` and the updated playbooks.
+`--harness all` now also covers `antigravity` and `grok`: Antigravity gets its
+own copy in `~/.gemini/antigravity-cli/skills`, and Grok joins the shared
+`~/.agents/skills` copy, so a rerun on an existing machine adds the Antigravity
+copy. `--project` installs skills only, and a
+fresh T3 worktree contains only committed files, so commit the project copy or
+use the user-level install. Existing `models.json` files stay valid.
+Contributors with skills whose plain-scalar `description` contains `: ` or ` #`
+must quote it. `docs/guide/07-overnight.md` now mentions `schedule_task`.
+
+### Verification
+
+Seven of the eight pull requests (all but the case-sensitivity fix) were
+reviewed with pi (provider relay-gpt, model GPT-6.1-SOL) until the last round
+returned no blocker or major findings, and every one passed Node 18/22 CI on
+Linux, macOS and Windows with the package and pinned-source checks. The T3 behavior described here was checked against the T3
+Code source at commit 8f75697, not against a running T3 Code session. The
+merge-confirmation task, `delegate_task` targets and effort option resolution
+were not exercised live. The `agy` and `grok` read-only arguments and
+`run-role` calls were run against agy 1.2.16 and Grok CLI 1.0.46; agy's
+`--mode plan` is an agent mode, not a tool restriction.
+
 ## 0.8.0 - 2026-10-06
 
 ### Changes
