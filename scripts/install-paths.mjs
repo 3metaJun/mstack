@@ -90,6 +90,9 @@ export function pathFoldsCase(directory) {
 // Each component is folded by the directory that contains it, so a case-insensitive mount inside a
 // case-sensitive tree (or the reverse) keeps its parent prefix intact. `foldsCase(directory)` is injectable
 // so tests do not depend on the host filesystem. Windows always folds.
+// Known limit: folding uses JS toLowerCase(), not the filesystem's own Unicode table (ext4 casefold, NTFS,
+// APFS), so non-ASCII names such as "Straße" and "STRASSE" can get different keys. Install target names
+// come from the ASCII skill registry.
 export function localPathKey(value, { platform = process.platform, foldsCase = pathFoldsCase } = {}) {
   const normalized = resolve(value);
   if (platform === "win32") return normalized.toLowerCase();
