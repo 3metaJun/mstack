@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: mattpocock/skills
-          ref: 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76
+          ref: 49dd158d1076134a641b33efb035946536778336
           path: .upstream/mattpocock-skills
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:

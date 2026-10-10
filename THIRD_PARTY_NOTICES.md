@@ -100,7 +100,7 @@ SOFTWARE.
 The following skills are adapted from
 [`mattpocock/skills`](https://github.com/mattpocock/skills), pinned during the
 port at commit
-[`6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`](https://github.com/mattpocock/skills/commit/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76):
+[`49dd158d1076134a641b33efb035946536778336`](https://github.com/mattpocock/skills/commit/49dd158d1076134a641b33efb035946536778336):
 
 - `writing-for-agents`
 - `codebase-design`

@@ -107,6 +107,14 @@ and archive limits. Claude-only invocation fields such as `user-invocable` and
 `disable-model-invocation` therefore belong in an install-time adapter, never in
 the canonical tree.
 
+No adapter sets those fields today, and that is deliberate. pstack marks most of
+its skills `disable-model-invocation: true` because Cursor users type them or
+reach them through a Custom Mode. mstack keeps every skill model-invocable so a
+Harness without a typed-skill entry point can still load a principle or workflow
+from its description. The cost is the listing budget: every description is in
+the session's skill listing. Revisit this per Harness, in its adapter, if that
+budget becomes the limit.
+
 The plugin also carries a `SessionStart` hook. Claude Code loads
 `hooks/hooks.json` from the plugin root by default, so `plugin.json` does not
 reference it; `validatePluginHooks` rejects a second reference as a duplicate and
