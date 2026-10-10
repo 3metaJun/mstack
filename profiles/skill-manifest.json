@@ -2,7 +2,7 @@
   "version": 1,
   "sources": {
     "pstack": "2cbf58508f40de470d7490b55c51d71241928fa2",
-    "mattpocock/skills": "6654f6b60cd9d5be8b54c6fafe44346dabeb3b76"
+    "mattpocock/skills": "49dd158d1076134a641b33efb035946536778336"
   },
   "files": {
     "skills/architect/references/design-red-flags.md": {
@@ -69,7 +69,7 @@
     "skills/codebase-design/references/design-alternatives.md": {
       "upstream": "mattpocock/skills",
       "source": "skills/engineering/codebase-design/DESIGN-IT-TWICE.md",
-      "sourceDigest": "8e740bf98446dbd4dfdc132ac4346d9a7eedaf93de6a495889171cf7f99f16bd",
+      "sourceDigest": "52b52e75655a27aea59c6966b410bac82448968ad46ef1ebb9f07c274e3ae010",
       "targetDigest": "fe64a751fc7e1a5399126886b1c0832b484364cfeaa7929d1c8e77b6a49eb208",
       "reason": "The adapted design comparison workflow lives under references."
     },
@@ -138,8 +138,8 @@
     "skills/diagnosing-bugs/SKILL.md": {
       "upstream": "mattpocock/skills",
       "source": "skills/engineering/diagnosing-bugs/SKILL.md",
-      "sourceDigest": "77f3cf31bc99b2f49af943222526531fcc9fc41d047626d3640e875e85af3e84",
-      "targetDigest": "ecc513932a6cbc3e83a0e8fbd6e6a80d669e8f86c473586b878be58712d58a81"
+      "sourceDigest": "849198df88cdb65fd0d97236604c1fca7ff2f22d2f705f9724a800d0266b118d",
+      "targetDigest": "2ca66d48ca49d5daca33163c6fe5b161441118276972cb8d12f1abe0e5072c68"
     },
     "skills/figure-it-out/SKILL.md": {
       "upstream": "pstack",

@@ -78,8 +78,9 @@ also returned the directory-derived command name during an isolated
 stream-JSON initialization without a user prompt or model request. Recheck this adapter
 if OpenCode adds a directory-name fallback for external skills.
 
-pi 0.85.1 keeps the first same-name skill and reports a collision for later
-independent copies. A stale native pi copy can therefore hide a shared update.
+pi keeps the first same-name skill and reports a collision for later
+independent copies. This was observed with pi 0.85.1, and the pi 1.1.0 skills
+documentation states the same rule. A stale native pi copy can therefore hide a shared update.
 The installer migration removes recognized redundant copies from discovery;
 see [migration instructions](../README.md#migrate-an-existing-installation).
 It also keeps backups outside skill roots so recursive scanners do not load
@@ -105,6 +106,14 @@ canonical frontmatter must stay inside the upload field set; the packer test and
 and archive limits. Claude-only invocation fields such as `user-invocable` and
 `disable-model-invocation` therefore belong in an install-time adapter, never in
 the canonical tree.
+
+No adapter sets those fields today, and that is deliberate. pstack marks most of
+its skills `disable-model-invocation: true` because Cursor users type them or
+reach them through a Custom Mode. mstack keeps every skill model-invocable so a
+Harness without a typed-skill entry point can still load a principle or workflow
+from its description. The cost is the listing budget: every description is in
+the session's skill listing. Revisit this per Harness, in its adapter, if that
+budget becomes the limit.
 
 The plugin also carries a `SessionStart` hook. Claude Code loads
 `hooks/hooks.json` from the plugin root by default, so `plugin.json` does not
