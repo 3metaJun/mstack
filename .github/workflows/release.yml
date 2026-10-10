@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   github-release:
+    # A manual run from another branch would tag an unmerged commit as the release.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

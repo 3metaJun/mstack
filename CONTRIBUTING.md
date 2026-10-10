@@ -33,5 +33,5 @@ It warns while the version is missing from npm; publishing stays a manual step.
 
 `npm run upstream-drift` lists upstream commits that touch the adapted paths
 after the pins in `profiles/upstreams.json`. The `upstream-drift` workflow runs
-it weekly and keeps one "Upstream drift report" issue current. Set `GH_TOKEN`
-locally to avoid GitHub's anonymous rate limit.
+it weekly and keeps one "Upstream drift report" issue current. It clones
+each upstream and reads `<pin>..HEAD`, so it needs `git` and network access.

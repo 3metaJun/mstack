@@ -29,8 +29,9 @@ jobs:
           cat drift.md
       - id: issue
         run: |
-          number=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number,title \
-            --jq "map(select(.title == \"$TITLE\")) | .[0].number // empty")
+          # Own only an issue this workflow wrote: opened by a bot and carrying the report marker.
+          number=$(gh issue list --state open --search "in:title \"$TITLE\"" --limit 100 --json number,author,body \
+            --jq 'map(select(.author.is_bot and (.body | contains("<!-- mstack-upstream-drift -->")))) | .[0].number // empty')
           echo "number=$number" >> "$GITHUB_OUTPUT"
       - if: steps.drift.outputs.drift == 'true' && steps.issue.outputs.number == ''
         run: gh issue create --title "$TITLE" --body-file drift.md
