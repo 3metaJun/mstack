@@ -449,7 +449,7 @@ left the workspace untouched but still wrote its own plan file under
 Harness's credentials and configured model access.
 
 The read-only live prompt last passed on 2026-10-10 with Claude Code 2.1.296,
-Codex CLI 0.162.0, and pi 1.1.0 on Windows.
+Codex CLI 0.162.0, OpenCode 1.18.34, and pi 1.1.0 on Windows.
 
 The Claude skill-invocation path was verified with Claude Code 2.1.267, the Kiro-Pro
 configuration, and `claude-haiku-4-5-20251001`. The check required Claude
