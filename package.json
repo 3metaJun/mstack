@@ -29,6 +29,7 @@
     "pack-claude-skills": "node scripts/pack-claude-skills.mjs",
     "smoke-harnesses": "node scripts/smoke-harnesses.mjs",
     "sync-upstream": "node scripts/sync-upstream.mjs",
+    "upstream-drift": "node scripts/upstream-drift.mjs",
     "install-skills": "node scripts/install.mjs",
     "optimize-context": "node scripts/optimize-context.mjs",
     "reconcile-context": "node scripts/reconcile-context.mjs",
