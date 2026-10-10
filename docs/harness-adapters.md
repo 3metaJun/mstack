@@ -78,8 +78,9 @@ also returned the directory-derived command name during an isolated
 stream-JSON initialization without a user prompt or model request. Recheck this adapter
 if OpenCode adds a directory-name fallback for external skills.
 
-pi 0.85.1 keeps the first same-name skill and reports a collision for later
-independent copies. A stale native pi copy can therefore hide a shared update.
+pi keeps the first same-name skill and reports a collision for later
+independent copies. This was observed with pi 0.85.1, and the pi 1.1.0 skills
+documentation states the same rule. A stale native pi copy can therefore hide a shared update.
 The installer migration removes recognized redundant copies from discovery;
 see [migration instructions](../README.md#migrate-an-existing-installation).
 It also keeps backups outside skill roots so recursive scanners do not load

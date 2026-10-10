@@ -317,7 +317,7 @@ test("fanout executes every configured model and retains attributed output after
   assert.deepEqual(readFileSync(log, "utf8").trim().split("\n").sort(), ["review-a", "review-b"]);
   for (const entry of results) {
     const output = JSON.parse(entry.stdout);
-    assert.deepEqual(output.args, ["-p", "--no-session", "--model", entry.model, "same prompt", "--tools", "read,grep,find,ls"]);
+    assert.deepEqual(output.args, ["-p", "--no-session", "--model", entry.model, "same prompt", "--tools", "read,grep,find,ls", "--no-mcp"]);
     assert.equal(output.proof, "x".repeat(128 * 1024));
     assert.equal(entry.stderr.trim(), `stderr:${entry.model}`);
   }

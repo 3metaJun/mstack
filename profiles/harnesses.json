@@ -20,7 +20,7 @@
       "command": "claude",
       "headlessArgs": ["--print", "--no-session-persistence", "--output-format", "text"],
       "modelArgs": ["--model", "{model}"],
-      "readOnlyArgs": ["--tools", "Read,Glob,Grep"]
+      "readOnlyArgs": ["--tools", "Read,Glob,Grep", "--strict-mcp-config"]
     }
   },
   "opencode": {
@@ -49,7 +49,7 @@
       "command": "pi",
       "headlessArgs": ["-p", "--no-session"],
       "modelArgs": ["--model", "{model}"],
-      "readOnlyArgs": ["--tools", "read,grep,find,ls"]
+      "readOnlyArgs": ["--tools", "read,grep,find,ls", "--no-mcp"]
     }
   },
   "antigravity": {

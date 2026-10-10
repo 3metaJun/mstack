@@ -435,7 +435,11 @@ model choices. An inherited role in that file needs `--parent-model`. The live
 prompt checks a reply marker; it does not prove that the Harness loaded the skill
 or completed its workflow. These live calls always use `--read-only`.
 Codex, Claude Code, pi, and Grok use CLI-enforced tool restrictions; Grok keeps
-only `read_file`, `list_dir`, and `grep`.
+only `read_file`, `list_dir`, and `grep`. A built-in tool allowlist does not
+cover MCP tools, so Claude Code also gets `--strict-mcp-config` and pi gets
+`--no-mcp`, which needs pi 1.0.4 or newer. Codex documents its `read-only` sandbox for
+shell commands, and mstack has not checked whether it limits configured MCP
+tools; run Codex with a profile that has no MCP servers when that matters.
 OpenCode selects its built-in `plan` agent, which denies direct edits but still
 allows shell commands in OpenCode 1.18; use a disposable checkout when its
 prompt-only write boundary is insufficient. Antigravity's `--mode plan` has the
@@ -444,7 +448,10 @@ left the workspace untouched but still wrote its own plan file under
 `~/.gemini/antigravity-cli/`. A live check also needs that
 Harness's credentials and configured model access.
 
-The Claude live path was verified with Claude Code 2.1.267, the Kiro-Pro
+The read-only live prompt last passed on 2026-10-10 with Claude Code 2.1.296,
+Codex CLI 0.162.0, and pi 1.1.0 on Windows.
+
+The Claude skill-invocation path was verified with Claude Code 2.1.267, the Kiro-Pro
 configuration, and `claude-haiku-4-5-20251001`. The check required Claude
 Code's native `Skill` tool to invoke `meta-mode` and return an exact marker;
 the remote fixture and temporary credentials were removed afterward.

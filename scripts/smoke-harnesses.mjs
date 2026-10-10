@@ -33,7 +33,8 @@ function cleanLines(value) {
     .replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, "")
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean);
+    // Windows PowerShell shims append CLIXML progress records, which would hide the CLI's own last line.
+    .filter((line) => line && line !== "#< CLIXML" && !line.startsWith("<Objs "));
 }
 
 const requested = options["--harness"] ?? "all";
