@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.10.0 - 2026-10-10
+
+### Changes
+
+- Keep MCP tools out of read-only runs. `run-role --read-only` and the smoke
+  check now pass `--no-mcp` to pi and `--strict-mcp-config` to Claude Code. A
+  built-in tool allowlist alone left configured MCP servers reachable: pi 1.0.4
+  and later keeps MCP tools when `--tools` lists plain names, and Claude Code's
+  `--tools` selects from the built-in set only.
+- Sync mattpocock/skills from 6654f6b to 49dd158. `diagnosing-bugs` reads
+  `GLOSSARY.md` after upstream's rename of `CONTEXT.md`, and asks for a `diff`
+  against a pristine copy when a failing test was forced by mutating code or a
+  fixture. `docs/upstream-sync-matt-49dd158.md` lists what was not ported.
+- Add a `release` workflow. When a new version lands on main it runs `npm test`
+  and creates the `v<version>` GitHub Release from that version's section in
+  this file. It runs only on main and warns while the version is missing from
+  npm. Publishing to npm stays manual.
+- Add `npm run upstream-drift` and a weekly `upstream-drift` workflow. They
+  list upstream commits that are not ancestors of the pins in
+  `profiles/upstreams.json` and touch the adapted paths. The workflow keeps one
+  "Upstream drift report" issue current.
+- Drop PowerShell CLIXML records from the smoke check's reported output, so the
+  CLI's own error is visible on Windows.
+- Record in `docs/harness-adapters.md` that every skill stays model-invocable
+  on purpose, and cover Grok and Antigravity in the README and social preview.
+
+### Upgrade notes
+
+Reinstall skills to receive the `diagnosing-bugs` update. `run-role --read-only`
+and `smoke-harnesses --execute` on pi now need pi 1.0.4 or newer, because older
+versions reject `--no-mcp`. A Claude Code read-only run no longer loads MCP
+servers from user or project configuration. A project that kept its domain
+glossary in `CONTEXT.md` for `diagnosing-bugs` should rename it to
+`GLOSSARY.md`. Codex documents its `read-only` sandbox for shell commands, and
+mstack has not checked whether it limits configured MCP tools.
+
+### Verification
+
+The pull request passed Node 18/22 CI on Linux, macOS and Windows with the
+package and pinned-source checks, and an adversarial review whose four findings
+were fixed before merge. The read-only live prompt passed on Windows with Claude
+Code 2.1.296, Codex CLI 0.162.0, OpenCode 1.18.34 and pi 1.1.0; pi and OpenCode
+ran with an explicit `--model`. Whether an MCP tool is actually absent in those
+runs was taken from each CLI's documentation, not observed with a configured
+server. The `release` workflow ran once on main and found the existing v0.9.0
+release; this release is the first one it creates. The `upstream-drift`
+workflow has not run on GitHub yet.
+
 ## 0.9.0 - 2026-10-06
 
 ### Changes
