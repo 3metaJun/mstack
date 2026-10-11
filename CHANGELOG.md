@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.11.0 - 2026-10-11
+
+### Changes
+
+- Sync pstack to `11713c6`, including the new `ketchup` skill and refreshed guides, automations, and upstream manifests.
+- Preserve mstack portability adaptations while updating the upstream validation pin and reviewed baselines.
+
+### Upgrade notes
+
+Reinstall mstack to receive the latest pstack content and the `ketchup` skill:
+
+```bash
+npx @3metajun/mstack --harness all --replace
+```
+
+### Verification
+
+The release PR passed the full Node 18/22 matrix on Linux, macOS, and Windows, plus meta-mode, package, and strict upstream checks.
+
 ## 0.10.0 - 2026-10-10
 
 ### Changes
