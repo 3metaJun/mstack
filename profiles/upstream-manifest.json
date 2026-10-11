@@ -1,6 +1,6 @@
 {
   "source": "https://github.com/cursor/plugins/tree/main/pstack",
-  "commit": "2cbf58508f40de470d7490b55c51d71241928fa2",
+  "commit": "11713c683fe4add4fd403ea880580abbc9e0875f",
   "canonicalSkills": {
     "architect": {
       "source": "8c46078c04ee70fc4f35a9f82a364e49b78992c43625873c82f0635054dc89bd",
@@ -295,10 +295,10 @@
       "automations/benny/templates/triage-automation-prompt.md": "e0bba594547834f013ec805915610eb597e7929efe3ffbe85ae00339ee16d474"
     },
     "guide": {
-      "docs/guide/01-setup.md": "058974e262eed41d2c24428109127898d3a6c403538570e7add515c4089d0d84",
+      "docs/guide/01-setup.md": "a6a9100fc9ace40b6725c7b819928551403a27364e3478ea451fac45eff3dd15",
       "docs/guide/02-meta-mode.md": "681343e7135540ecd0125c83209e602c5e646534b89c2a6029cc29d4dc2455fd",
       "docs/guide/03-understand.md": "c7dce3a9b1f1c0de8c00084453a3a18b69f0ad0c6616592b584e2d19add69ebd",
-      "docs/guide/04-design.md": "83f10b418a0f4d6ec0d7b536918d395fbcdf853f640d5dcbc1f7394a8f3d68ca",
+      "docs/guide/04-design.md": "588228c2e8fd6f9c75c971c5801568cea53ed7a7e7ce84a6ac88947d96df021d",
       "docs/guide/05-build-and-clean.md": "af91971988478ed0e53775d7f14f59e40ef7093b524d21df4f0b7917121b4f23",
       "docs/guide/06-verify-and-ship.md": "e3a8259f2b2450692e43d607848f5a85a7cee894490452968391079e52a8ac50",
       "docs/guide/07-overnight.md": "b66d8726a888fa8ed2f1b488fc1ca14ac67eab892ff655878bd09bacdcdefabc",
@@ -317,7 +317,7 @@
       "tools/meta-mode/bootstrap.ts": "d9d39f235da5512de6122f1ff28584b3a0120b170f5447a7a5868f7cf187d12a",
       "tools/meta-mode/bun.lock": "6413513594536785c3fd52b14934dd52d1ce179ad3ffe99d77535f5b637435a2",
       "tools/meta-mode/check-plan.mjs": "4f9432d9989880b6afc2bdda503d5b12a9d07d357ecf31936b7ab5e83bc80523",
-      "tools/meta-mode/orch/orch.test.ts": "174b86d21ff51ccd28d1a8c938cb2e0c6fa287b209d4ca6c03932fcb1b53372e",
+      "tools/meta-mode/orch/orch.test.ts": "773153ac74de6eb15f58d2682f487f5f30672d7efe3ef1d24a131aa9129d279b",
       "tools/meta-mode/orch/orch.ts": "f091687df627a0b75fabd54af58945a9cd6c7039ef0622012ac9ed60cd8ec434",
       "tools/meta-mode/orch/store.ts": "0eae7cf69282e827b1227166f2e32cee3560f2f3e65b3f1f2faf6fb83d3b4c5b",
       "tools/meta-mode/package.json": "c7ac7fd69bb925415cdc15cd636567304ee40f8d665986e45ed8c0ee658f6caf",
@@ -332,7 +332,7 @@
       "tools/meta-mode/watch-pr/tsconfig.json": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
       "tools/meta-mode/watch-pr/types.compile.ts": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
       "tools/meta-mode/watch-pr/types.ts": "64ba6221e3bfe61bbb292337d199cdec6309455477280efb060203dba34e0e91",
-      "tools/meta-mode/watch-pr/watch-pr": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
+      "tools/meta-mode/watch-pr/watch-pr": "a17825c7862730dd7c897c1ac076971c0f11d2f9ff8fe37c4a74ebc6db92d549",
       "tools/meta-mode/worktree-audit.sh": "9f14b5f4f70a6ada93778e49701f854796b11776edccb9f73816ee2a8b8b623c"
     }
   }
