@@ -3,11 +3,11 @@
   "commit": "11713c683fe4add4fd403ea880580abbc9e0875f",
   "canonicalSkills": {
     "architect": {
-      "source": "8c46078c04ee70fc4f35a9f82a364e49b78992c43625873c82f0635054dc89bd",
+      "source": "76ca68a7e061c68a9d387cb60a4c88eeca7f7aa4f472b6053e42e2ec19db6597",
       "target": "76c299297a79236fa519d401716a6ad1845ecc1a3f4fdff2aa052309261651aa"
     },
     "arena": {
-      "source": "6cc5f63b9212d91d25a10670f8a5eba8665278013ae0e066d18a25f87b710447",
+      "source": "39ea26609b17d925e97cea760f03ba60adea45f4f7232af7a701f8ebacd2b569",
       "target": "f100383e190b806567015d2cbbaf90b9a1b0151ae60b08aa6185fc6eca3c9552"
     },
     "automate-me": {
@@ -15,11 +15,11 @@
       "target": "6ab6c4c4a4b50a7cb182149408bd1758229d4386fbb8b1a66cf6927847b02c27"
     },
     "benchmark-checklist": {
-      "source": "6a767e788a60428fa14e645ee10fe2e49896e514ff654f668b1d824deb9038e8",
+      "source": "ba109e96c8f6c1c391baccf19e5d11e14370df7b3f2605e1572cd565a6c0fca0",
       "target": "3fc701eecd146557b75c0e7d26929ca5d5469632def12ef032109710ae23c1c0"
     },
     "blast-radius": {
-      "source": "5f02db9101ccf26c20254718f0fcd5c2c7ac5d4292b0e0923d0944ac47237aff",
+      "source": "2e10745b97f5862323dcda3b29ca60d56b5c3c98e37020085d26b48efbe0a436",
       "target": "72113714dc5e7ef634a8b220e3a8dacea7b0e82d1f24136c13e04013749ef41a"
     },
     "bro": {
@@ -35,16 +35,20 @@
       "target": "eca219cac2808714d6aa3090fd3065d1da6a579d432f277aef334f1ca0dfe770"
     },
     "figure-it-out": {
-      "source": "cd4c13cfc6553c5ff32458ab1f1a72a83548510f0bba77ca8d6c3846f0da09a4",
+      "source": "d9ed31f08dcd8b80693dcc0da6c5d8bdaddacb341c2ff4aaabc189fe47561e99",
       "target": "37c25a3c0b354da74e33a2a291fc21e62140304eee2447ed73400bc2759402ec"
     },
     "how": {
-      "source": "6492ea0d986c9763d649c665fb331a3b555444c486616136b748ca6c945045b5",
+      "source": "1ea39010bbb68f9dccd669ac516f5e90b5f3ceaa0b00f4f59c7d4b7f9faf50b8",
       "target": "a3e2acb068e126bad1ddadb4b16bb14154d5687fffc8ce2fe8209660b83c2e4b"
     },
     "interrogate": {
-      "source": "08a284d1c40dcfc49df5e33dcd5edac4dbb94664976eda174f3fdc15aad92873",
+      "source": "facea53a9a920ed50fa5a8ea10fea51ad1d81effbb2a7442496db51e468b8415",
       "target": "ab2508809da00eac47444b102cd7d11730f15b2476cd6cd947e330cc08814e78"
+    },
+    "ketchup": {
+      "source": "f460a861cf2179808abc24b5588c94709f8cc3e58d4da2e44baf89556f53b587",
+      "target": "451887dc45227e0e1abd9abfb043e0bc231ff0b246a8ed48b05786306ada123a"
     },
     "maintain-verification-skill": {
       "source": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
@@ -54,13 +58,13 @@
       "source": "3624c8ef16cf2e48deb2a4049e72c6962a9431c8d6c6af90e7bd7ea0375224ec",
       "target": "2f04984c34d64ad8119eac43f24298d480528b14a9876d672aee0c942aa0c2da"
     },
-    "meta-mode": {
-      "source": "2e09a945cbe289dd85448f4a51eeac8c0c3893904decaab9413a33babf96ca08",
-      "target": "1bd904d7163d624d390c09e7bd1079bb5dcf3435828ee72fa34882e06f347c52"
-    },
     "no-comments": {
       "source": "5c5b0882297d704c3a9720c52b7a793c68b013eaf717989f0945624efdfe2b05",
       "target": "f5bc3892fd057751d5928cffbebabbcde58804021a520bf67fac6b550d3399f5"
+    },
+    "meta-mode": {
+      "source": "990d7bd0fdbe817d39e646d7dfb7c3aa038cb7e73c42369a17afe61bfc9e06e2",
+      "target": "1bd904d7163d624d390c09e7bd1079bb5dcf3435828ee72fa34882e06f347c52"
     },
     "principle-attack-the-premise": {
       "source": "c87bd7536f772f8a403ad8155535ee17a1bbec9a353156693eb3bb1520c87ae3",
@@ -71,11 +75,11 @@
       "target": "0ebee28a5f8bf5cac890dc37a18f3cdf66c360d85336fe8efa0be04430ecdddf"
     },
     "principle-build-the-lever": {
-      "source": "458b269eab8e95a1573276955312f7d2a13ae8599879a9efc748248f6bc34b56",
+      "source": "3434b0ad0c640c6f1d7960be7a8986c3bcdc14e26060360dec29903df60074ff",
       "target": "b49623e8e41c072ce14e6479a0a93cb932cd1a320642334cf0ac8f9e7cf31ded"
     },
     "principle-encode-lessons-in-structure": {
-      "source": "77044c83a9ac6df78fc643887ea5f1f11f082adaf14b717c060cdaed03cce863",
+      "source": "ad12c26209770c52f632d9480c048ac5334ce8e5d6297f83ade59652a56cb3ef",
       "target": "e66d95bd954a1e8ba298bc451ba1e9190c758f6d77c240540bedf8f28c895694"
     },
     "principle-exhaust-the-design-space": {
@@ -87,7 +91,7 @@
       "target": "3013367ce42fabb55799ffbcc51ad20b2ae7ec1b898bad4ac4ceaa2f093edbe1"
     },
     "principle-explain-the-number": {
-      "source": "5aac99e7ce0bb1b37e2579acf4fe88c32a1456d9d46afd4a57cfe1df9092e89c",
+      "source": "cd5a25f9e7cf023627ccb470dc5faa97542f29b4319496a32b839a8e1e988047",
       "target": "0a5cb3579a30e4da9d1635f5ceb11f773e551ec8626ac9c38b5db3985d3ac26b"
     },
     "principle-fix-root-causes": {
@@ -115,15 +119,15 @@
       "target": "388e9cbc9e52bd72d9044d7e37126bd3355c4e8f1188447e2a6850fe4fc549d7"
     },
     "principle-minimize-reader-load": {
-      "source": "42551c5dc74cd578163c148da552db3ff67d29b78600ef216bfd311fb828fe69",
+      "source": "1ea2b7fef2391cae5844c4efdbd59031f775e8a52d06b7495d707229a200dcca",
       "target": "d44ded81ac7cfc194dca65c9943a55fe8a058660485049a6e607e6bdf5d70738"
     },
     "principle-model-the-domain": {
-      "source": "bbadbb9a723fac3f76e782ae45665eb94058ec10993e4bae36d4dc6b0e4eac07",
+      "source": "52c0d85e0c3827c41c18299b642657d7b47eaf77b7b31609e42e0df42b84c75f",
       "target": "4464cc1a0a2366ff8249659c30f525dba6206947f037f07f5931238ed0e96f82"
     },
     "principle-never-block-on-the-human": {
-      "source": "f2764bb9338cbfc788c903cf4b9cd0a5f4042d3a04dd6d59cbd525d9beaadd0a",
+      "source": "05030a7a083c337676f793881b4e93cd218e8f1dd676529f56e6ac1d3efb8d1f",
       "target": "90cd48f4082367fe70fc1659fec5a8d0e76a40cb7f9be4797b4b460cec28a4dd"
     },
     "principle-outcome-oriented-execution": {
@@ -135,7 +139,7 @@
       "target": "69fe19f428387ffbdf60d81fa6817272f1f88bc30ec7cd7edad408ce607ff39c"
     },
     "principle-redesign-from-first-principles": {
-      "source": "a1c7fd0a96b40e12a74bceb0e6bb20a9666dd844dcabfb624acb27da23b929fe",
+      "source": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
       "target": "b3ac6bc1c707aa8ad1a331851ad71aeb48f179136907ab2015f34881c674d056"
     },
     "principle-separate-before-serializing-shared-state": {
@@ -147,15 +151,15 @@
       "target": "bc512996a3f226d1964444341e3fab1bda7f1b2928b136ab406ac4486150430f"
     },
     "principle-subtract-before-you-add": {
-      "source": "a983a50e732c1ed315eba7aaf47a61329e31c4794eb1ab9d25d9945265b31e03",
+      "source": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
       "target": "65fa4e1a2a630040eb0abbcfeaf0e82241fd968443021b535f94b4b6d4b7aa0f"
     },
     "principle-test-behavior-not-implementation": {
-      "source": "87e40efe4e486f7ea639d2ed1fc0abe6c93b8fd0e89a81218086909d2470a52e",
+      "source": "b2b73ba42920f9c3174ecdf808ec6e4591b3a9266ada9a05814f386004266d3a",
       "target": "c6104107aa4902342d36eb5c6b7f99862eadff5ba27f367cde011ccdde4d8d17"
     },
     "principle-type-system-discipline": {
-      "source": "c83da8031ffb4c86410030d3e261f659598fca2b7d8158fd9dc269d70a3a025e",
+      "source": "2e492cef34bb25a20b9115df61f9ef3a9837e3fda144ffda8079e5f45a1b72e8",
       "target": "9397a9ce6e26e54d0e6e9f81e488f626f3daefd6903509536fbdfb0d021a274f"
     },
     "recall": {
@@ -163,11 +167,11 @@
       "target": "be67c9e064a2b6d2ec52e915c19f6507f9f389a112e9961eb93b3c793b565e70"
     },
     "reflect": {
-      "source": "902cd959ff2a894c44f462b58057afac676fb83fb0c56c2fc3c853db95e02205",
+      "source": "15c32130fc17fd155852d5e95e81110f390cb5266c1cdd9db59b837d1e31984c",
       "target": "5478382b85614482fdf8799c9b0113d0c12c6595ee1003aa62c91f6288b91089"
     },
     "setup-mstack": {
-      "source": "388d2a0869504ef9943f34b217d0d7a3ca13fdaaeea2327078104d3efb807ce3",
+      "source": "0b6497df7bbb807406afe14c8967ce07bc0e0738e9a341c512d264aa94cc5aa8",
       "target": "ccc9c0c029bc15fcce99a3983cf0c9d461f480d704227fb814396958cb8ffa7a"
     },
     "show-me-your-work": {
@@ -187,7 +191,7 @@
       "target": "5a85664f8cce57429af0d8c060a20d8740579867f0976f4981032e8855cab2b5"
     },
     "technical-writing": {
-      "source": "f5c512ffeec70bc4e0dee50f7bb4c26742e1be77967a6e8b15d1921e1c209ceb",
+      "source": "61fe9c424a798ebf36ad94941f87be049cb8827bdf86d21474a0dde37b513c43",
       "target": "b83d616480d74381acdc5accb65a409c01095b71abc7dc02b6cadc496138dc81"
     },
     "typescript-best-practices": {
@@ -195,83 +199,83 @@
       "target": "02b41b2cbb0ac43940b8f4df8b54c55f1aac0a68890a9379f9b006b2a8f1f4a0"
     },
     "unslop": {
-      "source": "195411d320b5b328f9f642baf59757ed19aaf0931c0838740e0aca273d538dc1",
+      "source": "3126b9e2cf46022f5e0c332e84be5e17a9730669cb3d6ac0a7e5e7e94b1e24fa",
       "target": "290a10a90e52f080fdf0f225f043088990b5cd8d8b8307c800a91cfeb1568aa4"
     },
     "why": {
-      "source": "073fb39adb2de6d07a6cfbaf98a35b6397be974ff9fe3bb26dc46f7065a04114",
+      "source": "844130c025ed6025e37bf64c160e9a1d3511c716d0dabe3a90ed297c0f7337ad",
       "target": "873aedc86d1321093e9a195ac8bff1783241b309a1d33808ab74f181c4b8f22d"
     }
   },
   "adaptedArtifacts": {
     "automations/benny/FOR_AGENTS.md": {
       "source": "9e86916edf7fdddf3325dac869d947d5cab767ee40f1b5eaf5d16e31f2a5322a",
-      "target": "5a8f7571f9aa66d16434e2d4bb6718c9e76141843f68c14e4e2f6a8fc39accce",
+      "target": "9e86916edf7fdddf3325dac869d947d5cab767ee40f1b5eaf5d16e31f2a5322a",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/README.md": {
       "source": "339fa6a5e1b07dbd708e87bc423e31e25ab3ac7e4292b80d3330abe992ee3245",
-      "target": "4dacbeb44e84630bbb7d88d119bd3ed9a76f679fb691a280463f5473e192d69e",
+      "target": "339fa6a5e1b07dbd708e87bc423e31e25ab3ac7e4292b80d3330abe992ee3245",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md": {
       "source": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
-      "target": "02c92e00d47c70c41bf9f469b556ea8d071483ad1eca70c3b27642dbc1f611f5",
+      "target": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md": {
       "source": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
-      "target": "c8a6639a5f4c377da6ce4e3a75a1ab3a843b1a17bb640cf758939eee0c1af2ea",
+      "target": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md": {
       "source": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
-      "target": "d62d3a59cddf77f591ee62b123e367faf805f64ae7d18103741ac04207ebbe39",
+      "target": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/skills/reproduce-and-fix-issues/SKILL.md": {
       "source": "2cb174442390be10cb7e7767e89bb1e94fda4d014426c40888397ad8286060ff",
-      "target": "6cd1740f9a1edaf6ab02eaf93f8690d6f4062e68b35be06c50585ac71f9798b6",
+      "target": "2cb174442390be10cb7e7767e89bb1e94fda4d014426c40888397ad8286060ff",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/skills/setup-benny/SKILL.md": {
       "source": "c5bbca8d97cc6975d34e84c42ac4fd59e04c7f77892e0af534b3e58ca0fd43df",
-      "target": "269ab1c55733cbc176eb07c9268b891a5b03051be90fec1d053dc03ecc870b69",
+      "target": "c5bbca8d97cc6975d34e84c42ac4fd59e04c7f77892e0af534b3e58ca0fd43df",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/templates/configuration.example.yaml": {
       "source": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
-      "target": "6ba873ecb944db84f46965238f131e195f9ac9e26fd037d6c4a198d9404d3c3b",
+      "target": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "automations/benny/templates/reproduce-automation-prompt.md": {
       "source": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
-      "target": "f0238f77e8339eba897e2a85fa1ee328ed3845be14f65d01863a8f0938eb538d",
+      "target": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
       "reason": "Route native Benny verification and maintenance through the shared canonical contract and feature map."
     },
     "docs/guide/01-setup.md": {
-      "source": "058974e262eed41d2c24428109127898d3a6c403538570e7add515c4089d0d84",
-      "target": "780ae4284b48e26032e0e70844d918ade5cd6ffebd6c301784c4432d4b7ac980",
+      "source": "a6a9100fc9ace40b6725c7b819928551403a27364e3478ea451fac45eff3dd15",
+      "target": "a6a9100fc9ace40b6725c7b819928551403a27364e3478ea451fac45eff3dd15",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/03-understand.md": {
       "source": "c7dce3a9b1f1c0de8c00084453a3a18b69f0ad0c6616592b584e2d19add69ebd",
-      "target": "72e10ba5cac7e7510de58bf4669121f820343304f5050c4bc219dd00668c05f9",
+      "target": "c7dce3a9b1f1c0de8c00084453a3a18b69f0ad0c6616592b584e2d19add69ebd",
       "reason": "Point session pickup at the portable project-local resume checkpoint."
     },
     "docs/guide/06-verify-and-ship.md": {
       "source": "e3a8259f2b2450692e43d607848f5a85a7cee894490452968391079e52a8ac50",
-      "target": "5fd91e770e7805455668b44d4f39f767498dc5ff6d4f10a9cfbe9de9d0631ac5",
+      "target": "e3a8259f2b2450692e43d607848f5a85a7cee894490452968391079e52a8ac50",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/07-overnight.md": {
       "source": "b66d8726a888fa8ed2f1b488fc1ca14ac67eab892ff655878bd09bacdcdefabc",
-      "target": "b7e45bde8b8e383ca2eeaf97296da9d409a7b13214c26a9f815ff83f4ed1a67e",
+      "target": "b66d8726a888fa8ed2f1b488fc1ca14ac67eab892ff655878bd09bacdcdefabc",
       "reason": "Offer a host scheduler as an alternative to a session loop for unattended runs."
     },
     "docs/guide/README.md": {
       "source": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b",
-      "target": "234cc31995332fdc898f1814d611b7cbcd6b2c1915e793dbb75883dd31b8c030",
+      "target": "4b0d617c745e1ff33274bea1c1bc1274f3e23514455bec97affc9e9951f2350b",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     }
   },
