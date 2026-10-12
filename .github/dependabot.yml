@@ -1,0 +1,32 @@
+# Workflow actions are pinned by commit SHA with a `# vN` comment; Dependabot
+# rewrites both. `cooldown` skips releases younger than 7 days as a supply-chain
+# guard (security updates ignore it).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: Asia/Shanghai
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      github-actions:
+        patterns: ['*']
+
+  - package-ecosystem: bun
+    directory: /tools/meta-mode
+    schedule:
+      interval: monthly
+      timezone: Asia/Shanghai
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      bun-minor-and-patch:
+        update-types: [minor, patch]
