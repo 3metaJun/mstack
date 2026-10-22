@@ -133,3 +133,13 @@ exists, offer once to run `/create-verification-skill`. Create it when the user
 has already requested that work or accepts the offer. Model configuration alone
 does not require launching the app or adopting a team policy. Mixed-Harness
 adoption is a separate project change described in the mstack guide.
+
+## Offer a formal verification skill (optional)
+
+Check whether the project already has a formal verification skill that runs a
+model checker, proof, or other verifier against the code. If none exists, offer
+once: "want a formal verification skill, so agents can prove a key property of
+your code holds in every case in scope, not only the cases tests reach? I can
+generate one with `/create-formal-verification-skill`." Create it when the user
+accepts the offer. Prefer this for concurrency, retries, state machines, or
+parsers where a bounded model can expose failures ordinary tests may miss.

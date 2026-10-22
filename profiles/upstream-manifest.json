@@ -184,7 +184,7 @@
     },
     "setup-mstack": {
       "source": "ef40d7cff8e0720dcb01e18f5ef44865ae1caaf0466045cecff8fb2cc9c5fc42",
-      "target": "ccc9c0c029bc15fcce99a3983cf0c9d461f480d704227fb814396958cb8ffa7a"
+      "target": "f78da4632da25656622e4d28485cea8a7eb1b4bdab234051d3d18ab64a2421dd"
     },
     "sharpen": {
       "source": "563dfc460c605d311e650726288e2f1cbd61eab817db178d6e7e29643e07e7a2",
@@ -275,7 +275,7 @@
     },
     "docs/guide/01-setup.md": {
       "source": "809266f58df5fd51c58a42fd17d26322e1e82924b283281b3094f0bec49dabac",
-      "target": "809266f58df5fd51c58a42fd17d26322e1e82924b283281b3094f0bec49dabac",
+      "target": "d73c4f0fd540cbd97d5715f09a70dd84459abee8460ac10264f4ae22cbd42b93",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/03-understand.md": {
@@ -285,12 +285,12 @@
     },
     "docs/guide/06-verify-and-ship.md": {
       "source": "8d7185d17cdff573a034e3f93449fcc8bb80180551ab2260d09bc84a8336afbe",
-      "target": "8d7185d17cdff573a034e3f93449fcc8bb80180551ab2260d09bc84a8336afbe",
+      "target": "4527eeeb9d5dab9d5673e12c12cfcab9207fb88364f896c1d5705654dd43087e",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/07-overnight.md": {
       "source": "ff75e792447369c8baedc46f2400dca7110e36ffa750bd78be56a4c4d6c28e7d",
-      "target": "ff75e792447369c8baedc46f2400dca7110e36ffa750bd78be56a4c4d6c28e7d",
+      "target": "280b01f725912dc8efab95ba5a6eaba65a66eb3dee53cb94a028b88520fe5c44",
       "reason": "Offer a host scheduler as an alternative to a session loop for unattended runs."
     },
     "docs/guide/README.md": {

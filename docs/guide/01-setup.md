@@ -13,7 +13,7 @@ npx @3metajun/mstack --harness <codex|claude|opencode|pi>
 The installer reports the target directory and the number of skills it staged.
 Run it again for another Harness when you use more than one.
 
-In Claude Code, run `/plugin marketplace add cursor/plugins`, then `/plugin install mstack@cursor-plugins`. Claude Code prefixes plugin commands, so each command in this guide takes a `mstack:` prefix there, such as `/mstack:setup-mstack`, which writes its model rule to `~/.claude/rules/mstack-models.md`. The [Claude Code adapter](../harness/claude-code.md) covers the other differences.
+Claude Code can load mstack through the installer command above. Its skill root and frontmatter rules differ from the shared Harness copy; see the [Harness adapter reference](../harness-adapters.md).
 
 ## Pick your models
 

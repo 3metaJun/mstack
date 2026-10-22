@@ -203,7 +203,7 @@ function parseArgs([command, ...rest]) {
   return { command, input, flags };
 }
 
-const rel = (file) => path.relative(process.cwd(), file) || ".";
+const rel = (file) => path.relative(process.cwd(), file).split(path.sep).join("/") || ".";
 const cfgOf = (spec) => spec.replace(/\.tla$/, ".cfg");
 
 function findTools() {

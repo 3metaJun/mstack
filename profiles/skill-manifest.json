@@ -611,7 +611,7 @@
       "upstream": "pstack",
       "source": "skills/setup-pstack/SKILL.md",
       "sourceDigest": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
-      "targetDigest": "ccc9c0c029bc15fcce99a3983cf0c9d461f480d704227fb814396958cb8ffa7a"
+      "targetDigest": "f78da4632da25656622e4d28485cea8a7eb1b4bdab234051d3d18ab64a2421dd"
     },
     "skills/sharpen/SKILL.md": {
       "upstream": "pstack",
@@ -678,7 +678,7 @@
       "upstream": "pstack",
       "source": "skills/statechart/scripts/statechart.mjs",
       "sourceDigest": "d352ca68fb05cef8673ce1b86ea516cc619ff6c1f4faea70233de59bcdf7a9b7",
-      "targetDigest": "d352ca68fb05cef8673ce1b86ea516cc619ff6c1f4faea70233de59bcdf7a9b7"
+      "targetDigest": "722442dfac9ad53c5b0b4c81099310d3ce3abbdc22e7bb71091a8ab9ce95f1d5"
     },
     "skills/statechart/scripts/test/statechart.test.mjs": {
       "upstream": "pstack",
