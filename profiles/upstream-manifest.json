@@ -285,12 +285,12 @@
     },
     "docs/guide/06-verify-and-ship.md": {
       "source": "8d7185d17cdff573a034e3f93449fcc8bb80180551ab2260d09bc84a8336afbe",
-      "target": "4527eeeb9d5dab9d5673e12c12cfcab9207fb88364f896c1d5705654dd43087e",
+      "target": "c933fc605724fc740608161f053c54063021ceae8cc0b0e91ad962f72e498921",
       "reason": "Document one canonical verification contract and the mixed pstack/mstack project workflow."
     },
     "docs/guide/07-overnight.md": {
       "source": "ff75e792447369c8baedc46f2400dca7110e36ffa750bd78be56a4c4d6c28e7d",
-      "target": "280b01f725912dc8efab95ba5a6eaba65a66eb3dee53cb94a028b88520fe5c44",
+      "target": "2fe921479713551182e339787d2dead69dbc1bf625152a05c902375857ec7b72",
       "reason": "Offer a host scheduler as an alternative to a session loop for unattended runs."
     },
     "docs/guide/README.md": {
