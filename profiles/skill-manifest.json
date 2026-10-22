@@ -872,7 +872,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/scripts/check-plan.test.ts",
       "sourceDigest": "c80f3ea043b81f219b92c4c8a3af6bdd4f8d32ea596ec15b5b9e0252645f2ae8",
-      "targetDigest": "c80f3ea043b81f219b92c4c8a3af6bdd4f8d32ea596ec15b5b9e0252645f2ae8",
+      "targetDigest": "a38f1de2a1a147c523076318584a6bc919e23ee65d88c9e32ab7cf50a08c124e",
       "reason": "Runtime tools are packaged separately from portable skill instructions."
     },
     "tools/meta-mode/check-playbooks.mjs": {
