@@ -21,13 +21,13 @@ Sources:
 - [Claude Code skills](https://code.claude.com/docs/en/skills)
 - [OpenCode skills](https://opencode.ai/docs/skills)
 - [pi skills](https://pi.dev/docs/latest/skills)
-- Antigravity: the `agy` 1.2.16 CLI and T3 Code's skill discovery for it,
+- Antigravity: the `agy` 1.2.17 CLI and T3 Code's skill discovery for it,
   [`AntigravitySkills.ts`](https://github.com/pingdotgg/t3code/blob/main/apps/server/src/provider/Drivers/AntigravitySkills.ts)
   and the [Antigravity provider guide](https://github.com/pingdotgg/t3code/blob/main/docs/user/providers-antigravity.md).
   Antigravity publishes no skill-path reference, so the roots above come from
   that implementation.
 - Grok: the Grok Build user guide shipped with the CLI (`docs/user-guide/08-skills.md`
-  under the Grok home directory), checked against `grok inspect --json` on 1.0.46,
+  under the Grok home directory), checked against `grok inspect --json` on 1.0.62,
   which listed skills from `~/.agents/skills/`.
 - [Cursor skills](https://cursor.com/docs/context/skills)
 
@@ -72,14 +72,14 @@ also scans `~/.claude/skills/`; skills with the same name collapse to one entry.
 Claude output omits frontmatter `name`; Claude's documented fallback
 uses the directory name, so `/meta-mode` keeps its name. OpenCode requires an
 explicit name before registration and skips the Claude copy. This behavior
-was checked with OpenCode 1.18.30 using a named Claude control skill and an
+was checked with OpenCode 1.19.3 using a named Claude control skill and an
 unnamed Claude copy alongside the canonical shared skill. Claude Code 2.1.267
 also returned the directory-derived command name during an isolated
 stream-JSON initialization without a user prompt or model request. Recheck this adapter
 if OpenCode adds a directory-name fallback for external skills.
 
 pi keeps the first same-name skill and reports a collision for later
-independent copies. This was observed with pi 0.85.1, and the pi 1.1.0 skills
+independent copies. This was observed with pi 0.85.1, and the pi 1.3.0 skills
 documentation states the same rule. A stale native pi copy can therefore hide a shared update.
 The installer migration removes recognized redundant copies from discovery;
 see [migration instructions](../README.md#migrate-an-existing-installation).
