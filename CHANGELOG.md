@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.12.0 - 2026-10-23
+
+### Changes
+
+- Sync pstack from `11713c6` to `eb4db2b`. The bundle grows from 54 to 60
+  skills. It adds `create-formal-verification-skill`,
+  `maintain-formal-verification-skill`, `statechart`, `in-your-own-words`, and
+  `sharpen`, and updates the guides and provenance manifests.
+- `/setup-mstack` now offers once to generate a formal verification skill when
+  the project has none.
+- Normalize line endings for `.cfg`, `.mmd`, and `.tla` files in skill baseline
+  digests, so a baseline recorded on a Windows checkout matches one on Linux.
+- The `statechart` CLI prints paths with `/` on every platform.
+- Record the current Claude Code, Codex CLI, OpenCode, pi, Antigravity, and
+  Grok versions in the docs.
+- Add Dependabot version updates.
+
+### Upgrade notes
+
+Reinstall mstack to receive the new skills:
+
+```bash
+npx @3metajun/mstack --harness all --replace
+```
+
+### Verification
+
+PR #54 passed the full Node 18/22 matrix on Linux, macOS, and Windows, plus
+meta-mode, package, and strict upstream checks. The `statechart` tests pass on
+Windows; the tests that need TLC are skipped.
+
 ## 0.11.0 - 2026-10-11
 
 ### Changes
