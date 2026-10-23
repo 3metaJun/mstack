@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: cursor/plugins
-          ref: 11713c683fe4add4fd403ea880580abbc9e0875f
+          ref: eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10
           path: .upstream/cursor-plugins
           sparse-checkout: pstack
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

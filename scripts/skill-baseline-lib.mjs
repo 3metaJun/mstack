@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const textExtensions = /\.(?:cjs|css|cts|hbs|html|js|json|lock|md|mjs|sh|ts|tsx|tsv|txt|yaml|yml)$/i;
+const textExtensions = /\.(?:cfg|cjs|css|cts|hbs|html|js|json|lock|md|mmd|mjs|sh|tla|ts|tsx|tsv|txt|yaml|yml)$/i;
 const hashPattern = /^[a-f0-9]{64}$/;
 
 export function inside(root, path) {

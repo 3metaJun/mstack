@@ -441,15 +441,15 @@ cover MCP tools, so Claude Code also gets `--strict-mcp-config` and pi gets
 shell commands, and mstack has not checked whether it limits configured MCP
 tools; run Codex with a profile that has no MCP servers when that matters.
 OpenCode selects its built-in `plan` agent, which denies direct edits but still
-allows shell commands in OpenCode 1.18; use a disposable checkout when its
+allows shell commands in OpenCode 1.19; use a disposable checkout when its
 prompt-only write boundary is insufficient. Antigravity's `--mode plan` has the
 same limit: it is an agent mode, not a tool allowlist. In Antigravity 1.2.17 it
 left the workspace untouched but still wrote its own plan file under
 `~/.gemini/antigravity-cli/`. A live check also needs that
 Harness's credentials and configured model access.
 
-The read-only live prompt last passed on 2026-10-10 with Claude Code 2.1.296,
-Codex CLI 0.162.0, OpenCode 1.18.34, and pi 1.1.0 on Windows.
+The read-only live prompt was checked on 2026-10-22 with Claude Code 2.1.306,
+Codex CLI 0.163.0, OpenCode 1.19.3, and pi 1.3.0 on Windows.
 
 The Claude skill-invocation path was verified with Claude Code 2.1.267, the Kiro-Pro
 configuration, and `claude-haiku-4-5-20251001`. The check required Claude
@@ -515,9 +515,9 @@ target directory and restores backups if a commit fails.
 
 ## Included skills
 
-The current bundle contains 54 skills. It includes the 50 entries in the
-portable pstack tree, three skills adapted from `mattpocock/skills`, and the
-local `mstack-help` skill:
+The current bundle contains 60 skills. It includes the 56 shipped entries in
+the portable pstack tree, three skills adapted from `mattpocock/skills`, and
+the local `mstack-help` skill:
 
 - Engineering principles for boundaries, domain modelling, idempotence,
   verification, sequencing, and type safety.
@@ -525,6 +525,10 @@ local `mstack-help` skill:
   instruction writing.
 - `create-verification-skill` for generating a project-specific verification
   workflow.
+- `create-formal-verification-skill` and `maintain-formal-verification-skill`
+  for TLA+ based formal verification workflows.
+- `statechart` for turning statecharts and TLA+ models into visual charts.
+- `in-your-own-words` and `sharpen` for goal restatement and prompt refinement.
 - `meta-mode` for routing a multi-step task through the capabilities available
   in the current harness.
 - `benchmark-checklist` and `correct` for vetting a measured number and for

@@ -2,7 +2,7 @@
 
 [T3 Code](https://github.com/pingdotgg/t3code) is a GUI that runs Codex, Claude Code, Cursor, Grok, OpenCode, Antigravity, Pi, and ACP Registry agents as subprocesses. It does not own skills. Each provider finds its own skills, and T3 lists them in the composer. Installing mstack for a provider is therefore enough; nothing is installed into T3 itself.
 
-This page was checked against the T3 Code source at commit `8f75697` (October 2026), the Grok CLI 1.0.46, and the mstack installer in this repository. T3 changes quickly, so treat the tables as a starting point and use the checks in each section when something does not show up.
+This page was checked against the T3 Code source at commit `8f75697` (October 2026), the Grok CLI 1.0.62, and the mstack installer in this repository. T3 changes quickly, so treat the tables as a starting point and use the checks in each section when something does not show up.
 
 ## How T3 finds skills
 
@@ -11,7 +11,7 @@ This page was checked against the T3 Code source at commit `8f75697` (October 20
 | Codex | Codex app-server (`skills/list`) | Codex's own, `~/.agents/skills` for mstack | Codex's own, `.agents/skills` for mstack |
 | Claude Code | T3 scans the directories | `<config dir>/skills`, where the config dir is the instance's home path, else `CLAUDE_CONFIG_DIR`, else `~/.claude` | `<cwd>/.claude/skills` only |
 | Cursor | T3 scans the directories | `~/.cursor/skills`, `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills` | The same four names under `<cwd>` |
-| Grok | `grok inspect --json` | Grok's own; on Grok CLI 1.0.46 both `~/.agents/skills` and `~/.claude/skills` were reported | Grok's own, not checked |
+| Grok | `grok inspect --json` | Grok's own; on Grok CLI 1.0.62 both `~/.agents/skills` and `~/.claude/skills` were reported | Grok's own, not checked |
 | Antigravity | T3 scans the directories | `~/.gemini/config/skills`, `~/.gemini/antigravity-cli/skills`. Not `~/.agents/skills`. | `<cwd>/.gemini/skills`, `<cwd>/.agents/skills`, `<cwd>/.agent/skills` |
 | Pi | Pi (`get_commands`) | Pi's own | Pi's own; approve the project in Pi first |
 | OpenCode | OpenCode, per project directory | OpenCode's own | OpenCode's own |
@@ -27,7 +27,7 @@ This page was checked against the T3 Code source at commit `8f75697` (October 20
 npx @3metajun/mstack --harness codex,claude,pi
 ```
 
-- Codex, Pi, OpenCode, and Cursor read the shared copy. Grok read it on 1.0.46.
+- Codex, Pi, OpenCode, and Cursor read the shared copy. Grok read it on 1.0.62.
 - Claude Code needs its own copy in `~/.claude/skills`, which `--harness claude` writes. The installer leaves out the frontmatter `name` there because Claude Code names a skill after its directory.
 - Antigravity does not read `~/.agents/skills`, and it needs the frontmatter `name`, so the Claude copy does not work for it either. Use an `antigravity` harness if your mstack version has one (`npx @3metajun/mstack --help` lists the harnesses). Otherwise install the canonical copy into its directory by overriding the Codex target:
 
