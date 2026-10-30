@@ -1,7 +1,7 @@
 {
   "name": "mstack",
   "displayName": "mstack",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Portable engineering skills for Codex, Claude Code, OpenCode, pi, Grok, and Antigravity.",
   "author": {
     "name": "3metaJun"

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.13.0 - 2026-10-30
+
+### Changes
+
+- Sync pstack to `0.15.36`, including the TypeScript statechart compiler,
+  refreshed statechart fixtures, `ketchup-video`, and updated agent workflows.
+- Update PR watcher, plan parsing, upstream baselines, and current harness
+  version notes.
+- Add Linux and Windows CI for the statechart compiler and TLC CLI.
+
+### Verification
+
+PR #56 passed all 11 required checks, including 368 Linux statechart tests and
+the Windows compiler, render, and TLC CLI checks.
+
 ## 0.12.1 - 2026-10-30
 
 ### Changes
