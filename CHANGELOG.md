@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.1 - 2026-10-30
+
+### Changes
+
+- Add the `"autopilot, don't merge"` trigger phrase to the `meta-mode`
+  Autopilot-stack entry, matching pstack `0.15.36`.
+
+### Verification
+
+PR #57 passed all 11 required checks.
+
 ## 0.13.0 - 2026-10-30
 
 ### Changes
