@@ -376,7 +376,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "ee1848c973a112026f09ba12ea7a13c1654006e7bf170d1c34bf5d5816bc439b",
-      "targetDigest": "d85e636da85c2858f2078c86ebe7865c528bad22726741fa209a2ffe4f0b8aa2"
+      "targetDigest": "3d21e1b684a2cc0ff43f81cfc0fd9b53c703936d901a8d609f499767ab63e728"
     },
     "skills/mstack-help/SKILL.md": {
       "upstream": null,
