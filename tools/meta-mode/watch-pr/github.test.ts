@@ -1,4 +1,8 @@
 import { describe, expect, it } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   ChecksUnavailable,
   WatcherQueryError,
@@ -288,16 +292,19 @@ describe("context and stack discovery", () => {
       {
         number: parsePrNumber(41),
         headRefName: "base-feature",
+        isCrossRepository: false,
         baseRefName: "main",
       },
       {
         number: context.number,
         headRefName: "feature",
+        isCrossRepository: false,
         baseRefName: "base-feature",
       },
       {
         number: parsePrNumber(43),
         headRefName: "upstack",
+        isCrossRepository: false,
         baseRefName: "feature",
       },
     ]);
@@ -310,11 +317,13 @@ describe("context and stack discovery", () => {
         {
           number: context.number,
           headRefName: "branch-a",
+          isCrossRepository: false,
           baseRefName: "branch-b",
         },
         {
           number: parsePrNumber(43),
           headRefName: "branch-b",
+          isCrossRepository: false,
           baseRefName: "branch-a",
         },
       ]);
@@ -329,4 +338,58 @@ describe("context and stack discovery", () => {
       });
     }
   });
+  it("does not use a fork's same-named head as a stack parent", () => {
+    const ordered = orderStack(context, [
+      { number: parsePrNumber(41), headRefName: "base-feature", baseRefName: "main", isCrossRepository: true },
+      { number: context.number, headRefName: "feature", baseRefName: "base-feature", isCrossRepository: false },
+    ]);
+    expect(ordered.map((item) => Number(item.number))).toEqual([42]);
+  });
+
+  it("does not attach upstream branch children to a fork head", () => {
+    const ordered = orderStack(context, [
+      { number: context.number, headRefName: "feature", baseRefName: "main", isCrossRepository: true },
+      { number: parsePrNumber(43), headRefName: "upstack", baseRefName: "feature", isCrossRepository: false },
+    ]);
+    expect(ordered.map((item) => Number(item.number))).toEqual([42]);
+  });
+
+  it("terminates when an unrelated fork opens main against main", () => {
+    const program = `import { orderStack } from ${JSON.stringify(import.meta.dir + "/github.ts")};
+      console.log(JSON.stringify(orderStack(${JSON.stringify(context)}, [
+        { number: 41, headRefName: "main", baseRefName: "main", isCrossRepository: true },
+        { number: 42, headRefName: "feature", baseRefName: "main", isCrossRepository: false }
+      ])));`;
+    const child = spawnSync(process.execPath, ["-e", program], { encoding: "utf8", timeout: 2000 });
+    expect(child.error).toBeUndefined();
+    expect(child.status).toBe(0);
+    expect(JSON.parse(child.stdout).map((item: { number: number }) => item.number)).toEqual([42]);
+  });
+
+  it.skipIf(process.platform === "win32")("requests and parses fork identity from gh before stack discovery", () => {
+    const directory = mkdtempSync(join(tmpdir(), "watch-pr-fork-"));
+    try {
+      writeFileSync(join(directory, "gh"), `#!/bin/sh
+case "$*" in
+  *number,headRefName,baseRefName,isCrossRepository*) ;;
+  *) exit 2 ;;
+esac
+printf '%s\\n' '[{"number":42,"headRefName":"feature","baseRefName":"main","isCrossRepository":true}]'
+`, { mode: 0o755 });
+      const program = `import { GhGitHubReader } from ${JSON.stringify(import.meta.dir + "/github.ts")};
+        console.log(JSON.stringify(await new GhGitHubReader().openPullRequests({ owner: "owner", repo: "repo" })));`;
+      const child = spawnSync(process.execPath, ["-e", program], {
+        encoding: "utf8", timeout: 2000,
+        env: { ...process.env, PATH: directory + ":" + process.env.PATH },
+      });
+      expect(child.error).toBeUndefined();
+      expect(child.status).toBe(0);
+      expect(JSON.parse(child.stdout)).toEqual([
+        { number: 42, headRefName: "feature", baseRefName: "main", isCrossRepository: true },
+      ]);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
 });

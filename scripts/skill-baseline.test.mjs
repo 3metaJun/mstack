@@ -5,8 +5,25 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { contentDigest } from "./skill-baseline-lib.mjs";
 
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), "skill-baseline.mjs");
+
+test("statechart source and fixture baselines ignore checkout line endings", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "mstack-statechart-baseline-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const file of ["chart.dot", "tlc.out", "tlc.exit", "ConfigOracle.java", "statechart"]) {
+    const path = `scripts/${file}`;
+    write(root, path, "first\nsecond\n");
+    const lf = contentDigest(root, path);
+    write(root, path, "first\r\nsecond\r\n");
+    assert.equal(contentDigest(root, path), lf, path);
+  }
+  write(root, "image.png", Buffer.from([0, 13, 10, 255]));
+  const binary = contentDigest(root, "image.png");
+  write(root, "image.png", Buffer.from([0, 10, 255]));
+  assert.notEqual(contentDigest(root, "image.png"), binary);
+});
 
 function write(root, path, value) {
   const file = join(root, path);

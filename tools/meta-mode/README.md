@@ -2,7 +2,6 @@
 
 This directory contains the optional Bun tools that support `meta-mode`:
 
-- `orch/` stores units, evidence, and gates for a long-running program.
 - `watch-pr/` reads GitHub checks and review signals for a pull request stack.
 - `check-plan.mjs` validates a generated plan.
 - `check-playbooks.mjs` validates project playbook extensions against the bundled playbooks.

@@ -24,7 +24,7 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric. State what success looks like for *this* task, then turn it into 3-6 concrete gradeable criteria. The rubric is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners from the active mstack model configuration's `candidate` role. If no override exists, use `inherit-parent` and run the requested number of isolated candidates on the current Harness. Spawn more when the arena covers multiple design directions. Same model N times when the work is generation-bound rather than judgment-sensitive.
+3. Pick the runners from the active mstack model configuration's `candidate` role. If no override exists, use `inherit-parent` and run the requested number of isolated candidates on the current Harness. If the Harness rejects a model, use an available model from the same family, or drop the seat and report it when none exists. Fill dropped seats with a remaining runner's model or `inherit-parent` until the requested count is restored. Spawn more when the arena covers multiple design directions. Same model N times when the work is generation-bound rather than judgment-sensitive.
 4. Assign output paths. Each candidate writes to its own location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per the **separate-before-serializing-shared-state** principle skill.
 
 ## Phase B: Fan out
@@ -37,17 +37,17 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose the `judge` role from the active mstack model configuration. Prefer a different model family from the parent's when the Harness supports it. Spawn one readonly judge subagent on that model. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
+After all Phase B candidates complete, choose the `judge` role from the active mstack model configuration. Run one readonly judge from a different model family than the parent's. `inherit-parent` and `auto` do not provide that independence. If the configured model is unavailable, try an available model from the same family. If no independent judge can run, skip this phase, pick the base in Phase D, and report the skipped judge. When the parent's model is unknown, report that the family check could not run. The judge sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
 
 ## Phase D: Pick a base
 
 Read every candidate end to end before picking.
 
-Score each candidate against the rubric criterion by criterion, not on holistic feel. Compare against the cross-judge. Agreement on the base confirms the pick. Disagreement means one of you is biased or the rubric was ambiguous. Read both rationales before deciding.
+Score each candidate against the rubric criterion by criterion, not on holistic feel. Compare against the cross-judge when Phase C ran one. Agreement on the base confirms the pick. Disagreement means one of you is biased or the rubric was ambiguous. Read both rationales before deciding.
 
 Pick the base on which candidate a future maintainer can extend most easily without breaking invariants. Prefer the cleaner boundary or smaller API when two feel tied, per the Laziness Protocol.
 
-Record the pick and the reason in a short synthesis note alongside the base artifact, including the cross-judge's verdict.
+Record the pick and the reason in a short synthesis note alongside the base artifact, including the cross-judge's verdict or why Phase C skipped the judge.
 
 ## Phase E: Graft
 

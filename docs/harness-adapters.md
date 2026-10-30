@@ -3,6 +3,12 @@
 This page records the vendor rules that shape mstack's adapters. The links point
 to the official documentation used for each entry.
 
+On 2026-10-30, release metadata and CLI help were checked against the
+[reviewed harness versions](../README.md#reviewed-harness-versions). The runtime
+arguments in `profiles/harnesses.json` remain supported. That review did not
+repeat live prompts or skill discovery. The behavior observations below keep
+their original tested versions.
+
 ## Skill locations and frontmatter
 
 | Harness | User skill root | Project skill root | Supported optional fields |
