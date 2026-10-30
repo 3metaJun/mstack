@@ -456,6 +456,26 @@ configuration, and `claude-haiku-4-5-20251001`. The check required Claude
 Code's native `Skill` tool to invoke `meta-mode` and return an exact marker;
 the remote fixture and temporary credentials were removed afterward.
 
+### Reviewed harness versions
+
+The latest stable releases were reviewed on 2026-10-30. Release metadata and
+CLI help checks confirmed the existing runtime arguments. This review did not
+repeat the live prompts or skill-discovery checks recorded above and in the
+[adapter reference](./docs/harness-adapters.md).
+
+| Harness | Latest stable | Verification |
+| --- | --- | --- |
+| Codex CLI | [0.166.0](https://github.com/openai/codex/releases/tag/rust-v0.166.0) | npm metadata, local version, and `exec --help` |
+| Claude Code | [2.1.314](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, and `--help` |
+| OpenCode | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata and release, local 1.19.4 `run --help` |
+| pi | [1.4.0](https://github.com/earendil-works/pi/releases/tag/v1.4.0) | npm metadata, local version, and `--help` |
+| Antigravity | [1.4.11](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, downloaded binary version, and `--help` |
+| Grok Build | 1.0.70 | Local version, `--help`, and `grok update --check --json` |
+
+The current pi npm package is `@earendil-works/pi-coding-agent`. The old
+`@mariozechner/pi-coding-agent` package stops at 0.73.1. Antigravity's manifest
+comes from its [official CLI installer](https://antigravity.google/cli).
+
 ## Recover recent context
 
 `recall` includes a history reader in `recall/scripts/history.mjs`; it also works
@@ -496,8 +516,8 @@ workflow even when no native skill creator or repository validator is installed.
   context note; `scripts/session-hook.mjs` is the script it runs.
 - `automations/benny/` keeps the optional Cursor automation pack from pstack.
 - `docs/guide/` contains the adapted upstream workflow guide.
-- `tools/meta-mode/` contains the optional Bun orchestration and PR watcher
-  tools, plus the project-playbook checker.
+- `tools/meta-mode/` contains the optional Bun PR watcher and validation
+  helpers, including the project-playbook checker.
 - `scripts/install.mjs` stages, validates, and commits an installation.
 - `scripts/remote-install.mjs` stages and transfers an SSH environment install.
 - `scripts/validate.mjs` checks inventory, frontmatter, links, and portability.
@@ -515,7 +535,7 @@ target directory and restores backups if a commit fails.
 
 ## Included skills
 
-The current bundle contains 60 skills. It includes the 56 shipped entries in
+The current bundle contains 61 skills. It includes the 57 shipped entries in
 the portable pstack tree, three skills adapted from `mattpocock/skills`, and
 the local `mstack-help` skill:
 
@@ -529,6 +549,8 @@ the local `mstack-help` skill:
   for TLA+ based formal verification workflows.
 - `statechart` for turning statecharts and TLA+ models into visual charts.
 - `in-your-own-words` and `sharpen` for goal restatement and prompt refinement.
+- `ketchup` and `ketchup-video` for catching up on recent work in text or a
+  subtitled video.
 - `meta-mode` for routing a multi-step task through the capabilities available
   in the current harness.
 - `benchmark-checklist` and `correct` for vetting a measured number and for

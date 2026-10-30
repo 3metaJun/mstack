@@ -54,8 +54,9 @@ requires a rerun. Dev servers, missing saved build output, runtime inputs, and
 inconclusive comparisons do not qualify. CI, mergeability, and review run fresh.
 
 Autopilot verdict language points to that rule rather than requiring an
-unchanged patch ID in every case. Orchestrate's SHA-keyed ledger remains
-strict; it has no build-output reuse implementation.
+unchanged patch ID in every case. The pstack 0.15.36 sync removes the `orch`
+runner. Orchestrate and Shipping now keep verdict identity and runtime evidence
+in the PR and durable decision trail, checked against the live PR before landing.
 
 The exception is an agent-facing procedure, not an automatic classifier.
 Repository tests prove model-budget CLI behavior and packaging integrity, not

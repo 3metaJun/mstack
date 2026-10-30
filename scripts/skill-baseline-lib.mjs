@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const textExtensions = /\.(?:cfg|cjs|css|cts|hbs|html|js|json|lock|md|mmd|mjs|sh|tla|ts|tsx|tsv|txt|yaml|yml)$/i;
+const textExtensions = /\.(?:cfg|cjs|css|cts|dot|exit|hbs|html|java|js|json|lock|md|mmd|mjs|out|sh|tla|ts|tsx|tsv|txt|yaml|yml)$/i;
 const hashPattern = /^[a-f0-9]{64}$/;
 
 export function inside(root, path) {
@@ -35,7 +35,7 @@ export function filesUnder(root, path, { excludeDependencies = false } = {}) {
 
 export function contentDigest(root, path) {
   const buffer = readFileSync(inside(root, path));
-  const content = textExtensions.test(path) || path.endsWith("/watch-pr")
+  const content = textExtensions.test(path) || /\/(?:statechart|watch-pr)$/.test(path)
     ? buffer.toString("utf8").replace(/\r\n/g, "\n") : buffer;
   return createHash("sha256").update(content).digest("hex");
 }

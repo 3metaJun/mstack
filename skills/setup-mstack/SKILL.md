@@ -66,7 +66,7 @@ Use these roles:
 
 - `implementer` for feature and refactoring workers.
 - `reviewer` for review and verification workers.
-- `judge` for comparisons and final decisions.
+- `judge` for comparisons and final decisions. Arena uses a judge from a different model family than the parent, so choose a concrete independent model to enable its cross-judge phase. `inherit-parent` and `auto` skip that phase.
 - `explorer` for read-only repository exploration.
 - `synthesizer` for combining findings into one answer or artifact.
 - `candidate` for independent alternatives evaluated by an arena.

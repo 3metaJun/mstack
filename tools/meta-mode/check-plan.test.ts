@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "bun:test";
 
 const checker = join(import.meta.dir, "check-plan.mjs");
-const playbook = readFileSync(join(import.meta.dir, "../../skills/meta-mode/playbooks/multi-phase-plan.md"), "utf8");
+const playbook = readFileSync(join(import.meta.dir, "../../skills/meta-mode/playbooks/multi-phase-plan.md"), "utf8").replaceAll("\r\n", "\n");
 const skeleton = playbook.match(/^````markdown\n([\s\S]*?)^````$/m)?.[1];
 if (!skeleton) throw new Error("multi-phase playbook has no plan skeleton");
 

@@ -126,3 +126,19 @@ for (const marker of ["program objective", "every hour"]) {
     assert.match(result.out, new RegExp(`Program checklist lacks "${marker}"`));
   });
 }
+
+for (const count of [2, 3, 4]) {
+  test(`prose rules ignore code spans with ${count} backticks`, () => {
+    const delimiter = "`".repeat(count);
+    const result = run(`${skeleton}\nUse ${delimiter}echo \`x\`: “quoted” — example${delimiter}.\n`);
+    assert.equal(result.code, 0, result.out);
+  });
+}
+
+test("prose rules still inspect unmatched delimiters and text after code spans", () => {
+  for (const example of ["Use ``echo `x`: y``. Bad: prose.", "Use ``unclosed: bad` here."]) {
+    const result = run(`${skeleton}\n${example}\n`);
+    assert.equal(result.code, 1, result.out);
+    assert.match(result.out, /mid-sentence colon/);
+  }
+});

@@ -1,0 +1,12 @@
+{
+  "name": "@mstack/statechart",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
+    "test:portable": "node --disable-warning=ExperimentalWarning --test test/chart.test.ts test/messages.test.ts test/pipeline.test.ts test/render.test.ts"
+  },
+  "devDependencies": {
+    "fast-check": "4.5.3"
+  }
+}
