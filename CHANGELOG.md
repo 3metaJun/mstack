@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.1 - 2026-10-30
+
+### Changes
+
+- Publish npm packages and create matching GitHub Releases automatically through GitHub Actions trusted publishing.
+
 ## 0.12.0 - 2026-10-23
 
 ### Changes

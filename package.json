@@ -1,6 +1,6 @@
 {
   "name": "@3metajun/mstack",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Portable engineering skills for Codex, Claude Code, OpenCode, pi, Grok, and Antigravity.",
   "keywords": [
     "pi-package"
