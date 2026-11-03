@@ -75,7 +75,7 @@ The default answer is `meta-mode`, which runs most of the others when its steps 
 | Fix a bug test-first when a cheap local test exists | `tdd` |
 | Get several attempts at one brief, merged into the best | `arena` |
 | Fan out parallel workers for coverage, races, or exploration | `swarm` |
-| Have several models review a diff and try to break it | `interrogate` |
+| Have several models review a diff and try to break it, when asked for an adversarial review | `interrogate` |
 | Apply strict TypeScript practices to `.ts` or `.tsx` work | `typescript-best-practices` |
 | Strip comments before review | `no-comments` |
 | Clean AI tells out of prose | `unslop` |
@@ -100,7 +100,7 @@ Close calls:
 
 - `how` explains what the code does. `why` explains the reasons. `teach` runs both and explains the result plainly.
 - `arena` gives every worker the same brief and merges the best parts. `swarm` splits work into slices or a race and returns one report.
-- `interrogate` reviews the diff. `blast-radius` looks for breakage outside it and proves the one fact that makes the change safe.
+- `interrogate` reviews the diff. `blast-radius` looks for breakage outside it and proves the one fact that makes the change safe. Prefer `blast-radius`, a prototype, or formal verification: evidence settles a contested change better than another round of review.
 - `figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program of many PRs. The Autonomous run playbook drives one task to a finish condition.
 
 ## Playbooks and principles

@@ -151,7 +151,7 @@ Each live lane runs in its own configured environment at the PR head. Drive it w
 
 ## Appendix D. Links and reading list
 
-<Docs to read before editing. Which PRs get `<mstack-skills>/how/SKILL.md` and `<mstack-skills>/interrogate/SKILL.md`. The trail per `<mstack-skills>/show-me-your-work/SKILL.md`.>
+<Docs to read before editing. Which PRs get `<mstack-skills>/how/SKILL.md`, and which get a `<mstack-skills>/statechart/SKILL.md` or formal verification pass. The trail per `<mstack-skills>/show-me-your-work/SKILL.md`.>
 ````
 
 **Reply:** the plan path, the PR ids with their dependencies and the review-gated set, what the prototypes proved and what stays unproven, and the check script's output.
