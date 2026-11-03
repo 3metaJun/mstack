@@ -149,6 +149,14 @@
           {
             "from": "When you're stuck, or can't tell which skill fits, type [`/poteto-help`](../../skills/poteto-help/SKILL.md) with your question:\n\n```text\n/poteto-help which skill should i use to review this branch?\n```\n\nIt answers, hands you a prompt to send, and links the skill or guide page the answer came from. It doesn't start the work, because a mstack run spends real tokens, so you send the prompt when you're ready. It runs only when you type it.\n\n",
             "to": ""
+          },
+          {
+            "from": "- A small, finished change you're unsure about needs `/interrogate` alone.",
+            "to": "- A small, finished change you're unsure about needs `/blast-radius`, which proves the one fact that makes it safe. Use `/interrogate` only when you want an adversarial review."
+          },
+          {
+            "from": "- A contested design that's expensive to reverse gets `/architect`, then `/interrogate` before shipping.",
+            "to": "- A contested design that's expensive to reverse gets `/architect`, then a prototype, `/statechart`, or formal verification before shipping. Evidence settles it better than another review."
           }
         ]
       },

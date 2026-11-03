@@ -35,7 +35,7 @@ Remaining triggers:
 - Any code → name the data shape first, and choose its organizing structure per **principle-model-the-domain**.
 - Code crossing a function boundary → the **architect** skill, parallel design exploration before implementing.
 - Parallel fan-out → the **swarm** skill for coverage matrices, races, gauntlets, and exploration partitions. Use **arena** for design or code bakeoffs with base selection and grafting.
-- Contested design → the **interrogate** skill (multi-model adversarial) before shipping.
+- Contested design → settle it with evidence, not more review. Run the competing shapes through the Prototype playbook (`playbooks/prototype.md`), or prove the safety-critical fact with the **blast-radius** skill. For a state, protocol, or concurrency invariant, check it with the **statechart** skill or the **create-formal-verification-skill** skill. Run the **interrogate** skill only when the user asks for an adversarial review.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
 - Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the repository's skill-authoring guidance.
 - Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`/technical-writing`).

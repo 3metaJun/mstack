@@ -27,7 +27,7 @@
       "upstream": "pstack",
       "source": "skills/architect/SKILL.md",
       "sourceDigest": "31f8e97a52bfa5432edd61f68ade2a8632ef0bacbc2d2a6802d7a0e6821944ac",
-      "targetDigest": "76c299297a79236fa519d401716a6ad1845ecc1a3f4fdff2aa052309261651aa"
+      "targetDigest": "8ab2154c8f977a50ed7754d77b989ea610b2ffbc379932bc55357beed0c45fe1"
     },
     "skills/arena/SKILL.md": {
       "upstream": "pstack",
@@ -247,7 +247,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/bug-fix.md",
       "sourceDigest": "66e26542dad131cfd7df80ac0cdf81ed4d85e7b5e3f0eb65b933888760c4831f",
-      "targetDigest": "8872387c8893159c2557929af3c2b35270b245ace9aa04b76f3d8f622b526d2d"
+      "targetDigest": "a1349fb3715f2878178041703c99fa54810f641237c8a8dc74ac93acfe2a66d1"
     },
     "skills/meta-mode/playbooks/eval.md": {
       "upstream": "pstack",
@@ -259,7 +259,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/feature.md",
       "sourceDigest": "af8ce700b99953741cb547e34308fde0cf6b98ce67e1652c800d0deedf53aba1",
-      "targetDigest": "f9ac3784c615c1e84d40ec30ede16872988dcb8364d480343e4d98b7961f06c2"
+      "targetDigest": "84770de9c0f52649e920865448377041ab18673f62f71e6b5c325b4e0ccb2a5c"
     },
     "skills/meta-mode/playbooks/hillclimb.md": {
       "upstream": "pstack",
@@ -277,7 +277,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/multi-phase-plan.md",
       "sourceDigest": "2b4fbb547e5ccfe46d1279d714eb0199d28e995f06bdc4eda4afbca9221fbbe6",
-      "targetDigest": "ad8323944a6e16aae7cadec362bae7063141ca33dccdaff446df90d5b198711d"
+      "targetDigest": "f0db3db097c610ec098bc5b52632d45f2a90f5e3e78d30dfc5649b92f684aae8"
     },
     "skills/meta-mode/playbooks/opening-a-pr.md": {
       "upstream": "pstack",
@@ -376,12 +376,12 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/SKILL.md",
       "sourceDigest": "ee1848c973a112026f09ba12ea7a13c1654006e7bf170d1c34bf5d5816bc439b",
-      "targetDigest": "3d21e1b684a2cc0ff43f81cfc0fd9b53c703936d901a8d609f499767ab63e728"
+      "targetDigest": "d7ede7cea157c2d26dfc2e65b4406a98a5e60f980ca9435bd23d204a024a4a53"
     },
     "skills/mstack-help/SKILL.md": {
       "upstream": null,
       "reason": "mstack-only entry skill that routes setup and usage questions; no upstream skill covers this repository.",
-      "targetDigest": "425353e51cc7d98f98c855375191f2f8e6127b406ce059ef0f2fd1934ec7d5ee"
+      "targetDigest": "cb138f6929f09d338f61a2c1474bf77b77baf6a8bf767ee372e37484ca5079d6"
     },
     "skills/no-comments/SKILL.md": {
       "upstream": "pstack",

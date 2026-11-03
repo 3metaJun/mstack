@@ -120,12 +120,12 @@ For a migration, state the bar in the prompt:
 
 You might be wondering whether every change needs this. No. Most changes need none of it. A rough ladder:
 
-- A small, finished change you're unsure about needs `/interrogate` alone.
+- A small, finished change you're unsure about needs `/blast-radius`, which proves the one fact that makes it safe. Use `/interrogate` only when you want an adversarial review.
 - A change that crosses function boundaries or moves ownership earns `/architect`, which brings `/arena` with it.
 - A standalone decision where independent attempts would help, like naming, formats, or an algorithm, is `/arena` directly.
 - A coverage matrix, set of parallel checks, or race with declared arms is `/swarm`.
 - An open question you could answer by running something, like a layout, a timing, or an approach, gets a prototype, not a debate.
-- A contested design that's expensive to reverse gets `/architect`, then `/interrogate` before shipping.
+- A contested design that's expensive to reverse gets `/architect`, then a prototype, `/statechart`, or formal verification before shipping. Evidence settles it better than another review.
 - Work that spans several PRs gets a plan, written after the design settles.
 
 `/meta-mode` already applies this ladder. Boundary-crossing work triggers `/architect` on its own, so you reach for these directly mainly when you want more or less scrutiny than the default.

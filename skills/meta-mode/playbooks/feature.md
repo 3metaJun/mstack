@@ -13,7 +13,7 @@
 5. Verify on the matching surface. "Inconclusive" or wrong-surface is not a pass. Flag it.
 6. Rebase into small, ordered commits. Stack follow-ups.
    Use the **sequence-verifiable-units** principle skill, building, verifying, and committing each small unit before the next.
-7. If the design is contested, `interrogate` before shipping.
+7. If the design is contested, settle it before shipping with a prototype or `blast-radius`, or with `statechart` or formal verification for a state or concurrency invariant. Use `interrogate` only when the user asks for an adversarial review.
 8. Run **Opening a PR**.
 
 Code-coupled work (one feature, one migration) goes to a single owner with the checkpoint inline. That owner fans out internally after the blocking phase. Parent-level fan-out is for slices that produce independent artifacts (audits, cross-subsystem investigations, competing experiments). Rewrite the checkpoint at phase boundaries. Spawn a fresh owner rather than chaining interrupts.
