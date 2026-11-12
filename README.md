@@ -57,7 +57,8 @@ in [Harness adapter reference](./docs/harness-adapters.md):
 - **Shared root:** Codex, OpenCode, pi, Grok, and Cursor all read
   `~/.agents/skills/`, so updating any of them refreshes the shared copy.
 - **Claude Code:** Gets its own copy without frontmatter `name` (Claude names
-  skills by directory; OpenCode ignores nameless copies).
+  skills by directory; OpenCode 1 skips nameless copies, and OpenCode 2 prefers
+  `~/.agents/skills/`).
 - **Antigravity:** Keeps its own canonical copy under
   `~/.gemini/antigravity-cli/skills/` because it does not scan
   `~/.agents/skills/` at user scope.
@@ -260,14 +261,22 @@ strict tool allowlists):
 npm run smoke-harnesses -- --harness all --require-installed
 ```
 
-| Harness | Reviewed stable | Verification |
+| Harness | Reviewed stable (2026-11-12) | Verification |
 | --- | --- | --- |
-| Codex CLI | [0.166.0](https://github.com/openai/codex/releases/tag/rust-v0.166.0) | npm metadata, local version, `exec --help` |
-| Claude Code | [2.1.314](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, `--help` |
-| OpenCode | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata, release notes, `run --help` |
-| pi | [1.4.0](https://github.com/earendil-works/pi/releases/tag/v1.4.0) | `@earendil-works/pi-coding-agent` metadata, `--help` |
-| Antigravity | [1.4.11](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, `--help` |
-| Grok Build | 1.0.70 | Local version, `--help`, `grok update --check --json` |
+| Codex CLI | [0.167.2](https://github.com/openai/codex/releases/tag/rust-v0.167.2) | npm metadata and release, `exec --help` from the npm package |
+| Claude Code | [2.1.322](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, `--help` |
+| OpenCode 2 | [2.2.7](https://github.com/anomalyco/opencode/releases/tag/v2.2.7) | npm metadata, local version, `run --help`, live `run --agent plan`, `recall` list/read, `api skill.list` |
+| OpenCode 1 | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata and release, live `run --agent plan`, `recall` list/read from the npm package |
+| pi | [1.5.2](https://github.com/earendil-works/pi/releases/tag/v1.5.2) | `@earendil-works/pi-coding-agent` metadata and release, `--help` |
+| Antigravity | [1.5.6](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, downloaded binary version, `--help` |
+| Grok Build | 1.0.77 | `grok update --check --json`; `--help` from local 1.0.70 |
+
+OpenCode 2 (`@opencode/cli`) removed `run --pure`, so `profiles/harnesses.json`
+runs `opencode run` without it (leaving OpenCode 1 external plugins enabled) and
+`recall` selects OpenCode 1 vs 2 commands by major version. The `opencode-ai`
+package remains on the 1.19 line, so both majors are supported. See
+[Harness adapter reference](./docs/harness-adapters.md) for versioned discovery
+details.
 
 ## Repository layout and maintenance
 
