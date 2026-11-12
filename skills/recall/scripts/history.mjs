@@ -85,7 +85,7 @@ async function metadata(path, harness) {
   }
 }
 
-function openCode(args, cwd, env) {
+function openCodeOutput(args, cwd, env) {
   let command = "opencode";
   let commandArgs = args;
   if (process.platform === "win32") {
@@ -96,17 +96,50 @@ function openCode(args, cwd, env) {
   }
   const result = spawnSync(command, commandArgs, { cwd, env, encoding: "utf8", maxBuffer: MAX_FILE_BYTES, timeout: 30_000, windowsHide: true });
   if (result.error || result.status !== 0) throw new Error("OpenCode history command failed; check CLI availability and its configured data directory.");
+  return result.stdout;
+}
+
+function openCode(args, cwd, env) {
   try {
-    return JSON.parse(result.stdout);
-  } catch {
-    throw new Error("OpenCode returned unsupported JSON output.");
+    return JSON.parse(openCodeOutput(args, cwd, env));
+  } catch (error) {
+    if (error instanceof SyntaxError) throw new Error("OpenCode returned unsupported JSON output.");
+    throw error;
   }
+}
+
+function openCodeMajor(cwd, env) {
+  const match = /(\d+)\.\d+\.\d+/.exec(openCodeOutput(["--version"], cwd, env));
+  if (!match) throw new Error("OpenCode returned an unsupported version string.");
+  return Number(match[1]);
+}
+
+// OpenCode 2 removed `--pure` and the top-level `export` command, and changed the export schema.
+// Its parser treats an unknown first word as a directory and opens the TUI, so the major version picks the commands.
+async function openCodeCommands(options) {
+  options.openCodeMajorVersion ??= await options.openCodeMajor(options.workspace, options.env);
+  const legacy = options.openCodeMajorVersion < 2;
+  return {
+    list: ["session", "list", "--format", "json", ...(legacy ? ["--pure"] : [])],
+    export: (id, sanitize) => legacy
+      ? ["export", id, ...(sanitize ? ["--sanitize"] : []), "--pure"]
+      : ["session", "export", id, ...(sanitize ? ["--sanitize"] : [])],
+    legacy,
+  };
+}
+
+function openCodeMessages(data, legacy) {
+  if (legacy) return data.messages.map((row) => ({ role: row.info?.role, text: textContent(row.parts) }));
+  return data.messages.map((row) => row?.type === "user" ? { role: "user", text: typeof row.text === "string" ? row.text : "" }
+    : row?.type === "assistant" ? { role: "assistant", text: textContent(row.content) }
+    : row?.type === "compaction" ? { role: "summary", text: typeof row.summary === "string" ? row.summary : "" }
+    : {});
 }
 
 async function discover(options, warnings) {
   const { harness, workspace } = options;
   if (harness === "opencode") {
-    const rows = await options.runOpenCode(["session", "list", "--format", "json", "--pure"], workspace, options.env);
+    const rows = await options.runOpenCode((await openCodeCommands(options)).list, workspace, options.env);
     if (!Array.isArray(rows)) throw new Error("OpenCode session list must return a JSON array.");
     return rows.filter((row) => row && sameWorkspace(row.directory, workspace)).map((row) => ({
       id: row.id, workspace: row.directory, updated: row.updated ?? row.time?.updated, child: Boolean(row.parentID),
@@ -162,15 +195,16 @@ function conversationBranch(rows, harness, leaf) {
 
 async function readMessages(session, options, warnings) {
   if (options.harness === "opencode") {
-    const args = ["export", session.id, ...(options.localText ? [] : ["--sanitize"]), "--pure"];
-    const data = await options.runOpenCode(args, options.workspace, options.env);
-    const directory = data?.info?.directory;
-    // Sanitized exports replace the directory after list metadata established the workspace.
-    const matchesDirectory = sameWorkspace(directory, options.workspace) || directory === `[redacted:session-directory:${session.id}]`;
+    const commands = await openCodeCommands(options);
+    const data = await options.runOpenCode(commands.export(session.id, !options.localText), options.workspace, options.env);
+    const directory = commands.legacy ? data?.info?.directory : data?.info?.location?.directory;
+    // Sanitized exports replace the directory after list metadata established the workspace. OpenCode 2 prefixes the marker with "/".
+    const marker = `[redacted:session-directory:${session.id}]`;
+    const matchesDirectory = sameWorkspace(directory, options.workspace) || directory === marker || directory === `/${marker}`;
     if (data?.info?.id !== session.id || !matchesDirectory || !Array.isArray(data.messages)) {
       throw new Error("OpenCode export does not match the selected workspace and session.");
     }
-    const messages = data.messages.map((row) => ({ role: row.info?.role, text: textContent(row.parts) }));
+    const messages = openCodeMessages(data, commands.legacy);
     if (!options.localText && messages.some((message) => /\[redacted:text:/.test(message.text))) {
       warnings.push("OpenCode sanitized export redacted message text. Use --local-text for private local recovery of the selected session.");
     }
@@ -206,7 +240,7 @@ async function readMessages(session, options, warnings) {
 }
 
 export async function history(input) {
-  const options = { env: process.env, runOpenCode: openCode, limit: 20, maxChars: 12_000, ...input };
+  const options = { env: process.env, runOpenCode: openCode, openCodeMajor, limit: 20, maxChars: 12_000, ...input };
   if (!["list", "read"].includes(options.command)) throw new Error("Command must be list or read.");
   if (!HARNESSES.includes(options.harness)) throw new Error(`--harness must be one of ${HARNESSES.join(", ")}.`);
   if (typeof options.workspace !== "string" || !options.workspace.trim()) throw new Error("--workspace is required.");

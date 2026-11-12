@@ -120,7 +120,7 @@ test("pi default storage uses only the requested workspace slug and keeps branch
   assert.deepEqual(result.warnings, []);
 });
 
-test("OpenCode filters list metadata before exporting one sanitized session", async (t) => {
+test("OpenCode 1 filters list metadata before exporting one sanitized session", async (t) => {
   const { root, workspace } = fixture(t);
   const calls = [];
   const runOpenCode = (args, cwd) => {
@@ -132,7 +132,7 @@ test("OpenCode filters list metadata before exporting one sanitized session", as
     ];
     return { info: { id: "wanted", directory: "[redacted:session-directory:wanted]" }, messages: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Sanitized answer" }, { type: "tool", text: "Do not emit" }] }] };
   };
-  const options = { harness: "opencode", workspace, runOpenCode, env: {} };
+  const options = { harness: "opencode", workspace, runOpenCode, openCodeMajor: () => 1, env: {} };
   const listing = await history({ ...options, command: "list" });
   assert.deepEqual(listing.sessions.map((session) => session.id), ["wanted"]);
   assert.equal(calls.length, 1);
@@ -144,6 +144,42 @@ test("OpenCode filters list metadata before exporting one sanitized session", as
   for (const directory of [join(root, "other"), "[redacted:session-directory:other]"]) {
     const wrongExport = (args, cwd) => args[0] === "session" ? runOpenCode(args, cwd)
       : { info: { id: "wanted", directory }, messages: [] };
+    await assert.rejects(history({ ...options, runOpenCode: wrongExport, command: "read", session: "wanted" }), /does not match/);
+  }
+});
+
+test("OpenCode 2 uses session export and reads its message schema", async (t) => {
+  const { root, workspace } = fixture(t);
+  const calls = [];
+  const runOpenCode = (args, cwd) => {
+    calls.push({ args, cwd });
+    if (args[1] === "list") return [
+      { id: "other", directory: join(root, "other"), updated: Date.now() },
+      { id: "wanted", directory: workspace, updated: Date.now() },
+    ];
+    return { info: { id: "wanted", location: { directory: "/[redacted:session-directory:wanted]" } }, messages: [
+      { type: "user", text: "Sanitized prompt" },
+      { type: "assistant", content: [{ type: "reasoning", text: "Do not emit" }, { type: "text", text: "Sanitized answer" }] },
+      { type: "compaction", status: "completed", summary: "Earlier work" },
+      { type: "shell", command: "Do not emit" },
+    ] };
+  };
+  const options = { harness: "opencode", workspace, runOpenCode, openCodeMajor: () => 2, env: {} };
+  const listing = await history({ ...options, command: "list" });
+  assert.deepEqual(calls.at(-1).args, ["session", "list", "--format", "json"]);
+  assert.deepEqual(listing.sessions.map((session) => session.id), ["wanted"]);
+  const reading = await history({ ...options, command: "read", session: "wanted" });
+  assert.deepEqual(calls.at(-1), { args: ["session", "export", "wanted", "--sanitize"], cwd: workspace });
+  assert.deepEqual(reading.messages, [
+    { role: "user", text: "Sanitized prompt" },
+    { role: "assistant", text: "Sanitized answer" },
+    { role: "summary", text: "Earlier work" },
+  ]);
+  await history({ ...options, command: "read", session: "wanted", localText: true });
+  assert.deepEqual(calls.at(-1).args, ["session", "export", "wanted"]);
+  for (const directory of [join(root, "other"), "/[redacted:session-directory:other]"]) {
+    const wrongExport = (args, cwd) => args[1] === "list" ? runOpenCode(args, cwd)
+      : { info: { id: "wanted", location: { directory } }, messages: [] };
     await assert.rejects(history({ ...options, runOpenCode: wrongExport, command: "read", session: "wanted" }), /does not match/);
   }
 });
@@ -170,7 +206,7 @@ test("OpenCode warns when sanitizer removes text and requires an explicit local-
   const runOpenCode = (args) => args[0] === "session" ? [{ id: "session", directory: workspace, updated: Date.now() }]
     : { info: { id: "session", directory: args.includes("--sanitize") ? "[redacted:session-directory:session]" : workspace },
       messages: [{ info: { role: "user" }, parts: [{ type: "text", text: args.includes("--sanitize") ? "[redacted:text:part]" : "Local fixture prompt" }] }] };
-  const options = { harness: "opencode", workspace, runOpenCode, command: "read", session: "session" };
+  const options = { harness: "opencode", workspace, runOpenCode, openCodeMajor: () => 1, command: "read", session: "session" };
   const sanitized = await history(options);
   assert.equal(sanitized.sanitized, true);
   assert.match(sanitized.warnings[0], /redacted message text/);
