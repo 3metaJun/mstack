@@ -219,7 +219,7 @@ test("run-role resolves a configured model override", () => {
     assert.equal(result.status, 0, result.stderr);
     const plan = JSON.parse(result.stdout);
     assert.equal(plan.model, "remote-model");
-    assert.deepEqual(plan.args, ["run", "--pure", "--model", "remote-model", "inspect the repository"]);
+    assert.deepEqual(plan.args, ["run", "--model", "remote-model", "inspect the repository"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

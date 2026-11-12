@@ -80,11 +80,16 @@ the helper does not fall back to scanning all project directories.
 
 ## OpenCode
 
-Prefer the stable CLI surface:
+Prefer the stable CLI surface. The helper runs `opencode --version` first,
+because OpenCode 2 removed `--pure` and moved `export` under `session`:
 
 ```bash
+# OpenCode 1 (npm package opencode-ai)
 opencode session list --format json --pure
 opencode export <sessionID> --sanitize --pure
+# OpenCode 2 (npm package @opencode/cli)
+opencode session list --format json
+opencode session export <sessionID> --sanitize
 ```
 
 Use `--sanitize` whenever exported data will leave the local machine. Do not
@@ -92,9 +97,14 @@ depend on OpenCode's internal database layout unless the CLI cannot provide the
 required authorized record. The helper runs these commands with the requested
 workspace as its working directory. It filters list entries by exact `directory`
 and excludes `parentID` sessions before exporting the selected ID, then verifies
-the export's `info.id` and `info.directory`. Sanitized exports may replace the
-directory with `[redacted:session-directory:<session-id>]`; the helper accepts
-only the marker for the already selected session. It inherits OpenCode's configured
+the export's `info.id` and directory: `info.directory` in OpenCode 1 and
+`info.location.directory` in OpenCode 2. Sanitized exports may replace the
+directory with `[redacted:session-directory:<session-id>]`, which OpenCode 2
+prefixes with `/`; the helper accepts only the marker for the already selected
+session. OpenCode 2 exports user prompts as `text`, assistant replies as
+`content` parts, and compaction summaries as `summary`; the helper reads those
+and skips tool, shell, and reasoning entries. OpenCode 2 lists only top-level
+sessions, at most 100 by default. It inherits OpenCode's configured
 environment, including `XDG_DATA_HOME`; `--root` is not supported. A missing CLI
 or unsupported JSON schema is an error, not an empty-history result.
 
