@@ -331,7 +331,7 @@
       "upstream": "pstack",
       "source": "skills/poteto-mode/playbooks/shipping.md",
       "sourceDigest": "bf56339bdf7e0223bcff5abf4e8599e3f5b547b3fcc3b4ce9475e6e7dda14a9f",
-      "targetDigest": "6640b6c18a1c0cd8d6ea7db8109d7809215e8ad44dc1f4de34fe146f0f617878"
+      "targetDigest": "aa58828a31400e994e9f5a4239d35c60b64fa2c739ceb2aaf2a73a64cca03402"
     },
     "skills/meta-mode/playbooks/trace-forensics.md": {
       "upstream": "pstack",
