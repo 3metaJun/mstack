@@ -3,7 +3,6 @@
 This directory contains the optional Bun tools that support `meta-mode`:
 
 - `watch-pr/` reads GitHub checks and review signals for a pull request stack.
-- `check-plan.mjs` validates a generated plan.
 - `check-playbooks.mjs` validates project playbook extensions against the bundled playbooks.
 - `worktree-audit.mjs` produces a read-only, cross-platform worktree audit.
 - `worktree-audit.sh` remains a compatibility wrapper for the historical name.

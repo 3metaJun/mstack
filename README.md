@@ -3,144 +3,111 @@
 [![CI](https://github.com/3metaJun/mstack/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/3metaJun/mstack/actions/workflows/validate.yml)
 [![npm version](https://img.shields.io/npm/v/%403metajun%2Fmstack?logo=npm&logoColor=white)](https://www.npmjs.com/package/@3metajun/mstack)
 
-mstack packages portable engineering skills for Codex, Claude Code, OpenCode,
-pi, Grok, and Antigravity. One canonical `skills/` tree feeds every supported
-harness. Cursor reads the shared `~/.agents/skills` copy, and T3 Code lists
-the skills its providers discover. The installer adapts harness metadata at
-install time, so skill instructions do not contain harness-specific paths or
-commands.
+Portable engineering skills for Codex, Claude Code, OpenCode, pi, Grok,
+Antigravity, Cursor, and T3 Code. One canonical `skills/` tree feeds every
+supported harness. The installer adapts harness metadata at install time, so
+skill instructions stay free of vendor-specific paths and commands.
 
-![mstack portable engineering skills across Codex, Claude Code, OpenCode, pi, Grok, and Antigravity](https://raw.githubusercontent.com/3metaJun/mstack/main/.github/assets/social-preview.png)
+![mstack portable engineering skills across Codex, Claude Code, OpenCode, pi, Grok, Antigravity, and T3 Code](https://raw.githubusercontent.com/3metaJun/mstack/main/.github/assets/social-preview.png)
 
-The collection started with selected workflows from
-[`pstack`](https://github.com/cursor/plugins/tree/main/pstack/skills) and
-[`mattpocock/skills`](https://github.com/mattpocock/skills). Source and license
-records live in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+The bundle carries 61 skills: 57 adapted from
+[`pstack`](https://github.com/cursor/plugins/tree/main/pstack/skills), three
+from [`mattpocock/skills`](https://github.com/mattpocock/skills), and the local
+`mstack-help` entry skill. Source revisions and licenses live in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
 
-## Install skills
+## Quick start
 
 Node.js 18 or newer is required.
 
-To install every skill for every supported harness, run:
+Install all 61 skills for every supported harness:
 
 ```bash
 npx @3metajun/mstack --harness all
 ```
 
-To install skills for selected harnesses, list them with commas:
+Or select specific harnesses and skills:
 
 ```bash
 npx @3metajun/mstack --harness codex,claude
 npx @3metajun/mstack --harness opencode,pi
 npx @3metajun/mstack --harness antigravity,grok
+npx @3metajun/mstack --harness all --skill writing-for-agents,codebase-design,diagnosing-bugs
 ```
 
-To install selected skills, add `--skill`:
+Existing skill directories are preserved by default. Add `--dry-run` to preview
+the plan. Add `--replace` to back up existing directories to a timestamped
+`.harness-skills-backups/` folder outside the skill discovery root before
+writing.
 
-```bash
-npx @3metajun/mstack --harness all \
-  --skill writing-for-agents,codebase-design,diagnosing-bugs
-```
+### Default install roots
 
-The installer preserves an existing skill directory. Use `--dry-run` to inspect
-the plan. Use `--replace` to move existing directories into a timestamped
-`.harness-skills-backups/` directory outside the skill root. Backups, staged
-skills and failed replacements must stay outside discovery roots because
-OpenCode also scans hidden subdirectories. Artifact backups stay beside the
-artifact target. The installer prints each backup path and retains its contents.
+Defined in [`profiles/harnesses.json`](./profiles/harnesses.json) and documented
+in [Harness adapter reference](./docs/harness-adapters.md):
 
-### Install into a project
+| Harness | Default user directory | Project directory (`--project`) | Override env var |
+| --- | --- | --- | --- |
+| Codex | `~/.agents/skills/` | `.agents/skills/` | `HARNESS_SKILLS_CODEX_DIR` |
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` | `HARNESS_SKILLS_CLAUDE_DIR` |
+| OpenCode | `~/.agents/skills/` | `.agents/skills/` | `HARNESS_SKILLS_OPENCODE_DIR` |
+| pi | `~/.agents/skills/` | `.agents/skills/` | `HARNESS_SKILLS_PI_DIR` |
+| Grok | `~/.agents/skills/` | `.agents/skills/` | `HARNESS_SKILLS_GROK_DIR` |
+| Antigravity (`agy`) | `~/.gemini/antigravity-cli/skills/` | `.agents/skills/` | `HARNESS_SKILLS_ANTIGRAVITY_DIR` |
 
-Some harnesses read project skills only from the working directory, which matters
-when an app starts agents in per-thread git worktrees such as
-[T3 Code](docs/t3code.md#project-install-for-t3-worktrees). `--project` copies
-skills into an existing local repository instead of the user directories:
+- **Shared root:** Codex, OpenCode, pi, Grok, and Cursor all read
+  `~/.agents/skills/`, so updating any of them refreshes the shared copy.
+- **Claude Code:** Gets its own copy without frontmatter `name` (Claude names
+  skills by directory; OpenCode ignores nameless copies).
+- **Antigravity:** Keeps its own canonical copy under
+  `~/.gemini/antigravity-cli/skills/` because it does not scan
+  `~/.agents/skills/` at user scope.
+- **T3 Code:** Lists the skills discovered by each provider you run in it and
+  integrates natively with T3's delegation, PR watching, scheduling, and preview
+  tools via host references. See [Use mstack in T3 Code](./docs/t3code.md).
+
+## Install into a project
+
+Use `--project` when a harness reads skills from the repository working
+directory (including per-thread git worktrees in T3 Code):
 
 ```bash
 npx @3metajun/mstack --harness codex,claude,pi --project /path/to/repo --dry-run
 npx @3metajun/mstack --harness codex,claude,pi --project /path/to/repo
 ```
 
-| Harness | Project root under `<repo>` | Reads it from |
-| --- | --- | --- |
-| Codex | `.agents/skills/` | the working directory up to the repository root |
-| OpenCode | `.agents/skills/` | the working directory up to the git worktree root (also reads `.opencode/skills/`) |
-| pi | `.agents/skills/` | the working directory up to the repository root |
-| Grok | `.agents/skills/` | every directory between the working directory and the repository root |
-| Antigravity (`agy`) | `.agents/skills/` | the working directory (also reads `.gemini/skills/` and `.agent/skills/`) |
-| Claude Code | `.claude/skills/` | the working directory only |
+- Skills only: `--artifact`, `--migrate`, and `--environment` are refused with
+  `--project`.
+- Copies directly (never symlinks) and ignores `HARNESS_SKILLS_*_DIR` overrides.
+- Refuses home directories, paths inside the mstack package, `.harness-skills-*`
+  storage, or any discovery root (checked via physical paths).
+- `--replace` backups land beside the skill roots under
+  `<repo>/.agents/.harness-skills-backups/` and
+  `<repo>/.claude/.harness-skills-backups/`. Add `.harness-skills-*` to
+  `.gitignore`. Commit project skills if new worktrees need them.
 
-Codex, OpenCode, pi, Grok and Antigravity share one copy per skill in
-`.agents/skills/`. Cursor reads that directory and `.claude/skills/` too, so it
-needs no target of its own. Claude gets the same adapter output as at user level
-(no frontmatter `name`). Project installs copy and never link, keep the
-installer's staging, locking, rollback and `--replace` backup behavior, and
-ignore `HARNESS_SKILLS_*_DIR` overrides.
+## Claude Code, Claude Desktop, and T3 Code
 
-Rules:
+### Claude Code plugin
 
-- The directory must exist. The installer refuses your home directory (use a
-  user-level install), anything inside the mstack package, any path inside
-  `.harness-skills-*` transaction storage, and any directory inside a skill
-  discovery root such as `.agents/skills` or `.claude/skills`, because backups
-  there would be scanned as skills. It checks physical paths, so symlinks,
-  junctions and letter case cannot redirect a target, backup or stage directory
-  outside the project or into the package or your user-level skill roots.
-- Skills only. `--artifact` is refused with `--project`: agent roles, tools, the
-  guide and session context are user-owned configuration and should not land in a
-  repository implicitly. `--migrate` and `--environment` (including SSH) are
-  refused too.
-- `--replace` backups go to `<repo>/.agents/.harness-skills-backups/` and
-  `<repo>/.claude/.harness-skills-backups/`, beside the skill roots and never under
-  them. Delete them when you no longer need them, and add `.harness-skills-*` to
-  `.gitignore`.
-- Commit the installed skills deliberately, or gitignore them. A new git worktree
-  holds only committed files, so uncommitted project skills do not appear in it.
-
-## Use with Claude Code and Claude Desktop
-
-Claude Code and the Code tab of the Claude desktop app share one skill system,
-so either route below covers both. Pick one per machine: a plugin install and
-`~/.claude/skills/` copies both load, and the duplicates compete for the skill
-listing budget.
-
-### Claude Code plugin (recommended)
-
-The repository is also a Claude Code plugin marketplace. The plugin ships all
-skills and both agents, and it carries the `tools/meta-mode/` files that
-`meta-mode` resolves at `../../tools/meta-mode`:
+This repository is also a Claude Code plugin marketplace shipping all 61 skills,
+both agents (`mstack:meta-agent`, `mstack:comment-reviewer`), `tools/meta-mode/`,
+and an opt-out `SessionStart` routing hook (`"sessionHook": false` in
+`~/.config/mstack/models.json`; see
+[Claude Code routing](./docs/guide/12-claude-code-routing.md)):
 
 ```bash
 claude plugin marketplace add 3metaJun/mstack
 claude plugin install mstack@mstack
 ```
 
-Plugin skills are namespaced, for example `/mstack:meta-mode`, and the agents
-appear as `mstack:meta-agent` and `mstack:comment-reviewer`. Run
-`claude plugin details mstack` to see the inventory and its projected token
-cost; the 54 skill descriptions add about 3,200 tokens to every session.
-`claude plugin marketplace update mstack` picks up new releases, because the
-plugin `version` tracks the npm version.
-
-The plugin also registers a `SessionStart` hook (`hooks/hooks.json`) that adds a
-short routing note on startup, resume, clear, and compact: multi-file changes
-and bugs with an unknown cause go through `mstack:meta-mode`, while your own
-`CLAUDE.md` instructions take priority. It runs one Node script, needs `node`
-on `PATH`, and never blocks a session. Turn it off with `"sessionHook": false`
-in `~/.config/mstack/models.json`; the
-[guide page](docs/guide/12-claude-code-routing.md) has the details. The
-installer registers no hooks, so the hook comes only with the plugin.
-
-The installer remains the route for bare `/meta-mode` names, per-skill
-selection, and the shared Codex, OpenCode, pi, and Grok copy:
-`npx @3metajun/mstack --harness claude`.
+Plugin skills are namespaced (for example `/mstack:meta-mode`). Pick either the
+plugin or `npx @3metajun/mstack --harness claude` per machine; installing both
+loads duplicate skills.
 
 ### Claude Desktop chat, Cowork, and claude.ai
 
-These surfaces take one zip per skill through the Skills upload page, and they
-reject frontmatter fields other than `name`, `description`, `license`,
-`compatibility`, `metadata`, and `allowed-tools`. Build upload-ready archives
-with:
+Package upload-ready per-skill zip archives (rewriting cross-skill links to
+plain text and validating upload frontmatter limits):
 
 ```bash
 npm run pack-claude-skills -- --out dist/claude-skills
@@ -148,559 +115,186 @@ npm run pack-claude-skills -- --skill diagnosing-bugs,tdd --out dist/claude-skil
 npm run pack-claude-skills -- --check
 ```
 
-The command validates every skill against the upload limits (1024-character
-description, no XML tags, name equal to the directory, no leading, trailing, or
-consecutive hyphens, 30 MB uncompressed) and writes `<skill>.zip` with the
-skill folder at the archive root. Uploaded skills are
-isolated from each other, so links to sibling skills become plain text that
-names the skill. Uploaded skills cannot reach the `meta-mode-tools` artifact, so
-use the plugin or the installer in Claude Code for orchestration and PR
-watching.
+### T3 Code
 
-## Use with T3 Code
+[T3 Code](https://github.com/pingdotgg/t3code) surfaces the skills each provider
+finds. Install mstack for your active providers, then restart the agent session.
+When T3's MCP tools are present, `meta-mode`, `setup-mstack`, `recall`, and
+`create-verification-skill` bind to T3's native `delegate_task`,
+`watch_pull_request`, `schedule_task`, thread search, preview browser, and
+device tools automatically via `references/hosts/t3code.md`. See
+[Use mstack in T3 Code](./docs/t3code.md) for provider discovery roots, `$skill`
+rewriting, worktree setup, and `overrides.t3code` model configuration.
 
-[T3 Code](https://github.com/pingdotgg/t3code) lists the skills each provider
-finds, so installing mstack for the providers you run in it is enough. See
-[Use mstack in T3 Code](docs/t3code.md) for where each provider looks, how
-`$skill` mentions are rewritten, worktree paths, and where T3's own delegation
-and PR watching overlap with `run-role` and `babysit`.
+## Optional artifacts
 
-## Install optional artifacts
-
-The same installer can copy the portable artifacts that accompany the skills.
-By default it installs skills only. Select artifacts explicitly, or use
-`--no-skills` when an artifact-only install is needed:
+By default the installer writes skills only. Opt in to accompanying artifacts
+with `--artifact` (or `--no-skills --artifact all`):
 
 ```bash
 npx @3metajun/mstack --harness codex --artifact agents,meta-mode-tools
 npx @3metajun/mstack --harness all --no-skills --artifact all
 ```
 
-The available installable artifacts are:
-
 | Artifact | Default destination |
 | --- | --- |
-| `agents` | Codex: `$CODEX_HOME/agents/` as TOML; other harnesses: their native `agents/` directory as Markdown |
-| `meta-mode-tools` | `tools/meta-mode/` beside the resolved skill root; shared consumers use `~/.agents/tools/meta-mode/` |
-| `guide` | `docs/guide/` beside the resolved skill root |
-| `session-context` | `session-context/` beside the resolved skill root; plain-text routing guidance, never implicit |
+| `agents` | Codex: `$CODEX_HOME/agents/` (TOML); others: native `agents/` directory (Markdown) |
+| `meta-mode-tools` | `tools/meta-mode/` beside the skill root (shared consumers: `~/.agents/tools/meta-mode/`) |
+| `guide` | `docs/guide/` beside the skill root |
+| `session-context` | `session-context/` beside the skill root (plain-text routing note, never implicit) |
 
-Codex skills default to `~/.agents/skills/`, while Codex agents default to
-`~/.codex/agents/`. An unset or empty `CODEX_HOME` uses `~/.codex`.
-`HARNESS_SKILLS_CODEX_DIR` relocates skills only; agents follow `CODEX_HOME`
-unless an artifact override is supplied. Codex TOML and Markdown agents must
-use separate target directories. Shared targets are allowed only when the
-artifact source and output format match.
+Override per-harness destinations with `MSTACK_ARTIFACT_<ARTIFACT>_<HARNESS>_DIR`
+or under `artifacts` in `~/.config/mstack/environments.json`. The optional
+Cursor automation pack under `automations/benny/` is excluded from cross-harness
+installs; review and copy it into `.cursor/automations/benny/` directly.
 
-For SSH installs, both `/home/dev/.agents/skills` and
-`/home/dev/.codex/skills` map agents to `/home/dev/.codex/agents`.
-For a custom remote layout or remote `CODEX_HOME`, set
-`artifacts.agents.codex` to that remote agent directory. The installer cannot
-infer a remote home from an arbitrary skill path or the local `CODEX_HOME`.
+## Migration, custom targets, and SSH
 
-Artifact destinations can be overridden per harness with
-`MSTACK_ARTIFACT_<ARTIFACT>_<HARNESS>_DIR`, for example
-`MSTACK_ARTIFACT_AGENTS_CODEX_DIR`. Named environments can provide the same
-overrides in either shape below (artifact-first is the documented form):
-
-```json
-{
-  "fleet": {
-    "targets": {
-      "codex": "C:\\path\\to\\Fleet\\codex\\skills"
-    },
-    "artifacts": {
-      "agents": {
-        "codex": "C:\\path\\to\\Fleet\\codex\\agents"
-      }
-    }
-  }
-}
-```
-
-`benny` is intentionally listed in `profiles/artifacts.json` as a
-Cursor-only source and is rejected by the cross-harness installer. It must be
-reviewed and copied into a project repository's committed
-`.cursor/automations/benny/` directory using its own setup instructions.
-mstack does not ship portable `commands/`, `hooks/`, or `settings/` trees:
-those are harness- and project-owned configuration surfaces and must be
-written or merged explicitly by the user. The optional `session-context`
-artifact is plain-text guidance only; select it with `--artifact session-context`
-and configure the harness's own session surface explicitly. It does not register
-a startup hook, grant permissions, or make session routing implicit. Hooks remain
-unsupported unless explicitly configured outside mstack.
-
-## Choose installation directories
-
-The default directories are defined in
-[`profiles/harnesses.json`](./profiles/harnesses.json):
-
-| Harness | Default directory | Override |
-| --- | --- | --- |
-| Codex | `~/.agents/skills/` | `HARNESS_SKILLS_CODEX_DIR` |
-| Claude Code | `~/.claude/skills/` | `HARNESS_SKILLS_CLAUDE_DIR` |
-| OpenCode | `~/.agents/skills/` | `HARNESS_SKILLS_OPENCODE_DIR` |
-| pi | `~/.agents/skills/` | `HARNESS_SKILLS_PI_DIR` |
-| Antigravity (`agy`) | `~/.gemini/antigravity-cli/skills/` | `HARNESS_SKILLS_ANTIGRAVITY_DIR` |
-| Grok | `~/.agents/skills/` | `HARNESS_SKILLS_GROK_DIR` |
-
-Codex, OpenCode, pi and Grok share one physical copy per skill by default. Updating
-through any of these Harnesses updates that shared copy. Claude gets its own
-adapter output without a frontmatter `name`: Claude uses the directory name,
-while OpenCode skips that copy. No global Harness settings are changed.
-
-Antigravity does not read `~/.agents/skills/`, so it keeps its own canonical copy
-under `~/.gemini/antigravity-cli/skills/` and relies on the frontmatter `name`
-the canonical skills carry. Cursor already reads `~/.agents/skills/` and needs no
-separate target; see the [Harness adapter reference](./docs/harness-adapters.md).
-
-OpenCode and pi agent artifacts retain their native configuration roots. Grok
-agents go to `~/.grok/agents/`. Antigravity artifacts install beside its skills
-root (`~/.gemini/antigravity-cli/`); whether `agy` discovers agent files there is
-not verified, so treat that target as storage until you confirm it.
-`CLAUDE_CONFIG_DIR`, `XDG_CONFIG_HOME` and `PI_CODING_AGENT_DIR` still resolve
-native roots and legacy migration locations; the latter two no longer move
-the default shared skills. Use `HARNESS_SKILLS_*_DIR` for explicit skill paths.
-
-Set an override to install into a mounted Fleet directory or another local
-path. The path must be absolute or start with `~/`. Explicit overrides and
-named environment targets are not rewritten. Equal targets are combined only
-when their selected skill adapters agree; Claude and canonical output cannot
-share a target. Keep explicit copies out of overlapping discovery paths.
-
-### Migrate an existing installation
-
-Run the new installer locally on the machine that owns the skills:
+Migrate legacy OpenCode/pi installs and older backup trees out of discovery
+roots:
 
 ```bash
 npx @3metajun/mstack --harness all --migrate --replace --dry-run
 npx @3metajun/mstack --harness all --migrate --replace
 ```
 
-Migration moves recognized legacy OpenCode and pi copies into backups outside
-skill discovery. It also moves old installer backup trees and recognized
-staging leftovers out of discovery.
-A partial shared update checks the same selected names in all native roots,
-including Harnesses not named on the command line. Existing Claude copies
-that need only directory-based identity are adapted from their installed
-contents, preserving supporting files and body edits. Directly selected skills
-are replaced from the package, with their original contents backed up.
+Migration verifies mstack ownership via install receipts or released `SKILL.md`
+digests, stops before writes on unrecognized same-name copies, and rolls back on
+failure.
 
-Ownership comes from an mstack install receipt or known released `SKILL.md`
-content from versions 0.2.0 through 0.4.0. An unrecognized same-name legacy copy
-stops migration before writes; inspect and relocate that copy before retrying.
-Unselected active skills and unrelated skill names remain in place. Re-running
-the migration is safe, and a later failed write rolls back earlier migrations.
-
-Without `--migrate`, the installer reports legacy copies that would remain
-active. Automatic migration requires a default shared local target. For SSH or
-mounted custom layouts, run migration on the target machine with its native
-paths; SSH `--migrate` is rejected before connecting. SSH dry-run validates
-configured destinations but does not inspect the remote filesystem.
-
-### Custom and remote targets
-
-```powershell
-$env:HARNESS_SKILLS_OPENCODE_DIR = 'C:\path\to\fleet\opencode\skills'
-npx @3metajun/mstack --harness opencode
-```
-
-For named local or mounted environments, copy
+For named local, mounted, or POSIX SSH environments (`ssh` + `rsync`), copy
 [`profiles/environments.example.json`](./profiles/environments.example.json) to
-`~/.config/mstack/environments.json`, replace the paths, and pass the name:
+`~/.config/mstack/environments.json` (or set `MSTACK_ENVIRONMENTS_FILE`) and
+pass `--environment <name>`:
 
 ```bash
-npx @3metajun/mstack --harness opencode --environment fleet
+npx @3metajun/mstack --harness opencode --environment fleet-ssh --dry-run
+npx @3metajun/mstack --harness opencode --environment fleet-ssh
 ```
 
-Set `MSTACK_ENVIRONMENTS_FILE` to use another environment file. Each target must
-be an absolute path or start with `~/` for local environments.
+Remote installs stage locally, transfer with `rsync`, acquire a timestamped
+remote lock (`<target-parent>/.mstack.install.lock/owner`), and swap atomically.
+For custom remote Codex layouts, set `artifacts.agents.codex` explicitly.
 
-For a Tailscale, VPS, or Mac mini target, use an SSH environment. The machine
-running mstack must have Node.js, `ssh`, and `rsync`. The target must expose a
-POSIX shell and `rsync`; it needs the selected Harness CLI only when roles or
-live smoke tests will run there:
+## Model configuration and `run-role`
 
-```json
-{
-  "fleet-ssh": {
-    "transport": "ssh",
-    "host": "dev@tailnet-host",
-    "shell": "posix",
-    "targets": {
-      "opencode": "/home/dev/.config/opencode/skills"
-    }
-  }
-}
-```
-
-Put identity and connection options in the SSH host alias when possible. If an
-environment supplies them directly, configure both transports because `rsync`
-starts its own SSH process and does not reuse `sshArgs`:
-
-```json
-{
-  "sshArgs": ["-i", "/home/dev/.ssh/id_ecdsa.pem"],
-  "rsyncArgs": ["-e", "ssh -i /home/dev/.ssh/id_ecdsa.pem"]
-}
-```
-
-The same `npx @3metajun/mstack --harness opencode --environment fleet-ssh`
-command stages
-locally, transfers with `rsync`, takes a remote lock, and moves each selected
-directory into place. Add `--dry-run` to print the remote plan without opening
-an SSH connection. Windows remotes can still be used through a mounted path;
-remote installation currently targets POSIX shells.
-
-Remote lock directories record a timestamped owner. After an interrupted
-install, inspect `<target-parent>/.mstack.install.lock/owner`, verify that no
-install is running, remove the lock directory, and retry.
-
-The SSH/rsync path has been verified end to end against a disposable POSIX
-target, including remote locking, atomic installation, checksum comparison,
-and cleanup.
-
-## Run a configured role
-
-`run-role` turns a configured role into the selected Harness command. Without
-`--execute` it only prints the plan:
-
-```bash
-npm run run-role -- --harness opencode --role explorer \
-  --prompt "Inspect the repository and do not edit files" \
-  --environment fleet-ssh --model auto
-```
-
-Add `--execute` to run the command. SSH environments pass the prompt through
-strict POSIX quoting or a PowerShell encoded command, depending on `shell`.
-Harnesses whose CLI takes the prompt as the value of a flag (`agy --print`,
-`grok --single`) declare that flag as `runtime.promptArgs` in
-[`profiles/harnesses.json`](./profiles/harnesses.json), so the model and read-only
-arguments never land between the flag and the prompt.
-
-Model roles live in `~/.config/mstack/models.json`. Each role accepts a model
-string. The `reviewer` role also accepts a non-empty list of unique model strings.
-A Harness override replaces the role's whole value. Use `/setup-mstack` to choose
-names reported by your Harness; existing string configurations remain valid.
-
-Strings in `roles` and Harness overrides are opaque model names, passed to the CLI
-exactly as written, whatever they contain. A host that picks a provider instance
-and exposes effort per model, such as T3 Code, reads its own `overrides.t3code`
-layer instead (see [Use mstack in T3 Code](./docs/t3code.md)). It is a host layer,
-not a Harness, and only there an entry can be an object,
-`{ "provider": "<instance id>", "model": "<model>", "effort": "<max|xhigh|high|medium|low>" }`,
-or the string `<provider>/<model> (<effort>)`. `run-role` rejects `t3code` as a
-harness and never reads that layer. With `--harness t3code`, the budget script sets
-`effort` from a catalog of `{ provider, model, efforts }` objects instead of
-rewriting name suffixes.
-
-`inherit-parent` requests the current chat model. Native delegation can use its
-documented inheritance mechanism, but `run-role` starts a new CLI process and
-requires `--parent-model <known-parent-model>` for that value. `auto` omits the
-model argument and selects the CLI's default, which may be different. Existing
-CLI calls that used `inherit-parent` must add `--parent-model`, or explicitly
-choose `--model auto`. With no configuration file, the seven roles default to
-`inherit-parent`, so the same choice is required.
-
-For a configured reviewer list, select one entry with `--model-index 0` or run
-all entries concurrently:
-
-```bash
-npm run run-role -- --harness codex --role reviewer \
-  --file ~/.config/mstack/models.json --prompt "Review this diff" \
-  --all-models --read-only --execute
-```
-
-Replace `roles.reviewer` or `overrides.codex.reviewer` with a JSON array of the
-model names you selected. Add `--parent-model <known-parent-model>` if an entry
-is `inherit-parent`. Without `--execute`, fanout prints a JSON array of plans.
-Execution returns a JSON array with each model's `stdout`, `stderr`, and `status`,
-in configuration order. A string role used with `--all-models` returns the same
-array shape with one entry. Any failure makes the overall exit code nonzero. Output
-is buffered up to 16 MiB per stream per worker; larger output fails that worker.
-`--all-models` requires `--read-only`. Writable workers need individual launches
-with separate worktrees. Review the Harness's read-only limits below.
-
-## Smoke test Harnesses
-
-Check CLI availability and installed skill files after installation:
-
-```bash
-npm run smoke-harnesses -- --harness all --require-installed
-```
-
-Add `--execute` for a live prompt on every available Harness. It uses the CLI
-default model unless you supply `--model`, `--parent-model`, or a `--file` with
-model choices. An inherited role in that file needs `--parent-model`. The live
-prompt checks a reply marker; it does not prove that the Harness loaded the skill
-or completed its workflow. These live calls always use `--read-only`.
-Codex, Claude Code, pi, and Grok use CLI-enforced tool restrictions; Grok keeps
-only `read_file`, `list_dir`, and `grep`. A built-in tool allowlist does not
-cover MCP tools, so Claude Code also gets `--strict-mcp-config` and pi gets
-`--no-mcp`, which needs pi 1.0.4 or newer. Codex documents its `read-only` sandbox for
-shell commands, and mstack has not checked whether it limits configured MCP
-tools; run Codex with a profile that has no MCP servers when that matters.
-OpenCode selects its built-in `plan` agent, which denies direct edits but still
-allows shell commands in OpenCode 1.19; use a disposable checkout when its
-prompt-only write boundary is insufficient. Antigravity's `--mode plan` has the
-same limit: it is an agent mode, not a tool allowlist. In Antigravity 1.2.17 it
-left the workspace untouched but still wrote its own plan file under
-`~/.gemini/antigravity-cli/`. A live check also needs that
-Harness's credentials and configured model access.
-
-The read-only live prompt was checked on 2026-10-22 with Claude Code 2.1.306,
-Codex CLI 0.163.0, OpenCode 1.19.3, and pi 1.3.0 on Windows.
-
-The Claude skill-invocation path was verified with Claude Code 2.1.267, the Kiro-Pro
-configuration, and `claude-haiku-4-5-20251001`. The check required Claude
-Code's native `Skill` tool to invoke `meta-mode` and return an exact marker;
-the remote fixture and temporary credentials were removed afterward.
-
-### Reviewed harness versions
-
-The latest stable releases were reviewed on 2026-10-30. Release metadata and
-CLI help checks confirmed the existing runtime arguments. This review did not
-repeat the live prompts or skill-discovery checks recorded above and in the
-[adapter reference](./docs/harness-adapters.md).
-
-| Harness | Latest stable | Verification |
-| --- | --- | --- |
-| Codex CLI | [0.166.0](https://github.com/openai/codex/releases/tag/rust-v0.166.0) | npm metadata, local version, and `exec --help` |
-| Claude Code | [2.1.314](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, and `--help` |
-| OpenCode | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata and release, local 1.19.4 `run --help` |
-| pi | [1.4.0](https://github.com/earendil-works/pi/releases/tag/v1.4.0) | npm metadata, local version, and `--help` |
-| Antigravity | [1.4.11](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, downloaded binary version, and `--help` |
-| Grok Build | 1.0.70 | Local version, `--help`, and `grok update --check --json` |
-
-The current pi npm package is `@earendil-works/pi-coding-agent`. The old
-`@mariozechner/pi-coding-agent` package stops at 0.73.1. Antigravity's manifest
-comes from its [official CLI installer](https://antigravity.google/cli).
-
-## Recover recent context
-
-`recall` includes a history reader in `recall/scripts/history.mjs`; it also works
-when only the skill directory is installed. List session metadata for the active
-workspace before selecting a session to read:
-
-```bash
-node <recall-directory>/scripts/history.mjs list --harness codex --workspace <workspace> --exclude <current-session-id>
-node <recall-directory>/scripts/history.mjs read --harness codex --workspace <workspace> --session <session-id> --query parser
-```
-
-The reader supports Codex, Claude Code, OpenCode, and pi, with configured storage
-roots, session exclusions, branch selection where available, and bounded text
-output. OpenCode exports are sanitized by default; explicitly use `--local-text`
-for private local recovery because sanitization can remove all message text.
-See [history sources](./skills/recall/references/history-sources.md) for supported
-formats and limits. Tests use disposable sessions; no user transcript is bundled.
-
-The [authoring playbook](./skills/meta-mode/playbooks/authoring-a-skill.md) gives
-`automate-me` and `reflect` a concrete draft, description review, and validation
-workflow even when no native skill creator or repository validator is installed.
-
-## Repository layout
-
-- `skills/` contains the canonical, harness-neutral skill files.
-- `adapters/` contains per-harness frontmatter changes.
-- `profiles/harnesses.json` defines supported harnesses and default paths.
-- `docs/harness-adapters.md` records the official skill and session rules used
-  by each Harness adapter.
-- `profiles/artifacts.json` defines optional artifacts and documents unsupported
-  harness-owned surfaces.
-- `profiles/skills.json` defines the canonical skill inventory.
-- `profiles/upstreams.json` records source commits and renamed entries.
-- `profiles/models.example.json` gives model-role configuration a portable
-  shape without forcing a provider.
-- `agents/` contains portable routing and comment-review agents.
-- `hooks/` holds the Claude Code plugin's `SessionStart` hook definition and its
-  context note; `scripts/session-hook.mjs` is the script it runs.
-- `automations/benny/` keeps the optional Cursor automation pack from pstack.
-- `docs/guide/` contains the adapted upstream workflow guide.
-- `tools/meta-mode/` contains the optional Bun PR watcher and validation
-  helpers, including the project-playbook checker.
-- `scripts/install.mjs` stages, validates, and commits an installation.
-- `scripts/remote-install.mjs` stages and transfers an SSH environment install.
-- `scripts/validate.mjs` checks inventory, frontmatter, links, and portability.
-- `scripts/check-harness-policy.mjs` validates a business repository's mixed
-  pstack/mstack policy and detects duplicate verification maps.
-- `.codex-plugin/` packages the same skill tree for Codex.
-- `.claude-plugin/` packages the same tree and agents as a Claude Code plugin
-  marketplace.
-- `scripts/pack-claude-skills.mjs` builds per-skill zips for Claude Desktop and
-  claude.ai uploads.
-
-The installer stages every selected skill, applies its adapter, validates the
-result, and then renames the staged directory into place. It uses a lock per
-target directory and restores backups if a commit fails.
-
-## Included skills
-
-The current bundle contains 61 skills. It includes the 57 shipped entries in
-the portable pstack tree, three skills adapted from `mattpocock/skills`, and
-the local `mstack-help` skill:
-
-- Engineering principles for boundaries, domain modelling, idempotence,
-  verification, sequencing, and type safety.
-- Workflows for diagnosis, design review, context recovery, TDD, and agent
-  instruction writing.
-- `create-verification-skill` for generating a project-specific verification
-  workflow.
-- `create-formal-verification-skill` and `maintain-formal-verification-skill`
-  for TLA+ based formal verification workflows.
-- `statechart` for turning statecharts and TLA+ models into visual charts.
-- `in-your-own-words` and `sharpen` for goal restatement and prompt refinement.
-- `ketchup` and `ketchup-video` for catching up on recent work in text or a
-  subtitled video.
-- `meta-mode` for routing a multi-step task through the capabilities available
-  in the current harness.
-- `benchmark-checklist` and `correct` for vetting a measured number and for
-  fixing repeated agent mistakes at the repository level.
-- `mstack-help` for questions about installing, setting up, and using mstack. It
-  answers and hands back a prompt to send without starting the work. Its source
-  is recorded in `profiles/local-skills.json` because no upstream skill covers it.
-
-The bundle includes the pstack workflow and principle names. `meta-mode` is the
-portable replacement for pstack's `poteto-mode`; it describes capabilities and
-uses the current harness's adapter instead of naming one vendor's commands.
-
-Run `node scripts/validate.mjs` to print the validated skill count.
-
-For a business repository that mixes pstack and mstack, initialize its shared
-project workflow with the CLI available in mstack 0.4.0 and later:
-
-```bash
-npx --package @3metajun/mstack@0.4.0 mstack-policy init --root <project> --app web --check 'node --test' --pstack <exact-pstack-commit>
-```
-
-Replace the app, check command, and pstack revision with the project's values.
-Initialization exports `.harness/check.mjs` and its library for committed CI
-checks that run without downloading mstack. It leaves the application
-contract for `/create-verification-skill` to create or migrate and prove. See
-[mixed-Harness adoption](./docs/guide/11-mixed-harness.md) for wrapper generation,
-receipts, repository protection, and reviewed checker upgrades. Pin the team's
-exact package version for initialization and run recording.
-
-To validate and print a user's model configuration, run:
+Per-role model choices live in `~/.config/mstack/models.json` (see
+[`profiles/models.example.json`](./profiles/models.example.json)). Run
+`/setup-mstack` to configure models and reasoning budgets (`unlimited`, `large`,
+`medium`, `small`) or validate the file directly:
 
 ```bash
 npm run check-models -- --file ~/.config/mstack/models.json
 ```
 
-To check the complete skill trees against both pinned upstreams, run:
+- Roles (`implementer`, `reviewer`, `judge`, `explorer`, `synthesizer`,
+  `candidate`, `operator`) default to `inherit-parent`.
+- `reviewer` accepts a single model string or a non-empty list of unique models
+  (used by `/interrogate` and `--all-models` fanout).
+- T3 Code uses `overrides.t3code` with `{ "provider", "model", "effort" }` or
+  `"<provider>/<model> (<effort>)"` entries; `run-role` rejects `t3code` as a
+  harness.
+
+Execute or dry-run a configured role from the CLI:
 
 ```bash
-npm run skill-baseline -- --check --source /path/to/pstack --matt-source /path/to/mattpocock-skills
+npm run run-role -- --harness opencode --role explorer \
+  --prompt "Inspect the repository and do not edit files" \
+  --environment fleet-ssh --model auto
+
+npm run run-role -- --harness codex --role reviewer \
+  --file ~/.config/mstack/models.json --prompt "Review this diff" \
+  --all-models --read-only --execute
 ```
 
-This checks every file in all 54 skill trees, including references, playbooks,
-and scripts. It also checks tools moved out of skill directories. Local
-additions and intentional upstream omissions are recorded explicitly. Both
-source checkouts must be clean and at their pinned commits. `npm test` checks
-the target files without needing upstream checkouts.
+`inherit-parent` requires `--parent-model <name>` for new CLI processes; `auto`
+uses the CLI default. `--all-models` requires `--read-only`.
 
-For intentional changes, preview with the same source arguments and `--diff`,
-review the source-to-adaptation patches, then use `--write` to update
-`profiles/skill-manifest.json`. Commit the baseline with the corresponding
-content changes. The hashes detect drift; they do not establish that an adapted
-workflow behaves like its source. See [the baseline review process](docs/skill-integrity.md).
+## Included skills
 
-To validate project playbooks that extend the bundled `meta-mode` playbooks, run:
+The 61 skills cover:
+
+- **Orchestration (`meta-mode`):** 22 playbooks (investigation, bug fix, perf,
+  hillclimb, runtime/trace forensics, feature, refactoring, prototype, visual
+  parity, skill authoring, eval, babysit, shipping, autonomous run,
+  autopilot-full, autopilot-stack, session pickup, pause safely, multi-phase
+  plan, worktree cleanup, opening a PR) plus `worker.md` for spawned agents.
+- **24 engineering principles (`principle-*`):** Domain modelling, boundaries,
+  type discipline, idempotence, verification, sequencing, root-cause fixes,
+  context guarding, and structural encoding.
+- **Understanding and design:** `how`, `why`, `teach`, `recall`, `ketchup`,
+  `ketchup-video`, `in-your-own-words`, `sharpen`, `architect`, `arena`,
+  `swarm`, `blast-radius`, `codebase-design`, `figure-it-out`,
+  `show-me-your-work`.
+- **Quality and verification:** `diagnosing-bugs`, `tdd`, `interrogate`,
+  `benchmark-checklist`, `statechart`, `create-verification-skill`,
+  `maintain-verification-skill`, `create-formal-verification-skill`,
+  `maintain-formal-verification-skill`, `typescript-best-practices`,
+  `no-comments`, `unslop`, `technical-writing`, `writing-for-agents`.
+- **Customization and setup:** `setup-mstack`, `mstack-help`, `automate-me`,
+  `reflect`, `correct`, `bro`, `make-bot-ui`.
+
+### Session history recovery and project playbooks
+
+- `recall` ships `skills/recall/scripts/history.mjs` to list and search scoped
+  Codex, Claude Code, OpenCode (`--local-text` for unsanitized local recovery),
+  and pi transcripts without repository scripts. See
+  [history sources](./skills/recall/references/history-sources.md).
+- Validate repository playbook extensions in `.agents/playbooks/` with:
+  ```bash
+  node tools/meta-mode/check-playbooks.mjs <project-root>
+  ```
+- Initialize mixed `pstack`/`mstack` project verification contracts with
+  `mstack-policy` (see [mixed-Harness adoption](./docs/guide/11-mixed-harness.md)):
+  ```bash
+  npx --package @3metajun/mstack mstack-policy init --root <project> --app web --check 'node --test' --pstack <exact-pstack-commit>
+  ```
+
+## Smoke test and reviewed harness versions
+
+Check installed skills and CLI availability (add `--execute` for read-only live
+probes; note OpenCode `plan` and Antigravity `--mode plan` are agent modes, not
+strict tool allowlists):
 
 ```bash
-node tools/meta-mode/check-playbooks.mjs <project-root>
+npm run smoke-harnesses -- --harness all --require-installed
 ```
 
-A project playbook belongs in `<project-root>/.agents/playbooks/`. Its frontmatter
-must contain `when:` and may contain a comma-separated `extends:` list. Changes
-must be list items that quote the exact bundled step they anchor to with `After`,
-`Before`, `Replace`, or `In`. Use `--bundled <path>` when checking a staged skill
-installation instead of this checkout.
+| Harness | Reviewed stable | Verification |
+| --- | --- | --- |
+| Codex CLI | [0.166.0](https://github.com/openai/codex/releases/tag/rust-v0.166.0) | npm metadata, local version, `exec --help` |
+| Claude Code | [2.1.314](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, `--help` |
+| OpenCode | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata, release notes, `run --help` |
+| pi | [1.4.0](https://github.com/earendil-works/pi/releases/tag/v1.4.0) | `@earendil-works/pi-coding-agent` metadata, `--help` |
+| Antigravity | [1.4.11](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, `--help` |
+| Grok Build | 1.0.70 | Local version, `--help`, `grok update --check --json` |
 
-To compare the pstack inventory and non-skill artifacts, run:
+## Repository layout and maintenance
 
-```bash
-npm run check-upstream -- --source /path/to/pstack
-```
+- `skills/` canonical, harness-neutral skill files (`profiles/skills.json` inventory)
+- `adapters/` per-harness frontmatter rules
+- `profiles/` harness roots, artifacts, model templates, upstream pins (`upstreams.json`, `upstream-manifest.json`, `skill-manifest.json`)
+- `agents/` portable `meta-agent` and `comment-reviewer` definitions
+- `hooks/` Claude Code plugin `SessionStart` hook (`scripts/session-hook.mjs`)
+- `tools/meta-mode/` optional Bun PR watcher (`watch-pr/`), `check-playbooks.mjs`, `worktree-audit.mjs`, `resume.mjs`, and `pr-safety.mjs`
+- `docs/` workflow guide (`docs/guide/`), T3 Code guide (`docs/t3code.md`), adapter reference (`docs/harness-adapters.md`), and baseline review guide (`docs/skill-integrity.md`)
+- `.claude-plugin/` and `.codex-plugin/` plugin manifests
 
-The check applies the renames in `profiles/upstreams.json`, verifies the
-reviewed body digest for every canonical pstack skill, reports the portable
-skill count, and reports the state of the agents, Benny automation, guide, and
-meta-mode tools. Add `--strict` to fail when a canonical skill body or
-configured artifact is missing, differs, or remains after removal upstream.
-Strict mode requires the source to be a clean Git checkout whose `HEAD` exactly
-matches the pinned commit. If you intentionally edit a canonical skill, update
-its reviewed target digest in `canonicalSkills` as part of that review; sync
-preserves these entries and does not silently re baseline them.
-
-To preview and apply a transformed refresh of those non-skill artifacts:
-
-```bash
-npm run sync-upstream -- --source /path/to/pstack
-npm run sync-upstream -- --source /path/to/pstack --apply
-```
-
-The sync command is dry-run by default. It transforms pstack and poteto names
-to mstack and meta names, preserves adapted agents, and refuses to overwrite
-changed source-managed files. `--apply` requires the same clean, pinned source
-checkout as strict checking. It removes files deleted upstream only when their
-content still matches the previous manifest. Pass `--apply --force` after
-reviewing a diff when overwriting or removing a locally changed file is
-intentional.
-
-All sync commands use one exclusive lock per target, so concurrent `--apply`,
-dry-run, and `check-upstream` commands are serialized. The lock records the
-host, platform, and process start identity. A lock from another runtime (for
-example Windows versus WSL), or one whose owner cannot be verified, is left in
-place and the command explains how to inspect and remove it after confirming
-that no sync is running.
-
-Writes and removals are staged and journaled before the target is changed; an
-ordinary failure rolls the whole refresh back. If the process is interrupted,
-the next `--apply` recovers the unfinished transaction before rebuilding the
-sync plan. If a user changed a target during an unfinished rollback, mstack
-moves that file to `.mstack-sync-upstream/recovery/<transaction>/<index>.user`
-and restores the previous version; the command prints both paths. A
-`COMMITTED` marker is authoritative, so later user edits are preserved while
-transaction sidecars are cleaned up. Dry runs and `check-upstream` refuse to
-inspect a target while a sync is active or needs recovery.
-
-On Windows, directory fsync is best-effort because Node cannot portably flush a
-directory handle. The transaction provides process-crash recovery, but it does
-not provide a power-loss durability guarantee on that platform. Readers that
-ignore the sync lock can still observe files changing during the commit.
-
-`--apply` writes `profiles/upstream-manifest.json`. Its artifact hashes describe
-the transformed upstream baseline, while `canonicalSkills` records the pinned
-source body and reviewed target body for each canonical skill. Files configured with
-`compareContent: false`, including the adapted agents, may intentionally differ
-from those hashes. A different checkout can be used as the destination with
-`--target /path/to/mstack`.
-
-## Verify changes
-
-Run the complete local check before you commit:
+### Verify and sync upstreams
 
 ```bash
 npm test
+npm run check-package
+npm run check-upstream -- --source /path/to/pstack --strict
+npm run skill-baseline -- --check --source /path/to/pstack --matt-source /path/to/mattpocock-skills
+npm run sync-upstream -- --source /path/to/pstack        # dry-run; add --apply [--force] to write
+npm run upstream-drift                                   # list new upstream commits past pinned refs
 ```
 
-The check validates the canonical tree and runs installer, context, upstream
-sync, runtime, and environment tests.
-
-## Add a skill
-
-1. Add `skills/<name>/SKILL.md` with `name` and `description` frontmatter.
-2. Keep the main file portable. Put harness-specific paths and commands in a
-   reference file.
-3. Add the skill name to `profiles/skills.json`.
-4. Add adapter metadata only when a harness needs it.
-5. Run `npm test` and verify discovery in at least one supported harness.
-
-Use the same name for a skill in the canonical tree, adapters, tests, and docs.
-This keeps installation and validation data-driven.
+See [Reviewing skill baselines](./docs/skill-integrity.md) before refreshing
+`profiles/skill-manifest.json` with `--write`.
 
 ## License
 
-mstack is released under the MIT License. See
-[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) for upstream licenses and
-source revisions.
+MIT. Upstream source revisions and licenses are recorded in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).

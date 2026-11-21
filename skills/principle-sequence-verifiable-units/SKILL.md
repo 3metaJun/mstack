@@ -6,13 +6,8 @@ license: MIT
 
 # Sequence work into verifiable units
 
-Order work so each unit ends in a check and no later unit builds on an unknown
-state.
+Order work as small units that each end in a state you can check, and do not advance until the current one is green.
 
-For delivery, arrange commits or pull requests so a reviewer can replay the
-argument. Useful sequences include failing test then fix, baseline capture then
-treatment, schema then consumer, or scaffold then feature. Each unit should be
-coherent on its own and make the next unit easier to verify.
+In a sweep, migration, or run of similar edits, each unit is a bracket: known-good state, one change, run the check, proceed. Run the per-unit check even when a tool does the edits.
 
-Use `principle-prove-it-works` to keep checks direct and
-`principle-build-the-lever` to make them rerunnable.
+Deliver in the order that proves the work: the failing test first, then the fix. The subtraction before the reshape. The baseline before the treatment. Each commit lands on its own.

@@ -84,12 +84,12 @@ test("every canonical skill packs and passes upload validation", () => {
 test("packed archive contains the skill tree under a single top-level folder", () => {
   const dir = mkdtempSync(join(tmpdir(), "mstack-pack-"));
   try {
-    execFileSync(process.execPath, [join(repoRoot, "scripts", "pack-claude-skills.mjs"), "--skill", "architect", "--out", dir]);
-    const entries = readZip(readFileSync(join(dir, "architect.zip")));
-    assert.ok(Object.keys(entries).every((name) => name.startsWith("architect/")));
-    const files = buildSkillFiles("architect", join(repoRoot, "skills")).map((file) => file.name);
+    execFileSync(process.execPath, [join(repoRoot, "scripts", "pack-claude-skills.mjs"), "--skill", "automate-me", "--out", dir]);
+    const entries = readZip(readFileSync(join(dir, "automate-me.zip")));
+    assert.ok(Object.keys(entries).every((name) => name.startsWith("automate-me/")));
+    const files = buildSkillFiles("automate-me", join(repoRoot, "skills")).map((file) => file.name);
     assert.deepEqual(Object.keys(entries), files);
-    assert.doesNotMatch(entries["architect/references/rationale-template.md"].toString(), /\.\.\/\.\.\/arena/);
+    assert.doesNotMatch(entries["automate-me/SKILL.md"].toString(), /\.\.\/meta-mode/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

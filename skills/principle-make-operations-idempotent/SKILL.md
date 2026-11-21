@@ -4,26 +4,12 @@ description: Design commands, lifecycle steps, installers, migrations, and proce
 license: MIT
 ---
 
-# Make operations idempotent
+# Make Operations Idempotent
 
-Design each state-mutating operation to converge to the intended state no
-matter how often it runs or where a previous attempt stopped.
+Design every state-changing operation to converge to the correct state however many times it runs and wherever the previous run stopped.
 
-Use these patterns:
+Derive each step from the state that exists, not from what the previous run meant to do. Read the current state, compare it to the goal, and apply only the difference.
 
-- Discover and reconcile existing state before creating new state.
-- Adopt healthy live resources and remove only stale resources owned by the operation.
-- Compare content or identity, not creation order.
-- Use owner-aware locks with stale-owner detection.
-- Regenerate transient input after a failed cycle.
-- Make create, update, and cleanup safe to repeat independently.
+Anything a run leaves behind (a lock, a temporary file, a half-written record, a claimed job) must be recognizable as stale by the next run, by evidence that holds wherever the previous run could have stopped. Write to a temporary path and rename it into place.
 
-Test the design by asking:
-
-1. What happens on two immediate successful runs?
-2. What happens if the first run crashes before and after every mutation?
-3. What happens if cleanup runs twice?
-4. Does every path converge to the same durable state?
-
-If the answer depends on ambiguous leftover state, add an explicit
-reconciliation step or strengthen resource ownership.
+The test: what happens if this runs twice? What if the previous run crashed at every possible point? If the answer depends on what was left behind, add a reconciliation step.

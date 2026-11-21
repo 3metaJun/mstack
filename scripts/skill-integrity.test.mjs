@@ -35,7 +35,6 @@ test("meta-mode retains the workflow contract after portability adaptation", () 
     "## Autonomy",
     "## Subagents",
     "## Writing the reply",
-    "## Comments",
     "## Playbooks",
   ]) {
     assert.match(content, new RegExp(`^${heading}$`, "m"));

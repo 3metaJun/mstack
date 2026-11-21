@@ -87,8 +87,4 @@ the transcript portion unavailable:
 Do not audit other runs' rows as your own. If this run's work proves an earlier
 row wrong, append a correction with the evidence.
 
-When an independent reviewer or subagent is available, ask it to inspect the
-trail and artifacts for weak evidence, skipped verification, risky choices, and
-important omissions. Verify its findings before reporting them. End the final
-handoff with an `Attention` section only when that review found something the
-user should scrutinize.
+When an independent reviewer or subagent on another vendor's model is available, ask it to inspect the trail and artifacts for weak evidence, skipped verification, risky choices, and important omissions. Verify its findings before reporting them. End the final handoff with an `Attention` section only when that review found something the user should scrutinize.

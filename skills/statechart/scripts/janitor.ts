@@ -1,11 +1,13 @@
 import fs from "node:fs";
-import { killGroup } from "./run.ts";
+import { finished } from "node:stream/promises";
+import { killGroup } from "./kill.ts";
 
-const [pid, stage, tmp] = process.argv.slice(2);
-process.stdin.resume();
-process.stdin.once("end", async () => {
-  const workerPid = Number(pid);
-  if (Number.isSafeInteger(workerPid) && workerPid > 0) await killGroup(workerPid);
-  for (const folder of [stage, tmp])
-    fs.rmSync(folder, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-});
+const [pid, ...dirs] = process.argv.slice(2);
+
+let input = "";
+process.stdin.setEncoding("utf8").on("data", (chunk: string) => (input += chunk));
+await finished(process.stdin).catch(() => {});
+const running = !input.includes("exited");
+const groupOutlivesWorker = process.platform !== "win32";
+if (running || groupOutlivesWorker) await killGroup(Number(pid));
+for (const dir of dirs) fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
