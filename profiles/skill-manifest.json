@@ -2,7 +2,7 @@
   "version": 1,
   "sources": {
     "pstack": "4dd1d05818d19792e7cd6e818f1667f95f7e1dbe",
-    "mattpocock/skills": "49dd158d1076134a641b33efb035946536778336"
+    "mattpocock/skills": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d"
   },
   "files": {
     "skills/architect/references/design-red-flags.md": {
@@ -69,8 +69,8 @@
     "skills/codebase-design/references/design-alternatives.md": {
       "upstream": "mattpocock/skills",
       "source": "skills/engineering/codebase-design/DESIGN-IT-TWICE.md",
-      "sourceDigest": "52b52e75655a27aea59c6966b410bac82448968ad46ef1ebb9f07c274e3ae010",
-      "targetDigest": "fe64a751fc7e1a5399126886b1c0832b484364cfeaa7929d1c8e77b6a49eb208",
+      "sourceDigest": "c222ab5a82e0405672eb9062d62496139a08828e45d07fc5f18e4952c10fac1a",
+      "targetDigest": "ff896de577b462ff28a3152e154788e1a8d922426f951444ec1b0dd5723b1f3b",
       "reason": "The adapted design comparison workflow lives under references."
     },
     "skills/codebase-design/SKILL.md": {
@@ -536,7 +536,7 @@
     "skills/recall/references/history-sources.md": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "181e7a56f8ef5514a1cae4841366bf62c708fd44be8bcee3c129c50182e0b3bc"
+      "targetDigest": "b95748234ef2196269ffba0638a439a6fee225420eca23da57923f04a3546922"
     },
     "skills/recall/references/hosts/t3code.md": {
       "upstream": null,
@@ -546,7 +546,7 @@
     "skills/recall/scripts/history.mjs": {
       "upstream": null,
       "reason": "Local portability guidance or implementation; review alongside its owning skill.",
-      "targetDigest": "fe3284380308ecd0cf232072c7bc8e59c0f56ffecc42851d1fddb2c382ab2683"
+      "targetDigest": "c3fb58b7816bb58acb5c134ebeaa2fe40a4716b936977221c8f2b42910c7da47"
     },
     "skills/recall/SKILL.md": {
       "upstream": "pstack",

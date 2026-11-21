@@ -3,11 +3,12 @@
 This page records the vendor rules that shape mstack's adapters. The links point
 to the official documentation used for each entry.
 
-On 2026-10-30, release metadata and CLI help were checked against the
-[reviewed harness versions](../README.md#reviewed-harness-versions). The runtime
-arguments in `profiles/harnesses.json` remain supported. That review did not
-repeat live prompts or skill discovery. The behavior observations below keep
-their original tested versions.
+On 2026-11-12, release metadata and CLI help were checked against the
+[reviewed harness versions](../README.md#reviewed-harness-versions). OpenCode 2
+rejects `--pure`, so its runtime arguments dropped that flag; the other runtime
+arguments in `profiles/harnesses.json` remain supported. Live prompts and
+skill discovery were repeated only for OpenCode. The other behavior
+observations below keep their original tested versions.
 
 ## Skill locations and frontmatter
 
@@ -76,13 +77,17 @@ the `name` field and a file named `SKILL.md`, which the canonical skills already
 satisfy, so `adapters/antigravity.json` and `adapters/grok.json` are empty. Grok
 also scans `~/.claude/skills/`; skills with the same name collapse to one entry.
 Claude output omits frontmatter `name`; Claude's documented fallback
-uses the directory name, so `/meta-mode` keeps its name. OpenCode requires an
+uses the directory name, so `/meta-mode` keeps its name. OpenCode 1 requires an
 explicit name before registration and skips the Claude copy. This behavior
 was checked with OpenCode 1.19.3 using a named Claude control skill and an
-unnamed Claude copy alongside the canonical shared skill. Claude Code 2.1.267
+unnamed Claude copy alongside the canonical shared skill. OpenCode 2 falls back
+to the directory name, so it also reads the unnamed Claude copy, but it keys
+skills by directory name and loads `.agents` roots after `.claude` roots. With
+OpenCode 2.2.7, `opencode api skill.list` returned one entry per mstack skill,
+each from `~/.agents/skills/`, while `~/.claude/skills/` held the unnamed copies.
+Claude Code 2.1.267
 also returned the directory-derived command name during an isolated
-stream-JSON initialization without a user prompt or model request. Recheck this adapter
-if OpenCode adds a directory-name fallback for external skills.
+stream-JSON initialization without a user prompt or model request.
 
 pi keeps the first same-name skill and reports a collision for later
 independent copies. This was observed with pi 0.85.1, and the pi 1.3.0 skills

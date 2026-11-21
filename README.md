@@ -458,23 +458,31 @@ the remote fixture and temporary credentials were removed afterward.
 
 ### Reviewed harness versions
 
-The latest stable releases were reviewed on 2026-10-30. Release metadata and
-CLI help checks confirmed the existing runtime arguments. This review did not
-repeat the live prompts or skill-discovery checks recorded above and in the
-[adapter reference](./docs/harness-adapters.md).
+The latest stable releases were reviewed on 2026-11-12. Release metadata and
+CLI help checks confirmed the runtime arguments for every Harness. OpenCode 2
+removed `run --pure`, so `profiles/harnesses.json` now runs `opencode run`
+without it, and the `recall` history reader selects its OpenCode commands by
+major version. This review repeated live prompts only for OpenCode; the other
+live and skill-discovery checks recorded above and in the
+[adapter reference](./docs/harness-adapters.md) keep their original versions.
 
 | Harness | Latest stable | Verification |
 | --- | --- | --- |
-| Codex CLI | [0.166.0](https://github.com/openai/codex/releases/tag/rust-v0.166.0) | npm metadata, local version, and `exec --help` |
-| Claude Code | [2.1.314](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, and `--help` |
-| OpenCode | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata and release, local 1.19.4 `run --help` |
-| pi | [1.4.0](https://github.com/earendil-works/pi/releases/tag/v1.4.0) | npm metadata, local version, and `--help` |
-| Antigravity | [1.4.11](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, downloaded binary version, and `--help` |
-| Grok Build | 1.0.70 | Local version, `--help`, and `grok update --check --json` |
+| Codex CLI | [0.167.2](https://github.com/openai/codex/releases/tag/rust-v0.167.2) | npm metadata and release, `exec --help` from the npm package |
+| Claude Code | [2.1.322](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | npm metadata, local version, and `--help` |
+| OpenCode 2 | [2.2.7](https://github.com/anomalyco/opencode/releases/tag/v2.2.7) | npm metadata, local version, `run --help`, live `run --agent plan`, `recall` list and read, and `api skill.list` |
+| OpenCode 1 | [1.19.5](https://github.com/anomalyco/opencode/releases/tag/v1.19.5) | npm metadata and release, live `run --agent plan`, and `recall` list and read from the npm package |
+| pi | [1.5.2](https://github.com/earendil-works/pi/releases/tag/v1.5.2) | npm metadata and release, `--help` from the npm package |
+| Antigravity | [1.5.6](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json) | Official manifest, binary SHA512, downloaded binary version, and `--help` |
+| Grok Build | 1.0.77 | `grok update --check --json`; `--help` from the local 1.0.70 |
 
-The current pi npm package is `@earendil-works/pi-coding-agent`. The old
-`@mariozechner/pi-coding-agent` package stops at 0.73.1. Antigravity's manifest
-comes from its [official CLI installer](https://antigravity.google/cli).
+OpenCode 2 is published as `@opencode/cli` and is the install the
+[OpenCode documentation](https://opencode.ai/docs) gives. The `opencode-ai`
+package and the release GitHub marks as latest remain on the 1.19 line, so both
+majors are supported. The current pi npm package is
+`@earendil-works/pi-coding-agent`. The old `@mariozechner/pi-coding-agent`
+package stops at 0.73.1. Antigravity's manifest comes from its
+[official CLI installer](https://antigravity.google/cli).
 
 ## Recover recent context
 
