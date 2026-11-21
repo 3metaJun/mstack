@@ -1,7 +1,7 @@
 {
   "pstack": {
     "repository": "https://github.com/cursor/plugins/tree/main/pstack",
-    "commit": "4dd1d05818d19792e7cd6e818f1667f95f7e1dbe",
+    "commit": "0b46ec399d55f2829e88822998f53b84944837d3",
     "renames": {
       "ketchup": "ketchup",
       "poteto-mode": "meta-mode",
@@ -75,8 +75,8 @@
             "to": "After setup, start a new session. The model configuration applies to new sessions."
           },
           {
-            "from": "The [Opening a PR playbook](../../skills/meta-mode/playbooks/opening-a-pr.md) runs `/deslop` on the diff before each commit and applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. `/deslop` ships in the `cursor-team-kit` plugin, not in mstack. If you don't have it, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits.",
-            "to": "The [Opening a PR playbook](../../skills/meta-mode/playbooks/opening-a-pr.md) runs the active Harness's code-cleanup command on the diff before each commit and applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. Some Harnesses provide `/deslop`; others use a different command or no built-in equivalent. When no cleanup command is available, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits."
+            "from": "The [Opening a PR playbook](../../skills/meta-mode/playbooks/opening-a-pr.md) runs `/deslop` on the diff before each commit, and meta-mode applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. `/deslop` ships in the `cursor-team-kit` plugin, not in mstack. If you don't have it, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits.",
+            "to": "The [Opening a PR playbook](../../skills/meta-mode/playbooks/opening-a-pr.md) runs the active Harness's code-cleanup command on the diff before each commit, and meta-mode applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. Some Harnesses provide `/deslop`; others use a different command or no built-in equivalent. When no cleanup command is available, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits."
           },
           {
             "from": "[Comment Sicko](../../agents/comment-sicko.md)",
@@ -123,8 +123,8 @@
             "to": "or that you're about to go offline or restart the Harness."
           },
           {
-            "from": "A [Cursor Project](https://cursor.com/blog/projects) gives one coordinator agent a persistent thread. The coordinator doesn't write code. It directs subagents, which run in the cloud by default, so the work continues when your laptop is closed. That's the shape the Orchestrate playbook expects.",
-            "to": "A coordinator agent with a persistent thread, such as a Harness project or a long-lived session, directs subagents and doesn't write code itself. When the Harness runs subagents remotely, the work continues when your laptop is closed. That's the shape the Orchestrate playbook expects."
+            "from": "A [Cursor Project](https://cursor.com/blog/projects) gives one coordinator agent a persistent thread. The coordinator doesn't write code. It directs subagents, which run in the cloud by default, so the work continues when your laptop is closed.",
+            "to": "A coordinator agent with a persistent thread, such as a Harness project or a long-lived session, directs subagents and doesn't write code itself. When the Harness runs subagents remotely, the work continues when your laptop is closed."
           },
           {
             "from": "- Give each body of work its own Project, such as a feature, a migration, a perf push, or a tech-debt cleanup. Several can run side by side.\n- Drag related chats into the Project, finished ones included. They become context for every agent in it.",

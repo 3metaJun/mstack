@@ -4,20 +4,8 @@ description: Apply when concurrent actors may write the same file, branch, key, 
 license: MIT
 ---
 
-# Separate before serializing shared state
+# Separate Before Serializing Shared State
 
-Instructions and conventions are not concurrency control. When actors may
-mutate the same state, first decide whether they truly need one mutable object.
+When concurrent actors might write the same file, branch, key, or object, first ask whether they need one shared object or are publishing independent facts. Default to giving each actor its own file, key, branch, or state directory, and merge only where the state is read. Two workers writing their own field into one `state.json` is still shared mutation.
 
-1. Identify every object that multiple actors read and write.
-2. Default to separate ownership: one file, key, branch, queue, or state
-   directory per actor. Merge independent facts at a read or reporting boundary.
-3. If a single shared writer is a real invariant, enforce it with a lockfile,
-   sequential phase, single-writer actor, transaction, or atomic compare-and-swap.
-4. Test crash recovery and simultaneous starts.
-
-Two workers updating separate fields in one JSON file still share mutable
-state. Two worker-owned files merged by a reader do not.
-
-Treat a proposed lock as a prompt to revisit the ownership model before adding
-serialization complexity.
+Only when one shared write target is a real invariant, serialize access structurally (a lockfile, a single writer, sequential phases, compare-and-swap). Instructions are not concurrency control, and "we need a lock" is a smell to check first.

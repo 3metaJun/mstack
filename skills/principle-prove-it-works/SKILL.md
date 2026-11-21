@@ -4,14 +4,8 @@ description: Verify completed work against the real artifact before declaring su
 license: MIT
 ---
 
-# Prove it works
+# Prove It Works
 
-Check the real outcome directly. A build, timestamp, cached screenshot, or agent
-summary is a useful signal but not proof of user-visible behavior.
+Verify every output by checking the real thing directly: run the feature, read the actual value, inspect the diff. Proxies (file mtimes, self-reports, cached output, "it compiles") do not count. When a check fails, suspect the observation method before the system.
 
-Prefer a deterministic, rerunnable script over a one-time visual check. Keep its
-output visible to the reviewer. Commit the proof only when the work is large or
-auditable enough to justify a durable trail.
-
-When verification fails, first confirm that the observation method is reading
-the intended instance, build, environment, and state.
+Script the check when you can. A deterministic script that reruns the comparison beats a one-time look. Keep its output where the human can see it, and commit it only when the trail must be auditable later.

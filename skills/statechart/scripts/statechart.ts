@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { killGroup, messageOf } from "./run.ts";
+import { killGroup } from "./kill.ts";
+import { messageOf } from "./run.ts";
 
 const USAGE = `Usage: statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR]
 
@@ -111,31 +112,26 @@ try {
         detached: true,
         stdio: ["ignore", "inherit", "inherit"],
         windowsHide: true,
-        env: { ...process.env, TMPDIR: tmp, ...(process.platform === "win32" ? { TMP: tmp, TEMP: tmp } : {}) },
+        env: { ...process.env, TMPDIR: tmp, TEMP: tmp, TMP: tmp },
       },
     );
-    janitor = process.platform === "win32" ? spawn(
+    janitor = spawn(
       process.execPath,
       [...runtime, path.join(import.meta.dirname, "janitor.ts"), String(worker.pid), stage, tmp],
       { detached: true, stdio: ["pipe", "ignore", "ignore"], windowsHide: true },
-    ) : spawn(
-      "/bin/sh",
-      [
-        "-c",
-        'while read -r line; do :; done; kill -s KILL -- "-$1"; rm -rf -- "$2" "$3"',
-        "sh",
-        String(worker.pid),
-        stage,
-        tmp,
-      ],
-      { detached: true, stdio: ["pipe", "ignore", "ignore"] },
     );
-    const exited = new Promise<number>((resolve, reject) => {
-      worker.once("error", reject);
-      worker.once("exit", (code) => resolve(code ?? 2));
-    });
+    const toJanitor = janitor.stdin;
+    toJanitor?.on("error", () => {});
+    const exited = new Promise<number>((resolve) =>
+      worker.on("exit", (code) => {
+        toJanitor?.write("exited\n");
+        resolve(code ?? 2);
+      }),
+    );
     await Promise.race([stopped, exited]);
-    if (worker.pid !== undefined) await killGroup(worker.pid);
+    const running = worker.exitCode === null && worker.signalCode === null;
+    const groupOutlivesWorker = process.platform !== "win32";
+    if (worker.pid !== undefined && (running || groupOutlivesWorker)) await killGroup(worker.pid);
     const verdict = await exited;
     if (stop) {
       console.error(`${stop} stopped the check, so the command wrote nothing.`);

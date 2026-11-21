@@ -4,21 +4,11 @@ description: Debug by reproducing the symptom, tracing the causal chain, and fix
 license: MIT
 ---
 
-# Fix root causes
+# Fix Root Causes
 
-Do not silence a symptom while leaving the cause intact.
+Fix the fault, not the place where it surfaced. The root cause is the first place the system did something it should not do, or failed to handle a state it should handle.
 
-1. Reproduce the failure with the smallest observable case.
-2. Ask why each preceding condition became possible until reaching the first
-   incorrect assumption, invalid state, or broken boundary.
-3. Instrument uncertain transitions and read actual values. Do not guess.
-4. Fix the cause at its owner, then search for the same pattern elsewhere.
-5. Re-run the reproduction and the nearest meaningful validation.
-
-Resist guards that merely suppress a crash. If a workaround needs a long
-comment to remain believable, revisit the model or boundary.
-
-For failures that appear after restart, inspect durable state before blaming
-unchanged code: configuration, caches, locks, checkpoints, serialized objects,
-and version skew. If clearing state restores behavior, add validation,
-migration, or reconciliation rather than institutionalizing manual cleanup.
+- Reproduce first. Ask "why" until the answer is a wrong decision in the code. When stuck, instrument and read the actual state.
+- Ask whether the state that triggered the symptom is legitimate. If it is, handle it where the code broke. If it should never exist, a check there hides the bug, so find what produced it. Guards, retries, swallowed errors, clamped values, and discarded state are the usual ways to hide a bug.
+- Fix the pattern, not the instance. Find every place with the same fault.
+- If the deciding fact took a deep dig, propose the cheap, always-on signal that would have shown it at first look.

@@ -4,26 +4,12 @@ description: Replace scattered conditionals, synchronized booleans, repeated sha
 license: MIT
 ---
 
-# Model the domain
+# Model the Domain
 
-Encode real domain rules in data structures instead of distributing them across
-branches and files.
+Encode the domain in a data structure instead of scattering it across conditionals. The right structure makes invalid states unrepresentable and deletes branches.
 
-Consider:
+Reach for a state machine instead of scattered booleans or phase checks, a typed model instead of loose parameters, a map, registry, or discriminated union instead of branching spread across files, a reducer instead of ad hoc mutations, and an index, queue, or normalized collection where the access pattern calls for it.
 
-- A state machine instead of synchronized booleans and lifecycle checks.
-- A typed domain object instead of loose parameters and repeated assumptions.
-- A registry, map, lookup table, or discriminated union instead of a growing
-  conditional chain.
-- A reducer or command/event model instead of ad hoc state mutation.
-- A module organized around one body of domain knowledge instead of procedural
-  phases such as load, validate, transform, and save.
-- A queue, cache, index, graph, tree, or normalized collection when the access
-  pattern calls for it.
+Do not force it. Keep boring code when the shape is clear, local, and unlikely to grow, and distrust an abstraction that adds indirection without removing branches or invalid states.
 
-Start with two questions: what must never be allowed, and how is the data read?
-Choose the smallest structure that encodes those answers.
-
-Do not force an abstraction when the existing code is clear, local, and stable.
-An abstraction should remove branches, duplicate rules, invalid states, or
-lifecycle risk. If it only adds indirection, keep the boring code.
+The sign that you skipped this: a feature that grows an if/else chain by one more branch, or a second boolean that must stay in sync with the first.

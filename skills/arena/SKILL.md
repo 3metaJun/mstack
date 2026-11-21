@@ -37,7 +37,7 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose the `judge` role from the active mstack model configuration. Run one readonly judge from a different model family than the parent's. `inherit-parent` and `auto` do not provide that independence. If the configured model is unavailable, try an available model from the same family. If no independent judge can run, skip this phase, pick the base in Phase D, and report the skipped judge. When the parent's model is unknown, report that the family check could not run. The judge sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
+After all Phase B candidates complete, choose the `judge` role from the active mstack model configuration. Run one readonly judge from a different model vendor than the parent's (Fable counts as Claude for that check). `inherit-parent` and `auto` do not provide that independence. If the configured model is unavailable, try an available model from the same family. If no independent judge can run, skip this phase, pick the base in Phase D, and report the skipped judge. When the parent's model is unknown, report that the vendor check could not run. The judge sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
 
 ## Phase D: Pick a base
 

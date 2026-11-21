@@ -49,7 +49,7 @@ If cost is the worry, say where the tokens go. mstack spends extra tokens on sub
 
 ## Start a task with `meta-mode`
 
-`meta-mode` matches the task to a playbook, copies the playbook's steps into the todo list, and runs other skills as the steps need them. A skipped step stays in the list as `skip: <reason>`. A good prompt states the goal and how to tell it is done. It does not list skills, because a hand-written sequence tends to drop steps the playbook would keep.
+`meta-mode` matches the task to a playbook, copies the playbook's steps into the todo list, and runs other skills as the steps need them. A good prompt states the goal and how to tell it is done. It does not list skills, because a hand-written sequence tends to drop steps the playbook would keep.
 
 ```text
 /meta-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
@@ -101,7 +101,7 @@ Close calls:
 - `how` explains what the code does. `why` explains the reasons. `teach` runs both and explains the result plainly.
 - `arena` gives every worker the same brief and merges the best parts. `swarm` splits work into slices or a race and returns one report.
 - `interrogate` reviews the diff. `blast-radius` looks for breakage outside it and proves the one fact that makes the change safe. Prefer `blast-radius`, a prototype, or formal verification: evidence settles a contested change better than another round of review.
-- `figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program of many PRs. The Autonomous run playbook drives one task to a finish condition.
+- `figure-it-out` designs one rigorous run for large, cross-cutting, or unattended work. The Autonomous run playbook drives one task to a finish condition.
 
 ## Playbooks and principles
 
