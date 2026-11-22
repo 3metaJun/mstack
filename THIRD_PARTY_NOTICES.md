@@ -133,3 +133,72 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## pstack-claude
+
+Selected reliability, safety, and policy improvements—including pull-request
+watcher hardening (`tools/meta-mode/watch-pr/`), worktree audit hold gates
+(`tools/meta-mode/worktree-audit.mjs`), Windows CRLF handling in `statechart`,
+decision-log quote neutralization, `MSTACK_SESSION_HOOK` environment override,
+comment-reviewer `HOLD` policy, playbook safeguards, and reference/invariant
+tests—are adapted from
+[`michael-denyer/pstack-claude`](https://github.com/michael-denyer/pstack-claude)
+under the MIT License.
+
+### pstack-claude MIT license
+
+MIT License
+
+Copyright (c) 2026 Michael Denyer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## t3-pstack
+
+Selected T3 Code integration improvements—including external dependency caching
+in `tools/meta-mode/bootstrap.ts`, optional review-settle window support
+(`tools/meta-mode/watch-pr/settle.ts`), read-only `-b`/`--base` and `--fetch`
+worktree audit semantics, T3 provider home discovery (`scripts/t3-homes.mjs`),
+and T3 catalog/panel-family validation—are adapted from
+[`chhoumann/t3-pstack`](https://github.com/chhoumann/t3-pstack) under the MIT
+License.
+
+### t3-pstack MIT license
+
+MIT License
+
+Copyright (c) 2026 Christian Bager Bach Houmann
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

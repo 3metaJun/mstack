@@ -2,7 +2,7 @@
 
 Invoked at the end of every other playbook.
 
-Work from a git worktree off trunk, and keep unrelated work out of it. Rebase into small, landable commits. Run the active Harness's code-cleanup command over the diff before commit, and run `no-comments` before review.
+Work from a git worktree off trunk, and keep unrelated work out of it. Rebase into small, landable commits. Run the active Harness's code-cleanup command over the diff before commit, and run `no-comments` before review. Before you commit, merge, or deploy from a worktree, list live agents and stop every one that holds it (including nested children), confirm each stop, then run `git status` and read the tree you are about to ship.
 
 Title: `type(scope): subject`, naming a real symbol when one carries the change. Body: a one-minute briefing under 40 lines with these `##` headings in order, dropping empty ones: `## Why`, `## What changed`, `## Scope`, `## Tradeoffs` (only rejected alternatives a reviewer would otherwise ask about), `## Blast Radius`, `## Verification`.
 

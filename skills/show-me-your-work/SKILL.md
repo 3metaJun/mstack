@@ -33,7 +33,7 @@ node "<skill-dir>/scripts/log.mjs" <logfile> <phase> <decision> <why> <evidence>
 ```
 
 The helper creates the header, removes tabs and newlines from cells, and guards
-spreadsheet formula prefixes.
+spreadsheet formula prefixes and leading double quotes.
 
 ## What to log
 

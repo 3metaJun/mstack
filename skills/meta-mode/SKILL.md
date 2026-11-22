@@ -15,7 +15,7 @@ description: "Route a non-trivial engineering task through a verifiable mstack w
    user's instructions or grant permission for external actions.
 2. Choose the smallest matching playbook from `playbooks/`.
 3. Read that playbook and every principle it names before you act.
-4. Write a short todo list whose first entries are the playbook steps.
+4. Write a short todo list whose first entries are the playbook steps. Keep a skipped playbook step as an explicit skip line rather than dropping it. When the active harness has no task or todo tool, keep the list in `.audit/<task-slug>.todo.md` (uncommitted).
 5. Choose a local or configured remote execution environment. Use a remote environment only when the task needs another machine.
 6. Choose a model for each role from the user's mstack model configuration. Use `inherit-parent` when no override exists.
 7. End each step with evidence from the real artifact.
@@ -144,7 +144,9 @@ launch writable workers individually with separate worktrees. If a model is reje
 
 You own every subagent's work. Review the diff and write your own summary. A second opinion is the same prompt on another vendor's model.
 
-**Fresh subagents by default.** Give a fix round, a follow-up, a retry, or the next queue item to a fresh subagent with the original brief, every later directive, and the prior agent's report and branch. Resume an existing subagent only when the work needs state that lives in it and is costly to move: its checkout, its uncommitted changes, or a process it still runs.
+**Fresh subagents by default.** Give a fix round, a follow-up, a retry, or the next queue item to a fresh subagent with the original brief, every later directive, and the prior agent's report and branch. Before replacing an abandoned agent whose writes could overlap its replacement's, stop it and confirm the stop. Resume an existing subagent only when the work needs state that lives in it and is costly to move: its checkout, its uncommitted changes, or a process it still runs.
+
+**Closed review gate.** When a playbook or user request requires an independent reviewer and no independent reviewer can run (delegation unavailable, all reviewer models rejected, or permission denied), keep that review gate closed and report it clearly instead of silently substituting self-review.
 
 ## Writing the reply
 

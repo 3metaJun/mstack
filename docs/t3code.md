@@ -12,7 +12,7 @@ This page was checked against the T3 Code source at commit `8f75697` (October 20
 | Claude Code | T3 scans the directories | `<config dir>/skills`, where the config dir is the instance's home path, else `CLAUDE_CONFIG_DIR`, else `~/.claude` | `<cwd>/.claude/skills` only |
 | Cursor | T3 scans the directories | `~/.cursor/skills`, `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills` | The same four names under `<cwd>` |
 | Grok | `grok inspect --json` | Grok's own; on Grok CLI 1.0.62 both `~/.agents/skills` and `~/.claude/skills` were reported | Grok's own, not checked |
-| Antigravity | T3 scans the directories | `~/.gemini/config/skills`, `~/.gemini/antigravity-cli/skills`. Not `~/.agents/skills`. | `<cwd>/.gemini/skills`, `<cwd>/.agents/skills`, `<cwd>/.agent/skills` |
+| Antigravity | T3 scans the directories | T3 runs each Antigravity instance with a private profile (`${T3CODE_HOME:-~/.t3}/userdata/providers/antigravity/<sha256(instanceId)>`) instead of `~/.gemini`; outside T3, `~/.gemini/config/skills` and `~/.gemini/antigravity-cli/skills`. Not `~/.agents/skills`. | `<cwd>/.gemini/skills`, `<cwd>/.agents/skills`, `<cwd>/.agent/skills` |
 | Pi | Pi (`get_commands`) | Pi's own | Pi's own; approve the project in Pi first |
 | OpenCode | OpenCode, per project directory | OpenCode's own | OpenCode's own |
 | ACP Registry agents | The agent; commands it names with a `$` prefix | Agent-defined | Agent-defined |
@@ -29,14 +29,15 @@ npx @3metajun/mstack --harness codex,claude,pi
 
 - Codex, Pi, OpenCode, and Cursor read the shared copy. Grok read it on 1.0.62.
 - Claude Code needs its own copy in `~/.claude/skills`, which `--harness claude` writes. The installer leaves out the frontmatter `name` there because Claude Code names a skill after its directory.
-- Antigravity does not read `~/.agents/skills`, and it needs the frontmatter `name`, so the Claude copy does not work for it either. Use an `antigravity` harness if your mstack version has one (`npx @3metajun/mstack --help` lists the harnesses). Otherwise install the canonical copy into its directory by overriding the Codex target:
+- Antigravity does not read `~/.agents/skills`, and it needs the frontmatter `name`, so the Claude copy does not work for it either. Use `--harness antigravity` for `~/.gemini/antigravity-cli/skills` outside T3, or point `HARNESS_SKILLS_ANTIGRAVITY_DIR` at the T3 private profile path printed by `npm run check-t3`:
 
   ```bash
-  HARNESS_SKILLS_CODEX_DIR='~/.gemini/antigravity-cli/skills' \
-    npx @3metajun/mstack --harness codex --dry-run
+  npx @3metajun/mstack --harness antigravity --dry-run
+  # Inside T3, check your instance's private profile path first:
+  npm run check-t3
   ```
 
-  Drop `--dry-run` once the printed plan looks right. On Windows PowerShell, set `$env:HARNESS_SKILLS_CODEX_DIR` first.
+  Drop `--dry-run` once the printed plan looks right. On Windows PowerShell, set `$env:HARNESS_SKILLS_ANTIGRAVITY_DIR` before running the installer when targeting a T3 private profile.
 
 After installing, run **Restart agent session** from the command palette (web and desktop). The conversation continues and the next message starts the agent with the new skills. If a skill is still missing, open **Settings → Providers** and refresh that provider's status.
 
@@ -62,7 +63,8 @@ A mention only counts when the name matches `[a-zA-Z0-9][a-zA-Z0-9:_-]*`, contai
 - **Invalid YAML hides a skill.** Cursor and Antigravity skip a skill whose frontmatter fails strict YAML parsing. Claude Code tolerates an unquoted `: ` inside a plain scalar and T3 repairs it for Claude only, so a description like `description: Use when: x` works in Claude and vanishes in Cursor. Quote any description that contains `: `.
 - **Antigravity needs `name`.** Without it T3 falls back to the file name and lists the skill as `SKILL`. Its project directories include `.agents/skills`, so a committed project wrapper is found there, but `~/.agents/skills` is only scanned when the project is your home directory.
 - **Windows home directories differ.** Claude and mstack's installer use the OS home directory (`USERPROFILE`). Cursor checks `HOME` first, then `USERPROFILE`. Antigravity uses `USERPROFILE`, then `HOMEDRIVE` plus `HOMEPATH`. If `HOME` is set to something else in the environment T3 runs in, Cursor looks in a different place than the installer wrote.
-- **Instance settings are not inherited by your own commands.** A Claude instance with a custom home path, or environment variables set on a provider instance, apply to the agent T3 starts. A terminal or script you run yourself, including `npx @3metajun/mstack`, does not see them. For a Claude instance with its own config directory, point the installer there explicitly with `HARNESS_SKILLS_CLAUDE_DIR=<that directory>/skills`.
+- **Instance settings are not inherited by your own commands.** A Claude instance with a custom home path, an Antigravity instance with a T3 private profile (`~/.t3/userdata/providers/antigravity/<sha256(instanceId)>`), or environment variables set on a provider instance apply to the agent T3 starts. A terminal or script you run yourself, including `npx @3metajun/mstack`, does not see them. Run `npm run check-t3` (or `node scripts/t3-homes.mjs`) to inspect every provider instance configured in `${T3CODE_HOME:-~/.t3}/userdata/settings.json` and print the exact install command for any missing target.
+- **Codex plugin hook trust.** Codex 0.164 and later trust a plugin's hooks by hashing every file in the installed plugin directory. `tools/meta-mode/bootstrap.ts` therefore caches `watch-pr` production dependencies under `${XDG_CACHE_HOME:-~/.cache}/mstack/meta-mode-tools/` instead of writing `node_modules/` into the plugin tree.
 - **Project skills for Pi** need the project approved in Pi, and then a provider refresh.
 
 ## Worktrees
@@ -79,7 +81,7 @@ By default T3 creates a worktree for a thread at:
 
 - Run it from the main checkout or from any worktree of the same repository; it skips the main worktree.
 - The `PR` column asks `gh` for PRs you authored and matches them by branch name, so a worktree whose branch has no PR shows `-`.
-- `LAST_CHAT` scans Claude Code, Codex, and pi transcripts only. Threads run through Cursor, Grok, OpenCode, or Antigravity, and T3's own thread history, are not read, so those worktrees can look idle. Set `MSTACK_TRANSCRIPTS_DIR` to scan one directory instead.
+- `LAST_CHAT` scans Claude Code, Codex, pi, and GitHub Copilot (`COPILOT_HOME` / `~/.copilot/session-state`) transcripts only. Threads run through Cursor, Grok, OpenCode, or Antigravity, and T3's own thread history, are not read, so those worktrees can look idle. Set `MSTACK_TRANSCRIPTS_DIR` to scan one directory instead.
 - Treat its `safe` bucket as a report. T3 has its own cleanup under **Settings → Storage** that removes only T3-managed worktrees without running sessions or uncommitted work. I did not check how T3 reacts when a worktree it manages is removed with `git worktree remove`, so use T3's cleanup or thread deletion for those.
 
 ## Project install for T3 worktrees

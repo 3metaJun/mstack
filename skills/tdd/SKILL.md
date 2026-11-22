@@ -15,7 +15,7 @@ test can be written cheaply.
    observable reproduction.
 2. Choose the narrowest existing test level that reaches the code path.
 3. Add the smallest test that encodes intended behavior without mirroring the implementation.
-4. Run it before the fix and confirm it fails for the intended reason.
+4. Run it before the fix and confirm it fails for the intended reason. Quote the failure content (the actual mismatch or diff), not just the assertion line: an exception, an empty result against a literal, and the predicted mismatch all print red, and only the last proves the test measures the bug. If it passes or fails for an unrelated reason, fix the test before touching production code.
 5. Make the smallest production change that fixes the cause.
 6. Run the new test and confirm it passes.
 
