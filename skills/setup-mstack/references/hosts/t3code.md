@@ -15,34 +15,36 @@ call rejects an argument, trust the error over this page.
 
 ## Detect the models
 
-Call `orchestrator_capabilities`. It is the only model source here. For each
-provider instance it returns `providerInstanceId`, `models` (each with `id` and
-an optional `options` list), `canRunChildTask`, `canRunCrossProviderChildTask`,
-and `constraints`. Also read `inheritedProviderInstanceId` and `inheritedModel`,
-the calling thread's own selection.
+Call `orchestrator_capabilities`. It is the only model source here. The default
+listing is short and may set `omittedModels`; pass `search` with a model id or
+prefix when looking up omitted catalog entries. For each provider instance it
+returns `providerInstanceId`, `models` (each with `id` and an optional `options`
+list), `canRunChildTask`, `canRunCrossProviderChildTask`, and `constraints`.
+Also read `inheritedProviderInstanceId` and `inheritedModel`, the calling
+thread's own selection.
 
 - Never write a provider instance or model it did not return.
 - Write an instance only when both `canRunChildTask` and
   `canRunCrossProviderChildTask` are true. A later thread can run on a
   different provider than this one, which makes any entry cross-provider. Mark
   an entry whose instance has either flag false as needing a choice, and do not
-  write it. `constraints` says why. At the checked commit the server sets both
-  flags from the same `constraints` list, so they do not differ yet. The
-  contract keeps them separate, so read both.
+  write it. `constraints` says why.
 - If the call fails or lists nothing, stop and tell the user. Keep the existing
   T3 entries as they are.
 
 ## Effort options
 
-A model's effort is one `select` option in its `options`. The option id is not
-fixed. The source defines `effort` for Claude, `reasoningEffort` for Codex and
-Grok, `thinking` for Pi, and `variant` for OpenCode. Treat the select option
-whose choices include ladder values as the effort option.
+A model's effort is one option in its `options`, exposing its allowed choices as
+either `values` (a string array) or `options: [{ id }]`. The option id is not
+fixed: Claude uses `effort`, Codex and Grok use `reasoningEffort`, Antigravity
+uses `thought_level`, Pi uses `thinking`, and OpenCode uses `variant`. Treat the
+option whose allowed values include ladder values as the effort option.
 
 The ladder is `max` > `xhigh` > `high` > `medium` > `low`. A choice id outside
-it, such as `off`, `minimal`, or `ultracode`, is never written to mstack
-configuration. A model with no such option has no effort to record. Omit
-`effort` for it.
+it, such as `off`, `minimal`, `ultra`, `ultrathink`, or `ultracode`, is never
+written to mstack configuration. A model with no such option has no effort to
+record. Omit `effort` for it. Never write `fastMode` unless the user explicitly
+asks for it.
 
 The file stores the effort value only, never the option id. The id belongs to a
 provider driver and can change with its version, so the delegating agent looks
@@ -106,9 +108,10 @@ entry's provider instance and model, then pass the entry in `target`:
 
 Resolve `options` from that current entry, not from memory:
 
-1. Find the model's `select` option whose choices include the stored effort
-   value. Its `id` is the key (`effort`, `reasoningEffort`, `thinking`,
-   `variant`, or whatever the driver uses now). Pass `{ <that id>: <value> }`.
+1. Find the model's effort option in `options` whose `values` (or `options`
+   ids) include the stored effort value. Its `id` is the key (`effort`,
+   `reasoningEffort`, `thought_level`, `thinking`, `variant`, or whatever the
+   driver uses now). Pass `{ <that id>: <value> }`.
 2. If no option offers the value, use the highest ladder value at or below it
    that an option offers, and tell the user the entry ran at that value.
 3. If none is offered, omit `options` and tell the user. The child then runs on
@@ -138,7 +141,11 @@ An entry with no effort needs no `options`.
 Read the file after writing it. Every concrete entry must match a provider
 instance and model that `orchestrator_capabilities` returned, on an instance
 whose `canRunChildTask` and `canRunCrossProviderChildTask` are both true, with
-an effort that model lists. Leave instances that fail those flags out of the
-budget catalog too. `inherit-parent` and `auto` always pass. With a checkout,
-`node scripts/model-config.mjs --file <models.json> --harness t3code` checks the
-shape.
+an effort that model lists. For a multi-model `reviewer` panel, prefer entries
+spanning at least two distinct model families (take the first segment of the
+model id's last `/` part, with `claude-fable-*` as its own family). Leave
+instances that fail the child-task flags out of the budget catalog too.
+`inherit-parent` and `auto` always pass. With a checkout, save the
+`orchestrator_capabilities` JSON and run
+`node scripts/model-config.mjs --file <models.json> --harness t3code --catalog <capabilities.json>`
+to validate both the shape and live catalog dispatchability.

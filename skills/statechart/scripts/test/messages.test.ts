@@ -22,6 +22,22 @@ test("TLC output with Windows line ends names the rule that breaks and prints as
   assert.equal(plain(windows), plain(unix));
 });
 
+test("readMessages closes messages when streamed Iterable<string> lines end with CR", () => {
+  function* crlfStream() {
+    yield "@!@!@STARTMSG 2185:0 @!@!@\r";
+    yield "Starting...\r";
+    yield "@!@!@ENDMSG 2185 @!@!@\r";
+    yield "";
+  }
+  const parts = [...readMessages(crlfStream())];
+  assert.equal(parts.length, 1);
+  assert.equal(typeof parts[0], "object");
+  if (typeof parts[0] === "object") {
+    assert.equal(parts[0].code, 2185);
+    assert.deepEqual(parts[0].body, ["Starting..."]);
+  }
+});
+
 test("TLC's -tool output prints as plain TLC prints it", () => {
   const text = [
     tool(2262, 0, "TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)"),

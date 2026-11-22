@@ -66,6 +66,7 @@ const requiredFiles = [
   ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json",
   "scripts/pack-claude-skills.mjs", "scripts/claude-package-lib.mjs",
   "hooks/hooks.json", "hooks/session-start-context.md", "scripts/session-hook.mjs",
+  "scripts/t3-homes.mjs",
   "agents/meta-agent.md", "agents/comment-reviewer.md",
 ];
 const missing = requiredFiles.filter((path) => !packedFiles.has(path));

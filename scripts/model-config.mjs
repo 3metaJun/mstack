@@ -2,15 +2,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HOST_KEYS, readModelConfig, resolveModels, validateModelConfig } from "./model-config-lib.mjs";
+import { HOST_KEYS, readModelConfig, resolveModels, t3CatalogWarnings, validateModelConfig, validateT3Catalog } from "./model-config-lib.mjs";
+import { decodeText } from "./text-decode.mjs";
 import { parseCliArgs } from "./cli-args.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const harnesses = Object.keys(JSON.parse(readFileSync(join(repoRoot, "profiles", "harnesses.json"), "utf8")));
-const options = parseCliArgs(process.argv.slice(2), ["--file", "--harness", "--role", "--format"]);
+const options = parseCliArgs(process.argv.slice(2), ["--file", "--harness", "--role", "--format", "--catalog"]);
 const requestedHarness = options["--harness"];
 if (requestedHarness && ![...harnesses, ...HOST_KEYS].includes(requestedHarness)) {
   throw new Error(`Unsupported harness: ${requestedHarness}`);
+}
+if (options["--catalog"] && requestedHarness && requestedHarness !== "t3code") {
+  throw new Error("--catalog validation is currently supported only for --harness t3code");
 }
 const requestedRole = options["--role"];
 const format = options["--format"] ?? "text";
@@ -32,9 +36,19 @@ if (!existsSync(configPath)) {
 
 const config = readModelConfig(configPath);
 const errors = validateModelConfig(config, harnesses);
+let warnings = [];
+if (options["--catalog"]) {
+  const catalogPath = resolve(expandHome(options["--catalog"]));
+  const catalog = JSON.parse(decodeText(readFileSync(catalogPath)));
+  errors.push(...validateT3Catalog(config, catalog));
+  warnings = t3CatalogWarnings(config);
+}
 if (errors.length) {
   console.error(errors.map((error) => `- ${error}`).join("\n"));
   process.exit(1);
+}
+for (const warning of warnings) {
+  console.error(`Warning: ${warning}`);
 }
 
 if (requestedRole && !Object.hasOwn(config.roles, requestedRole)) {

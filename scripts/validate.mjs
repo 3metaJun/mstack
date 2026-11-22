@@ -186,6 +186,19 @@ for (const file of walk(skillsRoot)) {
   errors.push(...hostBindingProblems(relative(repoRoot, file), readFileSync(file, "utf8")));
 }
 
+const hasConflictMarkers = (content) =>
+  /^<{7} /m.test(content) && /^={7}\r?$/m.test(content) && /^>{7} /m.test(content);
+for (const directory of ["skills", "agents", "hooks", "tools", "profiles", "adapters", "scripts"]) {
+  const full = join(repoRoot, directory);
+  if (!existsSync(full)) continue;
+  for (const file of walk(full)) {
+    const content = readFileSync(file, "utf8");
+    if (hasConflictMarkers(content)) {
+      errors.push(`${relative(repoRoot, file)} contains an unresolved merge conflict marker`);
+    }
+  }
+}
+
 const privateMarkers = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /[A-Za-z]:\\Users\\[^\\/\r\n]+/i,

@@ -180,3 +180,119 @@ export function resolveRoleModel(config, harness, role) {
   if (!Object.hasOwn(models, role)) throw new Error(`Unknown model role: ${role}`);
   return models[role];
 }
+
+// Model family is the first hyphen-delimited segment of the model id's last `/` part
+// (so route prefixes such as `openrouter/` or `ml-gpt-plus/` do not mask the vendor),
+// except `claude-fable-*` which counts as its own family.
+export function modelFamily(model) {
+  const id = String(model).split("/").pop();
+  return /^claude-fable(?:-|$)/i.test(id) ? "claude-fable" : id.split("-")[0].toLowerCase();
+}
+
+const EFFORT_OPTION_ID = /effort|think|thought|reason|variant/i;
+
+function allowedOptionValues(option) {
+  if (!option || option.type === "boolean") return [];
+  if (Array.isArray(option.values)) return option.values.map(String);
+  if (Array.isArray(option.options)) return option.options.map((entry) => String(entry?.id ?? ""));
+  return [];
+}
+
+function offeredEffortValues(listed) {
+  const options = Array.isArray(listed?.options) ? listed.options : [];
+  const effortOptions = options.filter((option) => EFFORT_OPTION_ID.test(String(option?.id ?? "")));
+  return effortOptions.flatMap(allowedOptionValues).filter((value) => EFFORT_LADDER.includes(value));
+}
+
+function normalizeT3Catalog(rawCatalog) {
+  if (Array.isArray(rawCatalog)) {
+    const byProvider = new Map();
+    for (const item of rawCatalog) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      const list = byProvider.get(item.provider) ?? [];
+      list.push({
+        id: item.model,
+        options: Array.isArray(item.efforts) ? [{ id: "effort", values: item.efforts }] : [],
+      });
+      byProvider.set(item.provider, list);
+    }
+    return [...byProvider.entries()].map(([providerInstanceId, models]) => ({
+      providerInstanceId,
+      canRunChildTask: true,
+      canRunCrossProviderChildTask: true,
+      models,
+    }));
+  }
+  if (rawCatalog && typeof rawCatalog === "object" && Array.isArray(rawCatalog.providers)) {
+    return rawCatalog.providers;
+  }
+  return null;
+}
+
+// Validates `overrides.t3code` entries against an `orchestrator_capabilities` snapshot
+// (or a flat `[{ provider, model, efforts }]` array). Checks provider availability,
+// child-task permissions, listed models, and allowed effort values.
+export function validateT3Catalog(config, rawCatalog) {
+  const providers = normalizeT3Catalog(rawCatalog);
+  if (!providers) return ["catalog must be an orchestrator_capabilities object with providers[] or a flat model array"];
+  const problems = [];
+  const t3Overrides = Object.hasOwn(config?.overrides ?? {}, "t3code") ? config.overrides.t3code : {};
+  for (const [role, value] of Object.entries(t3Overrides)) {
+    const rawEntries = role === "reviewer" && Array.isArray(value) ? value : [value];
+    for (const rawEntry of rawEntries) {
+      const parsed = parseRoleEntry(rawEntry, { host: true });
+      if (parsed.error) {
+        problems.push(`overrides.t3code.${role}: ${parsed.error}`);
+        continue;
+      }
+      if (isAlias(parsed.model)) continue;
+      const label = `${parsed.provider}/${parsed.model}`;
+      const provider = providers.find((entry) => entry?.providerInstanceId === parsed.provider);
+      if (!provider) {
+        problems.push(`overrides.t3code.${role}: ${label}: no provider instance "${parsed.provider}" in catalog`);
+        continue;
+      }
+      if (provider.canRunChildTask === false || provider.canRunCrossProviderChildTask === false) {
+        const why = Array.isArray(provider.constraints) && provider.constraints.length ? ` (${provider.constraints.join(" ")})` : "";
+        problems.push(`overrides.t3code.${role}: ${label}: provider "${parsed.provider}" cannot run cross-provider child tasks${why}`);
+        continue;
+      }
+      const listed = (provider.models ?? []).find((model) => model?.id === parsed.model);
+      if (!listed) {
+        problems.push(`overrides.t3code.${role}: ${label}: provider "${parsed.provider}" does not list model "${parsed.model}"`);
+        continue;
+      }
+      if (parsed.effort !== undefined) {
+        const offered = offeredEffortValues(listed);
+        if (!offered.includes(parsed.effort)) {
+          problems.push(
+            `overrides.t3code.${role}: ${label}: effort "${parsed.effort}" is not offered (available: ${offered.join(", ") || "none"})`,
+          );
+        }
+      }
+    }
+  }
+  return problems;
+}
+
+// Advisory warnings for `overrides.t3code`: multi-model reviewer panels remain valid when
+// mixing efforts on one model, but spanning at least two model families is preferred.
+export function t3CatalogWarnings(config) {
+  const warnings = [];
+  const t3Overrides = Object.hasOwn(config?.overrides ?? {}, "t3code") ? config.overrides.t3code : {};
+  const reviewer = t3Overrides.reviewer;
+  if (Array.isArray(reviewer) && reviewer.length > 1) {
+    const concrete = reviewer
+      .map((entry) => parseRoleEntry(entry, { host: true }))
+      .filter((parsed) => !parsed.error && !isAlias(parsed.model));
+    if (concrete.length > 1) {
+      const families = new Set(concrete.map((entry) => modelFamily(entry.model)));
+      if (families.size < 2) {
+        warnings.push(
+          `overrides.t3code.reviewer: multi-model reviewer panel uses one model family (${[...families].join(", ")}); prefer at least two distinct families`,
+        );
+      }
+    }
+  }
+  return warnings;
+}

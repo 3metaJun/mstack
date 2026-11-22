@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { WatchDeadline } from "./deadline.ts";
 import { WatcherQueryError } from "./github.ts";
 import {
   applyQueueSnapshot,
@@ -107,8 +108,9 @@ describe("snapshot query planning", () => {
     expect(snapshot.ci.kind).toBe("ci-pending");
     expect(reader.calls).toEqual([
       "pullRequest",
-      "reviewThreads",
+      "reviewThreadPage:null",
       "checksFastPath",
+      "pullRequest",
     ]);
   });
 
@@ -194,7 +196,7 @@ it("attributes a stack wait to the PR whose checks are pending, not the bottom",
   expect(decision).toMatchObject({
     kind: "waiting",
     frontier: { number: 21 },
-    pending: [{ name: "upstack-build" }],
+    reason: { kind: "pending-checks", pending: [{ name: "upstack-build" }] },
   });
 });
 
@@ -280,6 +282,7 @@ describe("queued-stack cadence", () => {
     const running = runQueued({
       dependencies: {
         reader,
+        deadline: new WatchDeadline(options.timeout, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",
@@ -301,10 +304,13 @@ describe("queued-stack cadence", () => {
     expect(timeline).toEqual([
       "emit:QUEUE",
       "read:20",
+      "read:20",
       "fail:21",
       "emit:RETRY",
       "sleep",
       "read:21",
+      "read:21",
+      "read:22",
       "read:22",
       "emit:STATUS",
       "emit:WAITING",
@@ -348,7 +354,7 @@ describe("queued-stack cadence", () => {
         const facts = await base.pullRequest(pr);
         const count = (reads.get(pr.number) ?? 0) + 1;
         reads.set(pr.number, count);
-        return pr.number === one.number && count > 1
+        return pr.number === one.number && count > 2
           ? {
               ...facts,
               state: "MERGED" as const,
@@ -363,6 +369,7 @@ describe("queued-stack cadence", () => {
     const running = runQueued({
       dependencies: {
         reader,
+        deadline: new WatchDeadline(options.timeout, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",
@@ -384,10 +391,11 @@ describe("queued-stack cadence", () => {
     await expect(running).rejects.toThrow("stop after advance proof");
     expect(emitted.some((event) => event.kind === "ADVANCE")).toBe(true);
     const firstSleep = timeline.indexOf("sleep");
-    expect(timeline.slice(firstSleep, firstSleep + 5)).toEqual([
+    expect(timeline.slice(firstSleep, firstSleep + 6)).toEqual([
       "sleep",
       "read:40",
       "emit:ADVANCE",
+      "read:41",
       "read:41",
       "emit:WAITING",
     ]);
@@ -402,11 +410,11 @@ describe("queued-stack cadence", () => {
       0,
       options
     ).state;
-    const first = evaluateQueue(state, 0, options);
+    const first = evaluateQueue(state, options);
     expect(first.kind).toBe("waiting");
     if (first.kind !== "waiting") throw new Error("expected waiting");
     expect(first.emit).toBe(true);
-    const second = evaluateQueue(first.state, 10, options);
+    const second = evaluateQueue(first.state, options);
     expect(second.kind).toBe("waiting");
     if (second.kind !== "waiting") throw new Error("expected waiting");
     expect(second.emit).toBe(false);
@@ -432,8 +440,10 @@ describe("polling deadline sleeps", () => {
           throw new WatcherQueryError({ kind: "command-exit", retryable: true, code: 1, detail: "temporary failure" });
         } }
         : pending;
+      const polling = { ...options, interval: 60, timeout: 5 };
       const dependencies = {
         reader,
+        deadline: new WatchDeadline(polling.timeout, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",
@@ -441,7 +451,6 @@ describe("polling deadline sleeps", () => {
         },
         emit() {},
       };
-      const polling = { ...options, interval: 60, timeout: 5 };
       const result = mode === "queued-stack"
         ? await runQueued({ dependencies, contexts: [context(1)], options: polling })
         : await runSimple({ dependencies, contexts: [context(1)], mode: "single", statusOnly: false, options: polling });
@@ -465,6 +474,7 @@ describe("polling deadline sleeps", () => {
             return reads === 1 ? pending.checksFastPath(pr) : passed.checksFastPath(pr);
           },
         },
+        deadline: new WatchDeadline(0, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",

@@ -70,6 +70,22 @@ test("sessionHook false turns the hook off, and nothing else does", (t) => {
   }
 });
 
+test("MSTACK_SESSION_HOOK env override disables the hook ahead of models.json", (t) => {
+  const root = sandbox(t);
+  writeConfig(root, '{"roles":{},"sessionHook":true}');
+  for (const value of ["off", "OFF", "false", "0", " false "]) {
+    const result = spawnSync(process.execPath, [script], {
+      cwd: root,
+      env: { ...process.env, HOME: root, USERPROFILE: root, MSTACK_SESSION_HOOK: value },
+      encoding: "utf8",
+      timeout: 15000,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "", `expected empty output for MSTACK_SESSION_HOOK=${JSON.stringify(value)}`);
+  }
+  assert.equal(sessionHookEnabled(join(root, ".config", "mstack", "models.json"), { MSTACK_SESSION_HOOK: "on" }), true);
+});
+
 test("a missing or unreadable config leaves the hook on", (t) => {
   const root = sandbox(t);
   assert.equal(sessionHookEnabled(join(root, "absent.json")), true);

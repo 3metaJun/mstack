@@ -27,7 +27,7 @@ try {
 
 function clean(value) {
   const singleLine = value.replace(/[\t\r\n]/g, " ");
-  return /^\s*[=+\-@]/.test(singleLine) ? `'${singleLine}` : singleLine;
+  return /^\s*[=+\-@"]/.test(singleLine) ? `'${singleLine}` : singleLine;
 }
 
 const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");

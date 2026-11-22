@@ -4,7 +4,7 @@
   "canonicalSkills": {
     "architect": {
       "source": "aea83d7aa109eb73402182701b14c289844663ad9c8f959fedbef2df66787ce0",
-      "target": "1e9636e3b13c206c74489cd16cb7277320384763924105077ae97da9d9d8f0c5"
+      "target": "c2b689fe0236df1ba7d8c891d0e3cb50965922386726ccddf62f3e0475831eb1"
     },
     "arena": {
       "source": "98288bee8e2bb9f223d46ff3622c7097df50a8a2fbc74d179e19d79c928160ff",
@@ -20,7 +20,7 @@
     },
     "blast-radius": {
       "source": "4248d03e22365207d2e5f90c9542720f80a88a6b42fd542ef88dde3cf9f9223f",
-      "target": "72113714dc5e7ef634a8b220e3a8dacea7b0e82d1f24136c13e04013749ef41a"
+      "target": "f70e0fe4fc2a4536912e4ff366822026fe7c81228a1b41be1d80d6cb202d46bd"
     },
     "bro": {
       "source": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
@@ -76,11 +76,11 @@
     },
     "no-comments": {
       "source": "741467a4600b1813cde46a9c58173e9ab444c3874c5262435c9991adcb59ed3f",
-      "target": "80c416c896336e3ee025ec9b03337be15466d86d273dda7cf0eb69ed0674929f"
+      "target": "2c88bf5a30c8d0d4c9d901a9413015a8834bb519cb813e65db5fcedd5daa2144"
     },
     "meta-mode": {
       "source": "1f72877e20cc2dbc412a82159d12d3334b8d6b37559102a509eb423231716031",
-      "target": "80d3200054604e2662e77d81d837efdd3da898c6b2cc9b8c4c64e78b72e0ff45"
+      "target": "8c871576f1349ec8aecf358e41e01ee9b88701cc1698ff8c97e7f134cc2f5938"
     },
     "principle-attack-the-premise": {
       "source": "831e916c540f4b6b720b7472aeea6e6ef93996655e36cc2517221f6f2081b480",
@@ -92,7 +92,7 @@
     },
     "principle-build-the-lever": {
       "source": "753d81cf9ca2a4e9d1f057429f0c63c9c622e6022dd877ec97ec15f442076aac",
-      "target": "d4b85b4c27918139431779db84d087a041565a3eee77ba2ceeee695c0a19e263"
+      "target": "943532633fc5a4b627c55954759ff85e06d343b54ea069651c6bd45f390cb63e"
     },
     "principle-encode-lessons-in-structure": {
       "source": "228963799189f481827d6f28065f278bc2008ffa37030b1234cbd5814d36b9e9",
@@ -152,7 +152,7 @@
     },
     "principle-prove-it-works": {
       "source": "3d6c482e341974cfcb8d19ebf66fb1d4274d8673af35e36d3c231a6aa9e03f25",
-      "target": "64a157310e878acd0d6db0fb5241f780cde011ecb19062a4a9f0fca8382dcf2f"
+      "target": "a0daf0152c8958ae8aa9eb603aa0d9daf3c94a5a55eaf704d33d6ea5747ea26a"
     },
     "principle-redesign-from-first-principles": {
       "source": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
@@ -172,7 +172,7 @@
     },
     "principle-test-behavior-not-implementation": {
       "source": "42afc1a2c7176363b6410cfde06a9fd3e96f5022ba86bdb8de4838ad65c2442d",
-      "target": "69755f16398acfa8a9b0582f6bbf921ac443915eafe384f71a21292c71e6b9ba"
+      "target": "ffaef2afc8ef611c379460136534270cfb945ab5eb49232c817b6a8f02b6ec88"
     },
     "principle-type-system-discipline": {
       "source": "9cd1ce345bc9d666c73c64c89c89164217b659aa4c4dde5600cbbe6f6e775461",
@@ -188,7 +188,7 @@
     },
     "setup-mstack": {
       "source": "ce951595f47ed635b570ce2af62ec0cfbe79ce8077acc41f9bb56aeae5f61d96",
-      "target": "a3431f9a13f21e462ab5752f301249b9bc9b76341c4df42b9d56f532ea707fd2"
+      "target": "dc000aa121c9a865ce969f47d988769fa6ae1c15cd864041ad71144c6b2386ce"
     },
     "sharpen": {
       "source": "aac4f8e6a1ffd70e3763314db37d3c2eb0cfea08bc63e98907aca6dae0343031",
@@ -196,7 +196,7 @@
     },
     "show-me-your-work": {
       "source": "ebc8c9eaf6f6ef2924d1ec1165b76f6a7d1c130f83e0436aaff2a26ab75dfdf2",
-      "target": "c30b03f8f42fef2cf68644e83c749b7f3baef45ee06fb2232093ef284e571068"
+      "target": "20d578cc528fb0519b0db38d8083e63bbf3a5491f80fd49b6c77bd67a1b11cb3"
     },
     "statechart": {
       "source": "ca7b3e43b1ddc4fb2425a33960f9390357323a869e1d921b6e2aff4f3004d55e",
@@ -208,7 +208,7 @@
     },
     "tdd": {
       "source": "eeb868e2dfebee528d730a67d7b17498fac4bb85dec2e38bc5c5176aca4d5d2f",
-      "target": "4930d09f2ca2dd47487c66d21d82bd376e35cd70bb8e42bfad5e19506c2ca2df"
+      "target": "3542bec2124698464305d925063fcb5aa46d1c7bea04aa82559b3c17dc81e453"
     },
     "teach": {
       "source": "2c17f3c0a79536ca2fa3c20983def027ffd8abb4063d9bb3c97778b77557600d",

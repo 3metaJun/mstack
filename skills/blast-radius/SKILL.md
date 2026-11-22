@@ -1,6 +1,6 @@
 ---
 name: blast-radius
-description: Find what a change could break beyond its diff, then prove the one or two safety-critical facts by running real code. Use for change-risk analysis, suspicious small diffs, migrations, or requests such as "what could this break?"
+description: Find what a change could break beyond its diff, then prove the one or two safety-critical facts by running real code. Use for change-risk analysis, suspicious small diffs, migrations, requests such as "what could this break?", or a brief that asserts something about existing code ("make X public", "X already handles Y") before designing against that assertion.
 license: MIT
 ---
 
@@ -8,7 +8,9 @@ license: MIT
 
 Find effects that a symbol search alone will miss. A convincing write-up is not
 proof, so reduce the analysis to the facts on which safety depends and execute
-the cheapest real checks for those facts.
+the cheapest real checks for those facts. Run this before design, not only before
+shipping, when a brief asserts something about existing code: the assertion is a
+hypothesis, and the consumer census decides the design.
 
 ## Evidence ladder
 

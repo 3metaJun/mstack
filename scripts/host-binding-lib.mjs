@@ -3,9 +3,9 @@
 const HOST_TOOL_PATTERNS = [
   [
     "T3 Code orchestration tool",
-    /\b(?:orchestrator_capabilities|delegate_task|task_status|task_cancel|create_threads|request_secret|schedule_task|run_scheduled_task_now|list_scheduled_tasks|(?:update|delete)_scheduled_task|(?:link|unlink|unwatch|watch)_pull_request|list_thread_pull_requests|html_(?:preview|render))\b/,
+    /\b(?:orchestrator_capabilities|delegate_task|task_status|task_cancel|create_threads|request_secret|schedule_task|run_scheduled_task_now|list_scheduled_tasks|(?:update|delete)_scheduled_task|(?:link|unlink)_pull_requests?|(?:unwatch|watch)_pull_request|list_thread_pull_requests|pull_request_(?:read|list|create|update|respond|review|merge)|(?:write|read)_pull_request_guides?|ci_(?:logs|rerun)|(?:list|read|create|link|unlink)_issues?|comment_on_issue|set_issue_state|list_thread_issues|send_to_user|html_(?:preview|render))\b/,
   ],
-  ["T3 Code thread tool", /\bt3_[a-z]+(?:_[a-z]+)+\b/],
+  ["T3 Code thread tool", /\bt3_[a-z]+(?:_[a-z]+)*\b/],
   ["T3 Code preview tool", /\bpreview_[a-z]+(?:_[a-z]+)*\b/],
   ["T3 Code device tool", /\bdevice_[a-z]+(?:_[a-z]+)*\b/],
   ["T3 Code MCP server name", /\bt3-code\b|\bmcp__t3_code__/],
