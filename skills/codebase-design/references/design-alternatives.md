@@ -18,7 +18,7 @@ Show this to the user, then immediately proceed to Step 2. The user reads and th
 
 ### 2. Spawn sub-agents
 
-Use the active Harness's native delegation to assign three independent candidates, within its available concurrency. Each must produce a **radically different** interface for the deepened module. If delegation is unavailable, run separate design passes with these same briefs and disclose that they share one agent's context. Keep the passes read-only; design alternatives do not need to edit a shared checkout.
+Use the active Harness's native delegation to assign three independent candidates, within its available concurrency. Start each one with a fresh context window rather than a fork of this conversation; some Harnesses fork by default, and a fork carries over the context the candidate exists to escape. Each must produce a **radically different** interface for the deepened module. If delegation is unavailable, run separate design passes with these same briefs and disclose that they share one agent's context. Keep the passes read-only; design alternatives do not need to edit a shared checkout.
 
 Prompt each sub-agent with a separate technical brief (file paths, coupling details, dependency category from [Deepening](deepening.md), what sits behind the seam). The brief is independent of the user-facing problem-space explanation in Step 1. Give each agent a different design constraint:
 

@@ -133,7 +133,7 @@ test("OpenCode read-only plans select the built-in plan agent", () => {
   ], { cwd: resolve("."), encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
-  assert.deepEqual(plan.args, ["run", "--pure", "inspect the repository", "--agent", "plan"]);
+  assert.deepEqual(plan.args, ["run", "inspect the repository", "--agent", "plan"]);
 });
 
 test("SSH invocation rejects an unsafe host before spawning", () => {

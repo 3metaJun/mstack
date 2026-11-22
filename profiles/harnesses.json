@@ -33,7 +33,7 @@
     "suffix": ["skills"],
     "runtime": {
       "command": "opencode",
-      "headlessArgs": ["run", "--pure"],
+      "headlessArgs": ["run"],
       "modelArgs": ["--model", "{model}"],
       "readOnlyArgs": ["--agent", "plan"]
     }
