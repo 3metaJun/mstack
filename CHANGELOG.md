@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.14.0 - 2026-11-23
+
+### Changes
+
+- Absorb worktree audit and cleanup safety, hardened `watch-pr` and `ship-pr`,
+  and T3 Code tooling from pstack-claude and t3-pstack, including
+  `npm run check-t3`.
+- `meta-mode` settles contested designs with a prototype, blast-radius,
+  statechart, or formal verification, and runs `interrogate` only on request.
+- `meta-mode` Shipping lands through a named merge gate and disarms auto-merge
+  before it waits on checks.
+- Support OpenCode 2: drop `--pure` and read `session export` by CLI major
+  version in `recall`.
+- Sync pstack to `0.15.46` and the mattpocock/skills pin to `4ae2317`.
+- Refresh the README and add T3 Code to the social preview.
+
+### Upgrade notes
+
+- `tools/meta-mode/check-plan.mjs` is removed. The multi-phase plan playbook
+  (`skills/meta-mode/playbooks/multi-phase-plan.md`) now verifies a plan
+  through per-PR unit, live, and perf checkboxes instead of a linter run.
+
+### Verification
+
+GitHub Actions cannot start runs on this account, so `npm test` and
+`npm run check-package` ran locally through the Fleet `local-ci/verify` gate.
+
 ## 0.13.1 - 2026-10-30
 
 ### Changes
