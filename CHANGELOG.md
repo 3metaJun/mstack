@@ -16,6 +16,12 @@
 - Sync pstack to `0.15.46` and the mattpocock/skills pin to `4ae2317`.
 - Refresh the README and add T3 Code to the social preview.
 
+### Upgrade notes
+
+- `tools/meta-mode/check-plan.mjs` is removed. The multi-phase plan playbook
+  (`skills/meta-mode/playbooks/multi-phase-plan.md`) now verifies a plan
+  through per-PR unit, live, and perf checkboxes instead of a linter run.
+
 ### Verification
 
 GitHub Actions cannot start runs on this account, so `npm test` and
